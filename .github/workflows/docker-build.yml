@@ -1,25 +1,30 @@
 name: Build & Push Docker Images on Tag
 
 on:
-    workflow_run:
-      workflows: ["Main build and test workflow"]
-      types:
-        - completed
-    workflow_dispatch:
+  workflow_run:
+    workflows: ["Main build and test workflow"]
+    types:
+      - completed
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'refs/tags/') }}
     env:
       IMAGE_BASE: isisacceleratorcontrols/poly-lithic
     environment: docker-secrets
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Extract version from tag
         id: vars
         run: |
-          TAG_NAME=${GITHUB_REF#refs/tags/}
+          # FIX THIS - extract from workflow_run context, not GITHUB_REF
+          TAG_NAME="${{ github.event.workflow_run.head_branch }}"
+          TAG_NAME=${TAG_NAME#refs/tags/}
           echo "VERSION=${TAG_NAME}" >> $GITHUB_ENV
           echo "version=${TAG_NAME}" >> $GITHUB_OUTPUT
 
