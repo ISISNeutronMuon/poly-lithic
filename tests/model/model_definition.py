@@ -11,7 +11,6 @@ class ExampleModel(LUMEBaseModel):
         return output_dict
 
 
-
 # We use this to create a model instance, we need this to yield a fully functional model instance
 class ModelFactory:
     def __init__(self):

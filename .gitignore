@@ -1,7 +1,7 @@
 main_local.py
 env
 cred.json
-__pycache__
+__pycache__/
 *lcls-cu-inj-nn/*
 *lcls_cu_inj_nn/*
 kube
@@ -22,7 +22,7 @@ test.ipynb
 image_model
 test.h5
 .vscode
-build
+/build
 env.json
 creds.json
 test.py
@@ -38,13 +38,14 @@ lebt_*/
 *-surrograte/
 waterfall*/
 _version.py
-dist/*
+dist/
 graphs/
 .coverage
 .vscode
 tmp*
 notify.profile
-*.code-workspace
 test.yaml
 test_files/
 old_examples/
+*code-workspace
+test-env

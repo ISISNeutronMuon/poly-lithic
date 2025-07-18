@@ -30,7 +30,7 @@ dependencies = [
 ]
 
 [tool.hatch.version]
-source = "vcs"
+source = "vcs" #test
 
 [tool.hatch.build.hooks.vcs]
 version-file = "poly_lithic/_version.py"
@@ -50,7 +50,7 @@ quote-style = "single"
 [project.scripts]
 poly_lithic = "poly_lithic.scripts.main:main"
 pl = "poly_lithic.scripts.main:main"
-model_manager = "poly_lithic.scripts.main:main"
+model_manager = "poly_lithic.scripts.main:main" # legacy alias for poly_lithic
 
 
 [tool.hatch.envs.default.env-vars]

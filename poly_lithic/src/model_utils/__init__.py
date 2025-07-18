@@ -5,8 +5,12 @@ registered_model_getters = {}
 from poly_lithic.src.model_utils.ModelGetterBase import ModelGetterBase
 
 try:
-    from poly_lithic.src.model_utils.MlflowModelGetter import MLflowModelGetter
+    from poly_lithic.src.model_utils.MlflowModelGetter import (
+        MLflowModelGetter,
+        MLflowModelGetterLegacy,
+    )
 
+    registered_model_getters['mlflow_legacy'] = MLflowModelGetterLegacy
     registered_model_getters['mlflow'] = MLflowModelGetter
 
 except Exception as e:

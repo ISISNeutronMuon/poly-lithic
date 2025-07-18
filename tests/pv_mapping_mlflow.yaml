@@ -38,9 +38,9 @@ modules:
         - "LUME:MLFLOW:TEST_B"
         - "LUME:MLFLOW:TEST_A"
       variables:
-        x2:
+        x:
           formula: "LUME:MLFLOW:TEST_B"
-        x1: 
+        y: 
           formula: "LUME:MLFLOW:TEST_A"
   model:
     name: "model"
@@ -51,8 +51,8 @@ modules:
     config:
       type: "MlflowModelGetter"
       args:
-        model_name: "torch_model"
-        model_version : 20
+        model_name: "SimpleModel"
+        model_version : 4
       variables:
         y:
           type: "scalar"
@@ -66,10 +66,10 @@ modules:
       unpack_data: True
     config:
       symbols:
-        - "y"
+        - "output"
       variables:
         LUME:MLFLOW:TEST_S:
-          formula: "y"
+          formula: "output"
 
 
     

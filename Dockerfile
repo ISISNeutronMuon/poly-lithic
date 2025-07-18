@@ -15,42 +15,70 @@
 # # CMD tail -f /dev/null
 # Stage 1: Base image with common dependencies
 
+# ===== Base stage =====
 FROM python:3.11.8-slim-bullseye AS base
+
+# Accept version as build argument
+ARG VERSION=""
+ENV POLY_LITHIC_VERSION=$VERSION
+
+LABEL org.opencontainers.image.version="${POLY_LITHIC_VERSION}"
+
+# System dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     iputils-ping \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Python requirements
 COPY requirements.txt /app/requirements.txt
 RUN python -m pip install -r /app/requirements.txt --no-cache-dir
 
+# Embed version into the container (optional)
+RUN echo "${POLY_LITHIC_VERSION}" > /opt/deployment/version.txt
 
+# ===== Torch stage =====
 FROM base AS torch
-# Install additional ML libraries
+
+# Additional ML dependencies
 RUN python -m pip install botorch pydantic torch==2.6.0 --no-cache-dir
 
-COPY . /opt/deployment
+# Copy code
+COPY poly_lithic /opt/poly_lithic
+COPY pyproject.toml /opt/deployment/pyproject.toml
+COPY tests /opt/deployment/tests
+
 WORKDIR /opt/deployment
-RUN python -m pip install . --no-cache-dir
+
+RUN python -m pip install poly-lithic --no-cache-dir
 
 CMD pl -c config.yaml -r -e env.json && pl --publish -c config.yaml -e env.json
 
+# ===== TensorFlow stage =====
 FROM base AS tensorflow
-# Install additional ML libraries
+
 RUN python -m pip install pydantic tensorflow --no-cache-dir
 
-COPY . /opt/deployment
+COPY poly_lithic /opt/poly_lithic
+COPY pyproject.toml /opt/deployment/pyproject.toml
+COPY tests /opt/deployment/tests
+
 WORKDIR /opt/deployment
-RUN python -m pip install . --no-cache-dir
+
+RUN python -m pip install poly-lithic --no-cache-dir
 
 CMD pl -c config.yaml -r -e env.json && pl --publish -c config.yaml -e env.json
 
-
+# ===== Vanilla stage =====
 FROM base AS vanilla
 
-COPY . /opt/deployment
+COPY poly_lithic /opt/poly_lithic
+COPY pyproject.toml /opt/deployment/pyproject.toml
+COPY tests /opt/deployment/tests
+
 WORKDIR /opt/deployment
-RUN python -m pip install . --no-cache-dir
+
+RUN python -m pip install poly-lithic --no-cache-dir
 
 CMD pl -c config.yaml -r -e env.json && pl --publish -c config.yaml -e env.json

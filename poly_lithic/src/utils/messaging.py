@@ -12,9 +12,28 @@ from poly_lithic.src.transformers import BaseTransformer
 from poly_lithic.src.interfaces import BaseInterface
 from poly_lithic.src.model_utils import registered_model_getters
 import os
+
 # from deepdiff import DeepDiff
 import hashlib
+import psutil
+
+current_process = psutil.Process()
 logger = get_logger()
+
+
+def get_process_tree_cpu(process):
+    current = process
+    cpu_percent = current.cpu_percent()
+
+    # Add CPU usage from all child processes
+    for child in current.children(recursive=True):
+        try:
+            cpu_percent += child.cpu_percent()
+        except psutil.NoSuchProcess:
+            pass  # Child process ended
+
+    return cpu_percent
+
 
 import cProfile
 
@@ -88,7 +107,7 @@ class Message(BaseModel):
     @computed_field
     def values(self) -> list[Any]:
         return list(self.value.values())
-    
+
     @computed_field
     def uid(self) -> str:
         """return a unique id for the message"""
@@ -96,9 +115,8 @@ class Message(BaseModel):
         for key, value in self.value.items():
             value_items = frozenset((k, str(v)) for k, v in value.items())
             items.append((key, value_items))
-        
+
         return hashlib.md5(str(frozenset(items)).encode()).hexdigest()
-            
 
     def __str__(self):
         return f'Message(topic={self.topic}, source={self.source}, value={self.value}, timestamp={self.timestamp})'
@@ -164,7 +182,6 @@ class MessageBroker:
     def notify(self, message: Message) -> None:
         """notify all observers of a message"""
         if message.topic in self._observers:
-            
             # logger.debug(f"notifying observers of {message}")
 
             for observer in self._observers[message.topic]:
@@ -172,7 +189,7 @@ class MessageBroker:
                 start = time.time()
                 result = observer.update(message)
                 end = time.time()
-                
+
                 if str(observer) not in self._stats:
                     self._stats[str(observer)] = 0
                     self._stats_cnt[str(observer)] = 0
@@ -186,8 +203,7 @@ class MessageBroker:
                             self.queue.append(r)
                     else:
                         self.queue.append(result)
-                        
-        
+
             if time.time() - self.last_update > 1:
                 self.last_update = time.time()
                 fmt_stats = {k: v / self._stats_cnt[k] for k, v in self._stats.items()}
@@ -198,10 +214,10 @@ class MessageBroker:
                 sum_time = sum([v for v in self._stats.values()])
                 cnt = sum([v for v in self._stats_cnt.values()])
                 logger.info(
-                    f'real time factor: {sum_time / 1000:.2f} must be less than 1, time spent updating this cycle : {sum_time:.2f}ms'
+                    f'real time factor: {sum_time / 1000:.2f} must be less than 1, time spent updating this cycle : {sum_time:.2f}ms, {get_process_tree_cpu(current_process):.2f}% CPU usage'
                 )
                 # print(self._stats)
-                # print(self._stats_cnt) 
+                # print(self._stats_cnt)
                 self._stats = {}
                 self._stats_cnt = {}
 
@@ -219,6 +235,7 @@ class MessageBroker:
         return None
 
     def parse_queue(self):
+        """parse the queue and notify observers of each message"""
         queue_snapshot = self.queue.copy()
         for message in queue_snapshot:
             self.notify(message)
@@ -279,9 +296,7 @@ class InterfaceObserver(Observer):
             else:
                 self.last_get_all = messages
                 return messages
-            
-            
-            
+
             return messages
         else:
             logger.debug(f'updating {self}')
@@ -386,8 +401,8 @@ class ModelObserver(Observer):
 
         if self.model is None and self.config is not None:
             self.model = self.__get_model()
-            if not hasattr(self.model, 'evaluate'):
-                raise ValueError('model must have a .evaluate() method')
+            # if not hasattr(self.model, 'evaluate'): # mlflow wierdness doesnt let me check the attribute, it always comes back false
+            #     raise ValueError('model must have a .evaluate() method')
         elif self.model is not None:
             self.model = model
         else:
@@ -397,14 +412,22 @@ class ModelObserver(Observer):
         """load the model from the config"""
         if self.config['type'] == 'mock':
             return MockModel()
-        if self.config['type'] == 'MlflowModelGetter':
-            model_getter = registered_model_getters['mlflow'](
+        if self.config['type'] == 'MlflowModelGetterLegacy':
+            model_getter = registered_model_getters['mlflow_legacy'](
                 self.config['args']
             )  # legacy name well make it consistent across the board in the future
             model = model_getter.get_model()
             # check model is not None
             if model is None:
                 raise ValueError('model is None')
+            return model
+        elif self.config['type'] == 'MlflowModelGetter':
+            model_getter = registered_model_getters['mlflow'](self.config['args'])
+            model = model_getter.get_model()
+            return model
+        elif self.config['type'] == 'LocalModelGetter':
+            model_getter = registered_model_getters['local'](self.config['args'])
+            model = model_getter.get_model()
             return model
 
         else:

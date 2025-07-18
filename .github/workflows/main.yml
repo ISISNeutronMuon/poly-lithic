@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: Main build and test workflow
 
 # only on tagged commits or manual trigger or on change to main.yml
 on:
@@ -7,11 +7,10 @@ on:
     #   - '*'
     # paths:
     #   - .github/workflows/**.yml
-    branches:
-      - dev
     tags:
       - '*'
     # on push to dev or main branch if tags are pushed
+  workflow_dispatch:
 
 jobs:
   Build:
@@ -62,5 +61,27 @@ jobs:
           name: dist
           path: |
             dist
-      
+  PyPI:
+    needs: Build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write 
+    if: github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/tags/') 
+
+    environment:
+      name: pypi
+      url: https://pypi.org/project/poly-lithic/
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist      
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+
+        
+        
 

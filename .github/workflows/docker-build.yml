@@ -1,0 +1,73 @@
+name: Build & Push Docker Images on Tag
+
+on:
+    workflow_run:
+      workflows: ["Main build and test workflow"]
+      types:
+        - completed
+    workflow_dispatch:
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_BASE: isisacceleratorcontrols/poly-lithic
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: vars
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          echo "VERSION=${TAG_NAME}" >> $GITHUB_ENV
+          echo "version=${TAG_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Determine if version is pure semver (e.g. v0.1.2)
+        id: semver_check
+        run: |
+          if echo "${{ steps.vars.outputs.version }}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "is_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_release=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker images with version injection
+        run: |
+          docker build --pull --rm --target vanilla \
+            --build-arg VERSION=${VERSION} \
+            -f Dockerfile -t $IMAGE_BASE:base-${VERSION} .
+
+          docker build --pull --rm --target torch \
+            --build-arg VERSION=${VERSION} \
+            -f Dockerfile -t $IMAGE_BASE:torch-${VERSION} .
+
+          docker build --pull --rm --target tensorflow \
+            --build-arg VERSION=${VERSION} \
+            -f Dockerfile -t $IMAGE_BASE:tensorflow-${VERSION} .
+
+      - name: Push versioned images
+        run: |
+          docker push $IMAGE_BASE:base-${VERSION}
+          docker push $IMAGE_BASE:torch-${VERSION}
+          docker push $IMAGE_BASE:tensorflow-${VERSION}
+
+      - name: Tag and push latest if release version
+        if: ${{ steps.semver_check.outputs.is_release == 'true' }}
+        run: |
+          echo "Tag is a release — tagging latest"
+
+          docker tag $IMAGE_BASE:base-${VERSION} $IMAGE_BASE:base-latest
+          docker tag $IMAGE_BASE:torch-${VERSION} $IMAGE_BASE:torch-latest
+          docker tag $IMAGE_BASE:tensorflow-${VERSION} $IMAGE_BASE:tensorflow-latest
+          docker tag $IMAGE_BASE:base-latest $IMAGE_BASE:latest
+
+          docker push $IMAGE_BASE:base-latest
+          docker push $IMAGE_BASE:torch-latest
+          docker push $IMAGE_BASE:tensorflow-latest
+          docker push $IMAGE_BASE:latest

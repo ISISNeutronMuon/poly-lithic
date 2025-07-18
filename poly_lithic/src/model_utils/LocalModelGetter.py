@@ -14,8 +14,8 @@ class LocalModelGetter(ModelGetterBase):
         self.model_type = 'local'
         self.requirements = config.get('requirements', None)
         logger.debug(
-            f"LocalModelGetter initialized with model_module_path: {self.model_module_path}, "
-            f"model_class_name: {self.model_class_name}, requirements: {self.requirements}"
+            f'LocalModelGetter initialized with model_module_path: {self.model_module_path}, '
+            f'model_class_name: {self.model_class_name}, requirements: {self.requirements}'
         )
 
     def get_model(self):

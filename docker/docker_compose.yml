@@ -1,9 +1,8 @@
 services:
   pl1:
-    image: harbor.stfc.ac.uk/isis-accelerator-controls/lume-deploy:base-test
-    volumes:
-      - ./mymodel.yaml:/opt/deployment/config.yaml
-      - ./env.json:/opt/deployment/env.json
-    # model_manager --publish -c test.yaml -e ./tests/env.json
-    command: ["model_manager", "--publish", "-c", "config.yaml", "-e", "env.json"]
-    # command: ["tail", "-f", "/dev/null"]
+    image: matindocker/poly-lithic:base-latest
+    # volumes: # mount your files here
+    #   - ./mymodel.yaml:/opt/deployment/config.yaml
+    #   - ./env.json:/opt/deployment/env.json
+    # command: ["model_manager", "--publish", "-c", "config.yaml", "-e", "env.json"]
+    command: ["tail", "-f", "/dev/null"]
