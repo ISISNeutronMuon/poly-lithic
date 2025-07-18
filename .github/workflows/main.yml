@@ -7,6 +7,8 @@ on:
     #   - '*'
     # paths:
     #   - .github/workflows/**.yml
+    branches:
+      - main
     tags:
       - '*'
     # on push to dev or main branch if tags are pushed
@@ -66,7 +68,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write 
-    if: github.ref == 'refs/heads/dev' || startsWith(github.ref, 'refs/tags/') 
+    if: startsWith(github.ref, 'refs/tags/') 
 
     environment:
       name: pypi
