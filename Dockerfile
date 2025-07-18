@@ -35,9 +35,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt /app/requirements.txt
 RUN python -m pip install -r /app/requirements.txt --no-cache-dir
 
-# Embed version into the container (optional)
-RUN echo "${POLY_LITHIC_VERSION}" > /opt/deployment/version.txt
-
 # ===== Torch stage =====
 FROM base AS torch
 
@@ -51,7 +48,11 @@ COPY tests /opt/deployment/tests
 
 WORKDIR /opt/deployment
 
-RUN python -m pip install poly-lithic --no-cache-dir
+RUN if [ -n "${POLY_LITHIC_VERSION}" ]; then \
+        python -m pip install poly-lithic==${POLY_LITHIC_VERSION} --no-cache-dir; \
+    else \
+        python -m pip install poly-lithic --no-cache-dir; \
+    fi
 
 CMD pl -c config.yaml -r -e env.json && pl --publish -c config.yaml -e env.json
 
@@ -66,7 +67,11 @@ COPY tests /opt/deployment/tests
 
 WORKDIR /opt/deployment
 
-RUN python -m pip install poly-lithic --no-cache-dir
+RUN if [ -n "${POLY_LITHIC_VERSION}" ]; then \
+        python -m pip install poly-lithic==${POLY_LITHIC_VERSION} --no-cache-dir; \
+    else \
+        python -m pip install poly-lithic --no-cache-dir; \
+    fi
 
 CMD pl -c config.yaml -r -e env.json && pl --publish -c config.yaml -e env.json
 
@@ -79,6 +84,10 @@ COPY tests /opt/deployment/tests
 
 WORKDIR /opt/deployment
 
-RUN python -m pip install poly-lithic --no-cache-dir
+RUN if [ -n "${POLY_LITHIC_VERSION}" ]; then \
+        python -m pip install poly-lithic==${POLY_LITHIC_VERSION} --no-cache-dir; \
+    else \
+        python -m pip install poly-lithic --no-cache-dir; \
+    fi
 
 CMD pl -c config.yaml -r -e env.json && pl --publish -c config.yaml -e env.json
