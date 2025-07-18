@@ -1,7 +1,7 @@
 # set build time variables
 export BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 export VCS_REF=$(git rev-parse --short HEAD)
-export VERSION=$(hatch version)
+export VERSION=v0.1.6.rc7 #$(hatch version)
 
 # # if build-info file exists, remove it
 # if [ -f build-info ]; then
