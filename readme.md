@@ -3,7 +3,7 @@ use old docs in the meantime: [old docs](./readme_old.md) -->
 
 
 
-[![Main build and test workflow](https://github.com/ISISNeutronMuon/poly-lithic/actions/workflows/main.yml/badge.svg)](https://github.com/ISISNeutronMuon/poly-lithic/actions/workflows/main.yml)
+[![Main build and test workflow](https://github.com/ISISNeutronMuon/poly-lithic/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/ISISNeutronMuon/poly-lithic/actions/workflows/main.yml)
 
 [![Build & Push Docker Images on Tag](https://github.com/ISISNeutronMuon/poly-lithic/actions/workflows/docker-build.yml/badge.svg)](https://github.com/ISISNeutronMuon/poly-lithic/actions/workflows/docker-build.yml)
 
