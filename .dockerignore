@@ -1,5 +1,6 @@
 main_local.py
 env.yaml
+env.json
 creds.json
 env
 kube/*
@@ -17,3 +18,8 @@ mlruns
 torch_model
 *_model
 local_test/
+lebt_torch_model/
+cookiecutter-*
+*.json
+test-env
+

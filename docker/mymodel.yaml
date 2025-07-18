@@ -1,0 +1,911 @@
+deployment:
+  type: continuous
+  rate: 0.1
+
+modules:
+  model:
+    name: model
+    type: model.SimpleModel
+    pub: model
+    sub: in_transformer
+    module_args: None
+    config:
+      type: MlflowModelGetter
+      args: 
+        model_name: mebt_hypergan
+        model_version: 3
+      variables:
+        mean_z:
+          type: waveform
+        landf_percent:
+          type: waveform
+        mean_x:
+          type: waveform
+        mean_y:
+          type: waveform
+        sigma_x:
+          type: waveform
+        sigma_y:
+          type: waveform
+        norm_emit_x:
+          type: waveform
+        norm_emit_y:
+          type: waveform
+        sigma_z:
+          type: waveform
+        sigma_energy:
+          type: waveform
+        cov_x__xp:
+          type: waveform
+        cov_y__yp:
+          type: waveform
+        cumulative_loss:
+          type: waveform
+        alpha_x:
+          type: waveform
+        alpha_y:
+          type: waveform
+        beta_x:
+          type: waveform
+        beta_y:
+          type: waveform
+        emittance_x:
+          type: waveform
+        emittance_y:
+          type: waveform
+        landf_percent_upper:
+          type: waveform
+        mean_x_upper:
+          type: waveform
+        mean_y_upper:
+          type: waveform
+        sigma_x_upper:
+          type: waveform
+        sigma_y_upper:
+          type: waveform
+        norm_emit_x_upper:
+          type: waveform
+        norm_emit_y_upper:
+          type: waveform
+        sigma_z_upper:
+          type: waveform
+        sigma_energy_upper:
+          type: waveform
+        cov_x__xp_upper:
+          type: waveform
+        cov_y__yp_upper:
+          type: waveform
+        cumulative_loss_upper:
+          type: waveform
+        alpha_x_upper:
+          type: waveform
+        alpha_y_upper:
+          type: waveform
+        beta_x_upper:
+          type: waveform
+        beta_y_upper:
+          type: waveform
+        emittance_x_upper:
+          type: waveform
+        emittance_y_upper:
+          type: waveform
+        landf_percent_lower:
+          type: waveform
+        mean_x_lower:
+          type: waveform
+        mean_y_lower:
+          type: waveform
+        sigma_x_lower:
+          type: waveform
+        sigma_y_lower:
+          type: waveform
+        norm_emit_x_lower:
+          type: waveform
+        norm_emit_y_lower:
+          type: waveform
+        sigma_z_lower:
+          type: waveform
+        sigma_energy_lower:
+          type: waveform
+        cov_x__xp_lower:
+          type: waveform
+        cov_y__yp_lower:
+          type: waveform
+        cumulative_loss_lower:
+          type: waveform
+        alpha_x_lower:
+          type: waveform
+        alpha_y_lower:
+          type: waveform
+        beta_x_lower:
+          type: waveform
+        beta_y_lower:
+          type: waveform
+        emittance_x_lower:
+          type: waveform
+        emittance_y_lower:
+          type: waveform
+        x_ellipse_x:
+          type: waveform
+        x_ellipse_y:
+          type: waveform
+        y_ellipse_x:
+          type: waveform
+        y_ellipse_y:
+          type: waveform
+        sigma_x_5rms:
+          type: waveform
+        sigma_y_5rms:
+          type: waveform
+        sigma_x_upper_5rms:
+          type: waveform
+        sigma_y_upper_5rms:
+          type: waveform
+        sigma_x_lower_5rms:
+          type: waveform
+        sigma_y_lower_5rms:
+          type: waveform
+        final_loss:
+          type: scalar
+
+  epics_server:
+    name: epics_server
+    type: interface.p4p_server
+    pub: in_interface
+    sub: 
+      - "get_all"
+      - "out_transformer"
+    module_args: None
+    config:
+      EPICS_PVA_NAME_SERVERS: localhost:5075
+      variables:
+        DEV:ML:MEBT_HYPERGAN:INPUT:SIG_X:
+          proto: pva
+          default: 1.33
+          name: DEV:ML:MEBT_HYPERGAN:INPUT:SIG_X
+        DEV:ML:MEBT_HYPERGAN:INPUT:SIG_Y:
+          proto: pva
+          default: 1.05
+          name: DEV:ML:MEBT_HYPERGAN:INPUT:SIG_Y
+        DEV:ML:MEBT_HYPERGAN:INPUT:X_OFF:
+          proto: pva
+          default: 0.0
+          name: DEV:ML:MEBT_HYPERGAN:INPUT:X_OFF
+        DEV:ML:MEBT_HYPERGAN:INPUT:Y_OFF:
+          proto: pva
+          default: 0.0
+          name: DEV:ML:MEBT_HYPERGAN:INPUT:Y_OFF
+        DEV:ML:MEBT_HYPERGAN:INPUT:CURRENT:
+          proto: pva
+          default: 35.03
+          name: DEV:ML:MEBT_HYPERGAN:INPUT:CURRENT
+        DEV:ML:MEBT_HYPERGAN:INPUT:CAV_1:VOLTS:
+          proto: pva
+          default: 40.7
+          name: DEV:ML:MEBT_HYPERGAN:INPUT:CAV_1:VOLTS
+        DEV:ML:MEBT_HYPERGAN:INPUT:CAV_2:VOLTS:
+          proto: pva
+          default: 26.1
+          name: DEV:ML:MEBT_HYPERGAN:INPUT:CAV_2:VOLTS
+        DEV:ML:MEBT_HYPERGAN:INPUT:CAV_3:VOLTS:
+          proto: pva
+          default: 14.6
+          name: DEV:ML:MEBT_HYPERGAN:INPUT:CAV_3:VOLTS
+        DEV:ML:MEBT_HYPERGAN:INPUT:CAV_4:VOLTS:
+          proto: pva
+          default: 29.2
+          name: DEV:ML:MEBT_HYPERGAN:INPUT:CAV_4:VOLTS
+        DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_1:CURRENT:
+          proto: pva
+          default: 146.8
+          name: DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_1:CURRENT
+        DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_2:CURRENT:
+          proto: pva
+          default: -225.4
+          name: DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_2:CURRENT
+        DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_3:CURRENT:
+          proto: pva
+          default: 148.9
+          name: DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_3:CURRENT
+        DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_4:CURRENT:
+          proto: pva
+          default: -80.7
+          name: DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_4:CURRENT
+        DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_5:CURRENT:
+          proto: pva
+          default: 52.4
+          name: DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_5:CURRENT
+        DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_6:CURRENT:
+          proto: pva
+          default: -144.7
+          name: DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_6:CURRENT
+        DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_7:CURRENT:
+          proto: pva
+          default: 209.7
+          name: DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_7:CURRENT
+        DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_8:CURRENT:
+          proto: pva
+          default: -129.0
+          name: DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_8:CURRENT
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:MEAN_Z:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:MEAN_Z
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:LANDF_PERCENT:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:LANDF_PERCENT
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:MEAN_X:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:MEAN_X
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:MEAN_Y:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:MEAN_Y
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_X:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_X
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Y:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Y
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:NORM_EMIT_X:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:NORM_EMIT_X
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:NORM_EMIT_Y:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:NORM_EMIT_Y
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Z:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Z
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_ENERGY:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_ENERGY
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:COV_X__XP:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:COV_X__XP
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:COV_Y__YP:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:COV_Y__YP
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:CUMULATIVE_LOSS:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:CUMULATIVE_LOSS
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_X:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_X
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_Y:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_Y
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_X:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_X
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_Y:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_Y
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:LANDF_PERCENT:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:LANDF_PERCENT:UPPER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:MEAN_X:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:MEAN_X:UPPER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:MEAN_Y:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:MEAN_Y:UPPER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_X:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_X:UPPER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Y:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Y:UPPER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:NORM_EMIT_X:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:NORM_EMIT_X:UPPER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:NORM_EMIT_Y:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:NORM_EMIT_Y:UPPER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Z:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Z:UPPER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_ENERGY:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_ENERGY:UPPER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:COV_X__XP:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:COV_X__XP:UPPER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:COV_Y__YP:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:COV_Y__YP:UPPER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:CUMULATIVE_LOSS:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:CUMULATIVE_LOSS:UPPER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_X:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_X:UPPER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_Y:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_Y:UPPER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_X:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_X:UPPER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_Y:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_Y:UPPER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:UPPER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:UPPER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:LANDF_PERCENT:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:LANDF_PERCENT:LOWER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:MEAN_X:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:MEAN_X:LOWER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:MEAN_Y:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:MEAN_Y:LOWER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_X:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_X:LOWER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Y:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Y:LOWER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:NORM_EMIT_X:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:NORM_EMIT_X:LOWER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:NORM_EMIT_Y:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:NORM_EMIT_Y:LOWER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Z:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Z:LOWER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_ENERGY:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_ENERGY:LOWER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:COV_X__XP:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:COV_X__XP:LOWER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:COV_Y__YP:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:COV_Y__YP:LOWER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:CUMULATIVE_LOSS:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:CUMULATIVE_LOSS:LOWER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_X:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_X:LOWER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_Y:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_Y:LOWER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_X:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_X:LOWER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_Y:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_Y:LOWER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:LOWER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:LOWER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:EXIT:ELLIPSE:X:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:EXIT:ELLIPSE:X
+          length: 100
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:EXIT:ELLIPSE:Y:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:EXIT:ELLIPSE:Y
+          length: 100
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:EXIT:ELLIPSE:X:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:EXIT:ELLIPSE:X
+          length: 100
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:EXIT:ELLIPSE:Y:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:EXIT:ELLIPSE:Y
+          length: 100
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:EXIT:ELLIPSE:X:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:EXIT:ELLIPSE:X:UPPER
+          length: 100
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:EXIT:ELLIPSE:Y:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:EXIT:ELLIPSE:Y:UPPER
+          length: 100
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:EXIT:ELLIPSE:X:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:EXIT:ELLIPSE:X:UPPER
+          length: 100
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:EXIT:ELLIPSE:Y:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:EXIT:ELLIPSE:Y:UPPER
+          length: 100
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:EXIT:ELLIPSE:X:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:EXIT:ELLIPSE:X:LOWER
+          length: 100
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:EXIT:ELLIPSE:Y:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:EXIT:ELLIPSE:Y:LOWER
+          length: 100
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:EXIT:ELLIPSE:X:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:EXIT:ELLIPSE:X:LOWER
+          length: 100
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:EXIT:ELLIPSE:Y:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:EXIT:ELLIPSE:Y:LOWER
+          length: 100
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_X:5RMS:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_X:5RMS
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Y:5RMS:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Y:5RMS
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_X:5RMS:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_X:5RMS:UPPER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Y:5RMS:UPPER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Y:5RMS:UPPER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_X:5RMS:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_X:5RMS:LOWER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Y:5RMS:LOWER:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Y:5RMS:LOWER
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BEAM_SIZE:
+          type: waveform
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:BEAM_SIZE
+          length: 200
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:FINAL_LOSS:
+          type: scalar
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:FINAL_LOSS
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_X:FINAL:
+          type: scalar
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_X:FINAL
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_Y:FINAL:
+          type: scalar
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_Y:FINAL
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_X:FINAL:
+          type: scalar
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_X:FINAL
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_Y:FINAL:
+          type: scalar
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_Y:FINAL
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_X:TANK1:
+          type: scalar
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_X:TANK1
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_Y:TANK1:
+          type: scalar
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_Y:TANK1
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_X:TANK1:
+          type: scalar
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_X:TANK1
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_Y:TANK1:
+          type: scalar
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_Y:TANK1
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_X:MISMATCH:
+          type: scalar
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_X:MISMATCH
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_Y:MISMATCH:
+          type: scalar
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_Y:MISMATCH
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_X:MISMATCH:
+          type: scalar
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_X:MISMATCH
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_Y:MISMATCH:
+          type: scalar
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_Y:MISMATCH
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:TOTAL_MISMATCH:
+          type: scalar
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:TOTAL_MISMATCH
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:FINAL_BEAM_SIZE:
+          type: scalar
+          proto: pva
+          name: DEV:ML:MEBT_HYPERGAN:OUTPUT:FINAL_BEAM_SIZE
+
+  input_transformer:
+    name: input_transformer
+    type: transformer.SimpleTransformer
+    pub: in_transformer
+    sub: in_interface
+    module_args: None
+    config:
+      symbols:
+      - DEV:ML:MEBT_HYPERGAN:INPUT:SIG_X
+      - DEV:ML:MEBT_HYPERGAN:INPUT:SIG_Y
+      - DEV:ML:MEBT_HYPERGAN:INPUT:X_OFF
+      - DEV:ML:MEBT_HYPERGAN:INPUT:Y_OFF
+      - DEV:ML:MEBT_HYPERGAN:INPUT:CURRENT
+      - DEV:ML:MEBT_HYPERGAN:INPUT:CAV_1:VOLTS
+      - DEV:ML:MEBT_HYPERGAN:INPUT:CAV_2:VOLTS
+      - DEV:ML:MEBT_HYPERGAN:INPUT:CAV_3:VOLTS
+      - DEV:ML:MEBT_HYPERGAN:INPUT:CAV_4:VOLTS
+      - DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_1:CURRENT
+      - DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_2:CURRENT
+      - DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_3:CURRENT
+      - DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_4:CURRENT
+      - DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_5:CURRENT
+      - DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_6:CURRENT
+      - DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_7:CURRENT
+      - DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_8:CURRENT
+      variables:
+        sig_x:
+          formula: DEV:ML:MEBT_HYPERGAN:INPUT:SIG_X
+        sig_y:
+          formula: DEV:ML:MEBT_HYPERGAN:INPUT:SIG_Y
+        x_off:
+          formula: DEV:ML:MEBT_HYPERGAN:INPUT:X_OFF
+        y_off:
+          formula: DEV:ML:MEBT_HYPERGAN:INPUT:Y_OFF
+        q_total:
+          formula: DEV:ML:MEBT_HYPERGAN:INPUT:CURRENT / 202.5
+        maxe(1):
+          formula: DEV:ML:MEBT_HYPERGAN:INPUT:CAV_1:VOLTS / 20.89
+        maxe(2):
+          formula: DEV:ML:MEBT_HYPERGAN:INPUT:CAV_2:VOLTS / 20.89
+        maxe(3):
+          formula: DEV:ML:MEBT_HYPERGAN:INPUT:CAV_3:VOLTS / 20.89
+        maxe(4):
+          formula: DEV:ML:MEBT_HYPERGAN:INPUT:CAV_4:VOLTS / 20.89
+        q_grad(1):
+          formula: DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_1:CURRENT * 0.09537
+        q_grad(2):
+          formula: DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_2:CURRENT * 0.09537
+        q_grad(3):
+          formula: DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_3:CURRENT * 0.09537
+        q_grad(4):
+          formula: DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_4:CURRENT * 0.09537
+        q_grad(5):
+          formula: DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_5:CURRENT * 0.09537
+        q_grad(6):
+          formula: DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_6:CURRENT * 0.09537
+        q_grad(7):
+          formula: DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_7:CURRENT * 0.09537
+        q_grad(8):
+          formula: DEV:ML:MEBT_HYPERGAN:INPUT:QUAD_8:CURRENT * 0.09537
+
+  output_transformer:
+    name: output_transformer
+    type: transformer.PassThroughTransformer
+    pub: out_transformer
+    sub:
+      - model
+    module_args: 
+      unpack_data: True
+    config:
+      symbols:
+      - mean_z
+      - landf_percent
+      - mean_x
+      - mean_y
+      - sigma_x
+      - sigma_y
+      - norm_emit_x
+      - norm_emit_y
+      - sigma_z
+      - sigma_energy
+      - cov_x__xp
+      - cov_y__yp
+      - cumulative_loss
+      - alpha_x
+      - alpha_y
+      - beta_x
+      - beta_y
+      - emittance_x
+      - emittance_y
+      - landf_percent_upper
+      - mean_x_upper
+      - mean_y_upper
+      - sigma_x_upper
+      - sigma_y_upper
+      - norm_emit_x_upper
+      - norm_emit_y_upper
+      - sigma_z_upper
+      - sigma_energy_upper
+      - cov_x__xp_upper
+      - cov_y__yp_upper
+      - cumulative_loss_upper
+      - alpha_x_upper
+      - alpha_y_upper
+      - beta_x_upper
+      - beta_y_upper
+      - emittance_x_upper
+      - emittance_y_upper
+      - landf_percent_lower
+      - mean_x_lower
+      - mean_y_lower
+      - sigma_x_lower
+      - sigma_y_lower
+      - norm_emit_x_lower
+      - norm_emit_y_lower
+      - sigma_z_lower
+      - sigma_energy_lower
+      - cov_x__xp_lower
+      - cov_y__yp_lower
+      - cumulative_loss_lower
+      - alpha_x_lower
+      - alpha_y_lower
+      - beta_x_lower
+      - beta_y_lower
+      - emittance_x_lower
+      - emittance_y_lower
+      - x_ellipse_x
+      - x_ellipse_y
+      - y_ellipse_x
+      - y_ellipse_y
+      - x_ellipse_x_upper
+      - x_ellipse_y_upper
+      - y_ellipse_x_upper
+      - y_ellipse_y_upper
+      - x_ellipse_x_lower
+      - x_ellipse_y_lower
+      - y_ellipse_x_lower
+      - y_ellipse_y_lower
+      - sigma_x_5rms
+      - sigma_y_5rms
+      - sigma_x_upper_5rms
+      - sigma_y_upper_5rms
+      - sigma_x_lower_5rms
+      - sigma_y_lower_5rms
+      - final_loss
+      - tank1_alpha_x
+      - tank1_alpha_y
+      - tank1_beta_x
+      - tank1_beta_y
+      - final_alpha_x
+      - final_alpha_y
+      - final_beta_x
+      - final_beta_y
+      - mismatch_alpha_x
+      - mismatch_alpha_y
+      - mismatch_beta_x
+      - mismatch_beta_y
+      - total_mismatch
+      - beam_size
+      - final_beam_size
+      variables:
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:MEAN_Z: mean_z
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:LANDF_PERCENT: landf_percent
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:MEAN_X: mean_x
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:MEAN_Y: mean_y
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_X: sigma_x
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Y: sigma_y
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:NORM_EMIT_X: norm_emit_x
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:NORM_EMIT_Y: norm_emit_y
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Z: sigma_z
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_ENERGY: sigma_energy
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:COV_X__XP: cov_x__xp
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:COV_Y__YP: cov_y__yp
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:CUMULATIVE_LOSS: cumulative_loss
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_X: alpha_x
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_Y: alpha_y
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_X: beta_x
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_Y: beta_y
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X: emittance_x
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y: emittance_y
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:LANDF_PERCENT:UPPER: landf_percent_upper
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:MEAN_X:UPPER: mean_x_upper
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:MEAN_Y:UPPER: mean_y_upper
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_X:UPPER: sigma_x_upper
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Y:UPPER: sigma_y_upper
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:NORM_EMIT_X:UPPER: norm_emit_x_upper
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:NORM_EMIT_Y:UPPER: norm_emit_y_upper
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Z:UPPER: sigma_z_upper
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_ENERGY:UPPER: sigma_energy_upper
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:COV_X__XP:UPPER: cov_x__xp_upper
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:COV_Y__YP:UPPER: cov_y__yp_upper
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:CUMULATIVE_LOSS:UPPER: cumulative_loss_upper
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_X:UPPER: alpha_x_upper
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_Y:UPPER: alpha_y_upper
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_X:UPPER: beta_x_upper
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_Y:UPPER: beta_y_upper
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:UPPER: emittance_x_upper
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:UPPER: emittance_y_upper
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:LANDF_PERCENT:LOWER: landf_percent_lower
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:MEAN_X:LOWER: mean_x_lower
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:MEAN_Y:LOWER: mean_y_lower
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_X:LOWER: sigma_x_lower
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Y:LOWER: sigma_y_lower
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:NORM_EMIT_X:LOWER: norm_emit_x_lower
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:NORM_EMIT_Y:LOWER: norm_emit_y_lower
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Z:LOWER: sigma_z_lower
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_ENERGY:LOWER: sigma_energy_lower
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:COV_X__XP:LOWER: cov_x__xp_lower
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:COV_Y__YP:LOWER: cov_y__yp_lower
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:CUMULATIVE_LOSS:LOWER: cumulative_loss_lower
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_X:LOWER: alpha_x_lower
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_Y:LOWER: alpha_y_lower
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_X:LOWER: beta_x_lower
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_Y:LOWER: beta_y_lower
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:LOWER: emittance_x_lower
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:LOWER: emittance_y_lower
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:EXIT:ELLIPSE:X: x_ellipse_x
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:EXIT:ELLIPSE:Y: x_ellipse_y
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:EXIT:ELLIPSE:X: y_ellipse_x
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:EXIT:ELLIPSE:Y: y_ellipse_y
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:EXIT:ELLIPSE:X:UPPER: x_ellipse_x_upper
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:EXIT:ELLIPSE:Y:UPPER: x_ellipse_y_upper
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:EXIT:ELLIPSE:X:UPPER: y_ellipse_x_upper
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:EXIT:ELLIPSE:Y:UPPER: y_ellipse_y_upper
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:EXIT:ELLIPSE:X:LOWER: x_ellipse_x_lower
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_X:EXIT:ELLIPSE:Y:LOWER: x_ellipse_y_lower
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:EXIT:ELLIPSE:X:LOWER: y_ellipse_x_lower
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:EMITTANCE_Y:EXIT:ELLIPSE:Y:LOWER: y_ellipse_y_lower
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_X:5RMS: sigma_x_5rms
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Y:5RMS: sigma_y_5rms
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_X:5RMS:UPPER: sigma_x_upper_5rms
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Y:5RMS:UPPER: sigma_y_upper_5rms
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_X:5RMS:LOWER: sigma_x_lower_5rms
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:SIGMA_Y:5RMS:LOWER: sigma_y_lower_5rms
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:FINAL_LOSS: final_loss
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_X:FINAL: final_alpha_x
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_Y:FINAL: final_alpha_y
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_X:FINAL: final_beta_x
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_Y:FINAL: final_beta_y
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_X:TANK1: tank1_alpha_x
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_Y:TANK1: tank1_alpha_y
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_X:TANK1: tank1_beta_x
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_Y:TANK1: tank1_beta_y
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_X:MISMATCH: mismatch_alpha_x
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:ALPHA_Y:MISMATCH: mismatch_alpha_y
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_X:MISMATCH: mismatch_beta_x
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BETA_Y:MISMATCH: mismatch_beta_y
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:TOTAL_MISMATCH: total_mismatch
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:BEAM_SIZE: beam_size
+        DEV:ML:MEBT_HYPERGAN:OUTPUT:FINAL_BEAM_SIZE: final_beam_size
+

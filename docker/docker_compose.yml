@@ -1,0 +1,8 @@
+services:
+  pl1:
+    image: matindocker/poly-lithic:base-latest
+    # volumes: # mount your files here
+    #   - ./mymodel.yaml:/opt/deployment/config.yaml
+    #   - ./env.json:/opt/deployment/env.json
+    # command: ["model_manager", "--publish", "-c", "config.yaml", "-e", "env.json"]
+    command: ["tail", "-f", "/dev/null"]

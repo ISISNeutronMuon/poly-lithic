@@ -1,0 +1,62 @@
+stages:
+  # - format-lint
+  - test-cov
+  - test
+  # - build-release
+  # - build-container
+
+
+# lifted from Ivan Finch's snowsignal 
+.before_script_template: &before_script_template
+  before_script: 
+    - python -m pip install --upgrade pip
+    - pip install pytest pytest-asyncio hatch torch pytest-cov
+    - pip install -r requirements.txt
+    - pip install ruff
+
+# format:
+#   <<: *before_script_template
+#   image: python:3.11
+#   stage: format-lint
+#   # script:
+#   #   - ruff check --no-fix
+#   #   - ruff format --diff
+
+.test_job_template: &test_job_template
+  <<: *before_script_template
+  stage: test
+  image: "python:$VERSION"
+  parallel:
+    matrix:
+      - VERSION: ['3.10', '3.12', '3.13']
+
+test-coverage-3.11:
+  <<: *before_script_template
+  stage: test-cov
+  image: "python:3.11"
+  script:
+      - hatch build
+      - ls -l dist
+      - pip install dist/*.whl
+      - cp $env_file ./tests/env.json
+      - pytest --junitxml=report.xml --cov-report term-missing --cov=poly_lithic
+  coverage: '/TOTAL.*\s+(\d+\%)/'
+  artifacts:
+    paths:
+      - report.xml
+    reports:
+      junit: report.xml
+
+  allow_failure: false
+
+test-other-versions:
+  <<: *test_job_template
+  script:
+    - hatch build
+    - ls -l dist
+    - pip install dist/*.whl
+    - cp $env_file ./tests/env.json
+    - pytest
+  allow_failure: true
+  
+  

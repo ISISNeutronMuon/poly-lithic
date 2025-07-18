@@ -1,0 +1,70 @@
+deployment:
+  type: "continuous"
+  rate: 1 #seconds
+
+modules: 
+  
+  p4p_server:
+    name: "p4p_server" # overrides the top key
+    type: "interface.p4p_server"
+    pub: "in_interface"
+    sub: 
+      - "update"
+      - "out_transformer" # look we can do this now!               
+    module_args: None # defines what arguments to pass to the module observer, if any this can inform unpacking etc
+    config: 
+      EPICS_PVA_NAME_SERVERS: "localhost:5075"
+      variables:
+        LUME:MLFLOW:TEST_B:
+          proto: pva
+          name: LUME:MLFLOW:TEST_B 
+        LUME:MLFLOW:TEST_A:
+          proto: pva
+          name: LUME:MLFLOW:TEST_A
+        LUME:MLFLOW:TEST_S:
+          proto: pva
+          name: LUME:MLFLOW:TEST_S
+  
+  input_transformer:
+    name: "input_transformer"
+    type: "transformer.SimpleTransformer"
+    pub: "in_transformer"
+    sub: "in_interface"
+    module_args: None
+    config:
+      symbols:
+        - "LUME:MLFLOW:TEST_B"
+        - "LUME:MLFLOW:TEST_A"
+      variables:
+        x2:
+          formula: "LUME:MLFLOW:TEST_B"
+        x1: 
+          formula: "LUME:MLFLOW:TEST_A"
+  model:
+    name: "model"
+    type: "model.SimpleModel"
+    pub: "model"
+    sub: "in_transformer"
+    module_args: None
+    config:
+      type: "mock"
+      variables:
+        y:
+          type: "scalar"
+  
+  output_transformer:
+    name: "output_transformer"
+    type: "transformer.SimpleTransformer"
+    pub: "out_transformer"
+    sub: "model"
+    module_args: 
+      unpack_data: True
+    config:
+      symbols:
+        - "y"
+      variables:
+        LUME:MLFLOW:TEST_S:
+          formula: "y"
+
+
+    

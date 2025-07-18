@@ -1,744 +1,506 @@
-## Purpose and Idea
-The purpose of the model manager is to allow for easy deployment of models from MLflow, local model defintion or other sources. 
-The package is in an early stage and right now is tightly coupled with MLflow. The goal is to make it more general and allow for easy deployment of models from other sources as well.
+<!-- NEW DOCS in progress
+use old docs in the meantime: [old docs](./readme_old.md) -->
 
-The idea is to divide model deployment into 3 layers:
+# Table of Contents
+  - [Installation](#installation)
+  - [Usage](#usage)
+  - [Configuration file](#configuration-file-formerly-pv_mappings-files)
+  - [Modules](#modules)
+    - [Interface](#interface)
+      - [Interface Configs](#interface-configs)
+        - [p4p sample configuration](#p4p-sample-configuration)
+        - [p4p_server sample configuration](#p4p_server-sample-configuration)
+        - [k2eg sample configuration](#k2eg-sample-configuration)
+    - [Transformer](#transformer)
+      - [Transformer Configs](#transformer-configs)
+        - [SimpleTransformer sample configuration](#simpletransformer-sample-configuration)
+        - [CAImageTransformer sample configuration](#caimagetransformer-sample-configuration)
+        - [CompoundTransformer sample configuration](#compoundtransformer-sample-configuration)
+        - [PassThroughTransformer sample configuration](#passthroughtransformer-sample-configuration)
+    - [Model](#model)
+      - [Model Configs](#model-configs)
+        - [Example Model - Local Model](#example-model---local-model)
+        - [Example Model - MLFLow Model](#example-model---mlflow-model)
 
-### System level 
-In this stage we get the data from X system (in our case EPICS), this is where we are "relaxed" about the definition of the data format. We just want to get the data and store it as a dictionary And supply it to a handler function.
+  - [Roadmap](#roadmap)
+# Poly-Lithic
 
-Example
-```python
-my_data_getter.get(name:str) -> Tuple(key: str, value: Dict[str, Any])
-```
-or get many
-```python
-my_data_getter.get_many(names:List[str]) -> List[Tuple(key: str, value: Dict[str, Any])]
-```
-Note: this is only partially implemeted thats why `main()` uses `.get()` instead of `.get_many()`
+Poly-Lithic is a package that allows you do deploy any model with an arbitrary number of inputs and outputs, related data transformations and system interfaces. 
 
-Since we are focused on continuous data we also usually have a monitor that calls a callback function when new data is available:
+Each deployment is defined by a model, typically hosted and retrieved from [MLFlow](https://mlflow.org/) and YAML file that describes the DG (Directed Graph) of model, transformations and interfaces. There are no restrictions on the numbers and types of nodes in the graph, so it may be used for things other than ML models.
 
-```python
-my_data_getter.monitor(callback: Callable[[Dict[str, Any]], None])
-```
-
-### Transformation level
-This is where we transform the data into a format that the model can understand; it is where we are stricter about the data format.
-
-Again since the initial focus was on continuous data, the transformer supplies a callback function that is called from the system level monitor function.
-
-```python
-my_transformer.handle(data: Dict[str, Any]) -> Dict[str, Any]
-```
-Now internally the model tracks the late input data, on each call to `handle` it updates the internal state and returns the transformed data.
-
-Example:
-```python
-# my pretend system has 3 inputs it provides, the inputs need some adjustments before they can be fed to the model
-config = {
-    "variables": {
-        "x1": {
-            "formula": "LUME:MLFLOW:TEST_A"
-        },
-        "x2": {
-            "formula": "LUME:MLFLOW:TEST_B"
-        },
-        "x3": {
-            "formula": "LUME:MLFLOW:TEST_C + LUME:MLFLOW:TEST_B"
-        }
-    },
-    "symbols": ["LUME:MLFLOW:TEST_A", "LUME:MLFLOW:TEST_B", "LUME:MLFLOW:TEST_C"]
-}
-
-transformer = SimpleTransformer(config) # all variables intialy set to None
-
-# now manually call the handle function
-transformer.handle("LUME:MLFLOW:TEST_A", 1) # this should update the internal state but internal update should only happen once all variables are updated
-transformer.handle("LUME:MLFLOW:TEST_B", 2) # still no update
-transformer.handle("LUME:MLFLOW:TEST_C", 3) # now the internal state should be updated
-
-transformer.updated # should be True
-
-x = transformer.latest_transformed
-# x should be a dictionary with the transformed data, ready to be fed to the model
-# {
-#     "x1": 1,
-#     "x2": 2,
-#     "x3": 5
-# }
-
-```
-### Model level
-This is where a lume model is used to make predictions. The model should be able to handle the transformed data and return a prediction.
-
-```python
-
-output = some_lume_model.evaluate(data: Dict[str, Any]) -> Dict[str, Any]
-# say output is:
-# {
-#     "y": 0.5
-# }
-```
-and done, now we follow the same pattern as before, the model calls the callback function when new data is available.
-
-```python
-
-config = {
-    "variables": {
-        "LUME:MLFLOW:TEST_Y": {
-            "formula": "y"
-        }
-    },
-    "symbols": ["LUME:MLFLOW:TEST_Y"]
-}
-
-reverse_transformer = ReverseTransformer(config) # all variables intialy set to None
-
-reverse_transformer.handle("y", 0.5) 
-
-reverse_transformer.updated # should be True
-
-y = reverse_transformer.latest_transformed
-
-# should return
-# {
-#     "LUME:MLFLOW:TEST_Y": 0.5
-# }
-```
-Then we pass the data to the system level and we are done.
-```python
-my_data_outputter.put(data: Dict[str, Any])
-```
-or many
-```python
-my_data_outputter.put_many(data: List[Dict[str, Any]])
-```
-
-To summarise the data flow is as follows:
-```
-System level -> Transformation level -> Model level -> Transformation level -> System level
-```
-All of this happens in the `main()` function in `model_manager/src/cli.py` under `setup()` and `model_main()` methods.
-
-## Available modules
-
-### System
-Purpose of the system module is to provide a way to get data from a system. The system can be anything from a database to a file or a live data source like EPICS, kafka, etc.
-
-| Module | Description | YAML configuration | Compatible with: |
-| ------ | ----------- | ------------------ | --------------- |
-| `p4p` | EPICS data source, must have an external EPICS server running. Note that SoftIOCPVA will not work with this module. | [config](#p4p-sample-configuration) | `SimpleTransformer`, `CompoundTransformer` |
-| `p4p_server` | EPICS data source, host EPICS p4p server for specifed PVs | same [config](#p4p-sample-configuration) as `p4p`| `SimpleTransformer`, `CompoundTransformer` |
-| `k2eg` | Kafka to EPICS gateway, get data from Kafka and write it to EPICS | [config](#k2eg-sample-configuration) | `SimpleTransformer`, `CompoundTransformer` , `CAImageTransformer`* |
-
-
-*`CAImageTransformer` untested, but compatible with `k2eg` ca protocol only
-
-
-#### `p4p` Sample configuration
-```yaml
-input_data:
-  get_method: "p4p"
-  config:
-    EPICS_PVA_NAME_SERVERS: "134.79.151.21:5169" # can be a space separated list
-    variables:
-      LUME:MLFLOW:TEST_B:
-        proto: pva # supports pva only
-        name: LUME:MLFLOW:TEST_B
-      LUME:MLFLOW:TEST_A:
-        proto: pva
-        name: LUME:MLFLOW:TEST_A
-      ### in p4p_server you can specify type as well, if not specified it will be assumed to be scalar
-      LUME:MLFLOW:TEST_C:
-        proto: pva
-        name: LUME:MLFLOW:TEST_C
-        type: "image"
-       
-```
-Available types are `scalar` and `image`. The `image` type expects an np array as the value. See `examples/image_model/pv_mapping.yaml` or run 
-```bash
-model_manager -n "image_model" -v "16" -e cred.json -c ./local_test/pv_mapping.yaml -p -d"
-```
-to see an example of how to use the `image` type.
-
-#### `k2eg` Sample configuration
-```yaml
-input_data:
-  get_method: "k2eg"
-  config:
-    variables:
-      LUME:MLFLOW:TEST_B:
-        proto: ca # supports ca or pva
-        name: LUME:MLFLOW:TEST_B
-      LUME:MLFLOW:TEST_A:
-        proto: pva
-        name: LUME:MLFLOW:TEST_A
-```
-
-### Transformation
-
-Purpose of the transformation module is to provide a way to transform the data into a format that the model can understand. Minor transformation operations like scaling, normalizing, etc. can be done here.
-
-| Module | Description | YAML configuration | Compatible with: |
-| ------ | ----------- | ------------------ | --------------- |
-| `SimpleTransformer` | Simple transformer that can be used to transform scalar values (ca or pv values that have a `value` field) | [config](#simpletransformer-sample-configuration) | `p4p`,`p4p_server`, `k2eg`|
-| `CAImageTransformer` | Transformer that can be used to transform a triplet of an array, x and y ca values into a np array | [config](#caimagetransformer-sample-configuration) | `k2eg` ca only|
-| `CompoundTransformer` | Compound transformer that can be used to have multuple transformers in parallel | [config](#compoundtransformer-sample-configuration) | `p4p`,`p4p_server`, `k2eg`|
-`PassThroughTransformer` | Transformer that can be used to pass data through without any transformation | [config](#passthroughtransformer-sample-configuration) | `p4p`,`p4p_server`, `k2eg`|
-
-#### `SimpleTransformer` Sample configuration
-```yaml
-input_data_to_model:
-  type: "SimpleTransformer"
-  config:
-    symbols:
-      - "LUME:MLFLOW:TEST_B"
-      - "LUME:MLFLOW:TEST_A"
-    variables:
-      x2:
-        formula: "LUME:MLFLOW:TEST_B"
-      x1: 
-        formula: "LUME:MLFLOW:TEST_A"
-```
-Two keywords expected in the configuration are `varaibles` where one must sepcify the a list of output variables of the transformer and their associated `formula`s (in the example its `x1` and `x2`). The formulas tell us how to transform the input data from the providers to get the model input. `symbols` will be variables gathered from one of the compatible system data providers. All are intialised as `None` and are populated first via `.get()` then `.monitor()` methods of the providers. On each change a transform is executed and the transfomer provides a dictonary of model inputs for example `{'x1':1.2,'x2':3.2}`. `formula` can be any valid [SymPy](https://www.sympy.org/en/index.html) expression.
-
-#### `CAImageTransformer` Sample configuration
-```yaml
-input_data_to_model:
-  type: "CAImageTransformer"
-    config:
-        variables:
-        img_1:
-            img_ch: "MY_TEST_CA"
-            img_x_ch: "MY_TEST_CA_X"
-            img_y_ch: "MY_TEST_CA_Y"
-        img_2:
-            img_ch: "MY_TEST_C2"
-            img_x_ch: "MY_TEST_CA_X2"
-            img_y_ch: "MY_TEST_CA_Y2"
-```
-The above provides a way to transform a triplet of an array, x and y ca values into a np array. The `img_ch` is the channel for the image array, `img_x_ch` is the x channel and `img_y_ch` is the y channel. The transformer will wait for all three channels to be updated before transforming the data. The output will be a dictionary with the keys being the `img_ch` and the values being the np array. The x and y channels are not returned `{img_1: np.array, img_2: np.array}`. where `np.array` is a 2D numpy array with shape `(x,y)`.
-
-#### `CompoundTransformer` Sample configuration
-```yaml
-input_data_to_model:
-  type: "CompoundTransformer"
-  config:
-    transformers:
-      transformer_1:
-        type: "SimpleTransformer"
-        config:
-          symbols:
-            - "LUME:MLFLOW:TEST_B"
-            - "LUME:MLFLOW:TEST_A"
-          variables:
-            x2:
-              formula: "LUME:MLFLOW:TEST_B"
-            x1: 
-              formula: "LUME:MLFLOW:TEST_A"
-      transformer_2:
-        type: "CAImageTransfomer"
-        config:
-          variables:
-            img_1:
-                img_ch: "MY_TEST_CA"
-                img_x_ch: "MY_TEST_CA_X"
-                img_y_ch: "MY_TEST_CA_Y"
-            img_2:
-                img_ch: "MY_TEST_C2"
-                img_x_ch: "MY_TEST_CA_X2"
-                img_y_ch: "MY_TEST_CA_Y2"
-```
-Combines multiple transformers in parallel. The output will be a combined dictionary og model outputs . Example: `{'x1':1.2,'x2':3.2, img_1: np.array, img_2: np.array}`
-
-#### `PassThroughTransformer` Sample configuration
-```yaml
-output_model_to_data:
-  type: "PassThroughTransformer"
-  config:
-    variables:
-      LUME:MLFLOW:TEST_IMAGE: "y_img"
-```
-
-### Model
-Model layer is compatible with [lume-model](https://github.com/slaclab/lume-model). Currently of `TorchModule` and `BaseModel` are supported. All models have to come from MLflow, with local models coming soon.
-
-See an example notebook containing both `TorchModule` and `BaseModel` being uploaded and registered to MLflow [here](/examples/sample_workflow.ipynb).
-
-## Example YAML configurations
-
-### Example 1
-```yaml
-deployment:
-  type: "continuous" # doesnt do anything at the moment, but will be used to determine the type of deployment
-  # other configurations
-input_data:
-  get_method: "k2eg"
-  config:
-    variables:
-      LUME:MLFLOW:TEST_B:
-        proto: pva
-        name: LUME:MLFLOW:TEST_B
-      LUME:MLFLOW:TEST_A:
-        proto: pva
-        name: LUME:MLFLOW:TEST_A
-
-input_data_to_model:
-  type: "SimpleTransformer"
-  config:
-    symbols:
-      - "LUME:MLFLOW:TEST_B"
-      - "LUME:MLFLOW:TEST_A"
-    variables:
-      x2:
-        formula: "LUME:MLFLOW:TEST_B"
-      x1: 
-        formula: "LUME:MLFLOW:TEST_A"
-
-outputs_model:
-  config:
-    variables:
-      y:
-        type: "scalar" # doesnt do anything at the moment, but will be used to determine the type of output
-
-output_model_to_data:
-  type: "SimpleTransformer"
-  config:
-    symbols:
-      - "y"
-    variables:
-      LUME:MLFLOW:TEST_G:
-        formula: "y"
-
-output_data_to:
-  put_method: "k2eg"
-  config:
-    variables:
-      LUME:MLFLOW:TEST_G:
-        proto: pva
-        name: LUME:MLFLOW:TEST_G
-```
-
-### Example 2
-```yaml
-deployment:
-  type: "continuous"
-input_data:
-  get_method: "k2eg"
-  config:
-    variables:
-      SOLN:IN20:121:BACT:
-        proto: ca
-        name: SOLN:IN20:121:BACT
-      QUAD:IN20:121:BACT:
-        proto: ca
-        name: QUAD:IN20:121:BACT
-      QUAD:IN20:122:BACT:
-        proto: ca
-        name: QUAD:IN20:122:BACT
-      ACCL:IN20:300:L0A_PDES:
-        proto: ca
-        name: ACCL:IN20:300:L0A_PDES
-      ACCL:IN20:400:L0B_PDES:
-        proto: ca
-        name: ACCL:IN20:400:L0B_PDES
-      ACCL:IN20:300:L0A_ADES:
-        proto: ca
-        name: ACCL:IN20:300:L0A_ADES
-      ACCL:IN20:400:L0B_ADES:
-        proto: ca
-        name: ACCL:IN20:400:L0B_ADES
-      QUAD:IN20:361:BACT:
-        proto: ca
-        name: QUAD:IN20:361:BACT
-      QUAD:IN20:371:BACT:
-        proto: ca
-        name: QUAD:IN20:371:BACT
-      QUAD:IN20:425:BACT:
-        proto: ca
-        name: QUAD:IN20:425:BACT
-      QUAD:IN20:441:BACT:
-        proto: ca
-        name: QUAD:IN20:441:BACT
-      QUAD:IN20:511:BACT:
-        proto: ca
-        name: QUAD:IN20:511:BACT
-      QUAD:IN20:525:BACT:
-        proto: ca
-        name: QUAD:IN20:525:BACT
-      FBCK:BCI0:1:CHRG_S:
-        proto: ca
-        name: FBCK:BCI0:1:CHRG_S
-      CAMR:IN20:186:XRMS:
-        proto: ca
-        name: CAMR:IN20:186:XRMS
-      CAMR:IN20:186:YRMS:
-        proto: ca
-        name: CAMR:IN20:186:YRMS
-
-input_data_to_model:
-  type: "SimpleTransformer"
-  config:
-    symbols:
-      - CAMR:IN20:186:XRMS
-      - CAMR:IN20:186:YRMS
-      - SOLN:IN20:121:BACT
-      - QUAD:IN20:121:BACT
-      - QUAD:IN20:122:BACT
-      - ACCL:IN20:300:L0A_PDES
-      - ACCL:IN20:400:L0B_PDES
-      - ACCL:IN20:300:L0A_ADES
-      - ACCL:IN20:400:L0B_ADES
-      - QUAD:IN20:361:BACT
-      - QUAD:IN20:371:BACT
-      - QUAD:IN20:425:BACT
-      - QUAD:IN20:441:BACT
-      - QUAD:IN20:511:BACT
-      - QUAD:IN20:525:BACT
-      - FBCK:BCI0:1:CHRG_S
-    variables:
-      distgen:t_dist:length:value:
-          formula: "1.8550514181818183" # constant
-      distgen:r_dist:sigma_xy:value: 
-        formula: "(CAMR:IN20:186:XRMS**2 + CAMR:IN20:186:YRMS**2)**(1/2)" 
-      SOL1:solenoid_field_scale:
-        formula: "SOLN:IN20:121:BACT" # no transformation just pass the value
-      CQ01:b1_gradient:
-        formula: "QUAD:IN20:121:BACT"
-      SQ01:b1_gradient:
-        formula: "QUAD:IN20:122:BACT"
-      L0A_phase:dtheta0_deg:
-        formula: "ACCL:IN20:300:L0A_PDES"
-      L0B_phase:dtheta0_deg:
-        formula: "ACCL:IN20:400:L0B_PDES"
-      L0A_scale:voltage:
-        formula: "ACCL:IN20:300:L0A_ADES"
-      L0B_scale:voltage:
-        formula: "ACCL:IN20:400:L0B_ADES"
-      QA01:b1_gradient:
-        formula: "QUAD:IN20:361:BACT"
-      QA02:b1_gradient:
-        formula: "QUAD:IN20:371:BACT"
-      QE01:b1_gradient:
-        formula: "QUAD:IN20:425:BACT"
-      QE02:b1_gradient:
-        formula: "QUAD:IN20:441:BACT"
-      QE03:b1_gradient:
-        formula: "QUAD:IN20:511:BACT"
-      QE04:b1_gradient:
-        formula: "QUAD:IN20:525:BACT"
-      distgen:total_charge:value:
-        formula: "FBCK:BCI0:1:CHRG_S"
-
-outputs_model:
-  config:
-    variables:
-      sigma_x:
-        type:"scalar"
-      sigma_y:
-        type:"scalar"
-      sigma_z:
-        type:"scalar"
-      norm_emit_x:
-        type:"scalar"
-      norm_emit_y:
-        type:"scalar"
-
-output_model_to_data:
-  type: "SimpleTransformer"
-  config:
-    symbols:
-      - sigma_x
-      - sigma_y
-      - sigma_z
-      - norm_emit_x
-      - norm_emit_y
-    variables:
-      LUME:MLFLOW:SIGMA_X:
-        type: ca
-        formula: "sigma_x"
-      LUME:MLFLOW:SIGMA_Y:
-        type: ca
-        formula: "sigma_y"
-      LUME:MLFLOW:SIGMA_Z:
-        type: ca
-        formula: "sigma_z"
-      LUME:MLFLOW:NORM_EMIT_X:
-        type: ca
-        formula: "norm_emit_x"
-      LUME:MLFLOW:NORM_EMIT_Y:
-        type: ca
-        formula: "norm_emit_y"
-      LUME:MLFLOW:EXAMPLE:COMBINED:
-        type: ca
-        formula: "(sigma_x**2 + sigma_y**2)**(1/2)"
-    
-output_data_to:
-  put_method: "k2eg"
-  config:
-    variables:
-      LUME:MLFLOW:SIGMA_X:
-        proto: pva
-        name: LUME:MLFLOW:SIGMA_X
-      LUME:MLFLOW:SIGMA_Y:
-        proto: pva
-        name: LUME:MLFLOW:SIGMA_Y
-      LUME:MLFLOW:SIGMA_Z:
-        proto: pva
-        name: LUME:MLFLOW:SIGMA_Z
-      LUME:MLFLOW:NORM_EMIT_X:
-        proto: pva
-        name: LUME:MLFLOW:NORM_EMIT_X
-      LUME:MLFLOW:NORM_EMIT_Y:
-        proto: pva
-        name: LUME:MLFLOW:NORM_EMIT_Y
-      LUME:MLFLOW:EXAMPLE:COMBINED:
-        proto: pva
-        name: LUME:MLFLOW:EXAMPLE:COMBINED
-```
-This example is a working deployment for [lcls-cu-in-nn](https://github.com/t-bz/lcls_cu_injector_nn_model) model. The output channels are live and can be inspected using `pvget` or `pvmonitor` commands.
-
-### Example 3
-This is based on the image example 
-```yaml
-deployment:
-  type: "continuous"
-  # other configurations
-input_data:
-  get_method: "k2eg"
-  config:
-    variables:
-      CAMR:IN20:186:IMAGE:
-        proto: ca
-        name: CAMR:IN20:186:IMAGE
-      CAMR:IN20:186:N_OF_ROW:
-        proto: ca
-        name: CAMR:IN20:186:N_OF_ROW
-      CAMR:IN20:186:N_OF_COL:
-        proto: ca
-        name: CAMR:IN20:186:N_OF_COL
-      
-input_data_to_model:
-      type: "CAImageTransfomer"
-      config:
-        variables:
-          image:
-            img_ch: CAMR:IN20:186:IMAGE
-            img_x_ch: CAMR:IN20:186:N_OF_COL
-            img_y_ch: CAMR:IN20:186:N_OF_ROW
-outputs_model:
-  config:
-    variables:
-      y_max:
-        type: "scalar"
-      y_min:
-        type: "scalar"
-      y_mean:
-        type: "scalar"
-      y_std:
-        type: "scalar"
-      y_img:
-        type: "image"
-output_model_to_data:
-  type: "CompoundTransformer"
-  config:
-    transformers:
-      t_1:
-        type: "SimpleTransformer"
-        config:
-          symbols:
-            - "y_max"
-            - "y_min"
-            - "y_mean"
-            - "y_std"
-          variables:
-            LUME:MLFLOW:TEST_Y_MAX:
-              formula: "y_max"
-            LUME:MLFLOW:TEST_Y_MIN:
-              formula: "y_min"
-            LUME:MLFLOW:TEST_Y_MEAN:
-              formula: "y_mean"
-            LUME:MLFLOW:TEST_Y_STD:
-              formula: "y_std"
-      t_2:
-        type: "PassThroughTransformer"
-        config:
-          variables:
-            LUME:MLFLOW:TEST_IMAGE: "y_img"
-
-output_data_to:
-  put_method: "p4p_server"
-  config:
-    variables:
-      LUME:MLFLOW:TEST_Y_MAX:
-        proto: pva
-        name: LUME:MLFLOW:TEST_Y_MAX
-      LUME:MLFLOW:TEST_Y_MIN:
-        proto: pva
-        name: LUME:MLFLOW:TEST_Y_MIN
-      LUME:MLFLOW:TEST_Y_MEAN:
-        proto: pva
-        name: LUME:MLFLOW:TEST_Y_MEAN
-      LUME:MLFLOW:TEST_Y_STD: # implicitly type: "scalar"
-        proto: pva
-        name: LUME:MLFLOW:TEST_Y_STD
-      LUME:MLFLOW:TEST_IMAGE:
-        type: "image"
-        image_size:
-          x: 640
-          y: 480
-        proto: pva
-        name: LUME:MLFLOW:TEST_IMAGE
-```
-
-Then running from command line rather than deplyment:
-```bash
-model_manager -n "image_model" -v "16" -e cred.json -c ./examples/image/pv_mapping.yaml -p"
-```
-![gif example of the terminal result](/images/terminal_example.gif)
-
-and viewing the result in pydm using (image.ui):
-
-![model output](/images/result.gif)
 
 ## Installation
 
 Python `3.11.x` recommended.
 
 ```bash
-pip install -r reqirements.txt
-cd model_manager
-pip install .
+pip install poly-lithic
 ```
 for development:
 
 ```bash
 pip install -r reqirements.txt
-cd model_manager
 pip install -e .
 ```
 
-Or conda environment:
+with docker:
 
 ```bash
-conda env create -f mlflow_env.yml
-conda activate mlflow
- 
-cd model_manager
-pip install . # or pip install -e .
-```
+docker compose -f ./docker/docker_compose.yml up
+``` 
 
 ## Usage
 
-```bash
-model_manager -n <model_name> -v <model_version> -e <env.json> -c <configs.yaml>
+```python
+model_manager --publish -c ./tests/pv_mapping_mlflow.yaml -e ./tests/env.json
 ```
-Where:
-
-- `model_name` is the name of the registered model in MLflow
-- `model_version` is the version of the model to be used
-- `env.json` is a json file containing the environment variables for the model, optional
-- `pv_mappings.yaml` is a yaml file containing the full configuration for the system, transformation and model layers, optional, provided that the registered model has a `pv_mappings.yaml` file in the MLflow model directory.
-
-For non-mlflow models:
-
-```bash
-model_manager -l /path/to/model_and_factory -e <env.json> -c <configs.yaml>
+or
+```python
+pl --publish -c ./tests/pv_mapping_mlflow.yaml -e ./tests/env.json
 ```
-See image example for how to set up model factory and model for local use.
+The env file is a json file that contains the environment variables that are used in the deployment. In this example we are pulling the [torch](./examples/torch_and_generic.ipynb) model and wrapping it with simple transformers and a simple p4p server.  
 
-#### List of flags:
-- `-n` or `--model_name` : Name of the model in MLflow
-- `-v` or `--model_version` : Version of the model in MLflow
-- `-e` or `--env` : Path to the env.json file
-- `-c` or `--configs` : Path to the configs.yaml file
-- `-p` or `--publish` : Publish data to output module, off by default.
-- `-d` or `--debug` : Debug mode, off by default.
-- `-l` or `--local` : Local mode, you need to supply a model path and a model factory class. Alternative to using MLflow. you need to provide a `-c` config as well. 
+Reqired variables are:
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET`
+- `AWS_DEFAULT_REGION`
+- `AWS_REGION`
+- `MLFLOW_S3_ENDPOINT_URL`
+- `MINIO_ROOT_PASSWORD`
+- `MINIO_ROOT_USER`
+- `MINIO_SITE_REGION`
+- `MLFLOW_TRACKING_URI` 
+- `PUBLISH` - set to `true` for the deployment to publish data to the interface. This flag serves as a safety measure to prevent accidental publishing of data to live system. 
 
-`env.json` is a json file containing the environment variables for the model. The file should look like this:
+See [this](https://mlflow.org/docs/latest/api_reference/python_api/mlflow.environment_variables.html) for explantions of the MLFlow environment variables.
+
+## Configuration file (formerly pv_mappings files)
+
+The configuration file consists of 2 sections `deployment` and `modules`. Former describes deployment type and other setings such as refresh rate. The latter describes the nodes the modules and their connections to each other. 
+
+
+#### Example configuration file
+```yaml
+deployment:
+  type: "continuous" #type of deployment, continuous is the only one supported at the moment but more will be added
+  rate: 0.25 #refresh rate in seconds
+
+modules:
+    module1:
+        name: "module1"         # name of the module used to identify it in the graph
+        type: "type.subtype"    # type of the module, used to identify the module class and subclass 
+        pub: "topic1"           # topic the outputs will be published to, similar to MQTT, Kafka, ROS etc 
+        sub:                    # topics the module will subscribe to, we listen for and transform data from these topics
+        - "update"              # update is a special topic that will trigger an interface module to run get_all method (get_many for all keys)
+        - "topic3"              
+        module_args: None       # defines what arguments to pass to the module observer, if any this can inform unpacking etc
+        config:                 # configuration specific to the module type
+            key1: "value1"
+            keyn: "valuen"
+
+    module2:
+        ...
+        pub: "topic2"
+        sub:
+        - "topic1"
+    module3:
+        ...
+        pub: "topic3"
+        sub:
+        - "topic2"
+```
+The graph for the above configuration would look like this:
+
+```mermaid
+graph TD;
+    every_0.25s --> module1
+    module1 --> module2
+    module2 --> module3
+    module3 --> module1
+```
+
+Under the hood we are passing messages in the format:
+
 ```json
 {
-    "MLFLOW_TRACKING_USERNAME": "username",
-    "MLFLOW_TRACKING_PASSWORD": "password",
-    "MLFLOW_ENABLE_SYSTEM_METRICS_LOGGING": "true",
-    "AWS_DEFAULT_REGION": "eu-west-3",
-    "AWS_REGION": "eu-west-3",
-    "AWS_ACCESS_KEY_ID": "key-id",
-    "AWS_SECRET_ACCESS_KEY": "secret-key"
-    "MLFLOW_S3_ENDPOINT_URL": "http://my-s3-endpoint:myport",
-    "MLFLOW_TRACKING_URI": "http://my-mlflow-server"
-    "K2EG_PYTHON_CONFIGURATION_PATH_FOLDER" : "/path/to/k2eg/config_folder"
+    "topic": "topic1",
+    "data": {
+        "key1": {"value" : 1},
+        "key2": {"value" : [1,2,3]},
+        "key3": {"value" : {...}}
+    }
 }
 ```
-This is optional and all of the above can be set as environment variables. But working on windows can be a pain so this is a workaround.
+Note that the data is a dictionary of dictionaries.
 
-If you are using mlflow locally, you dont have to set anything just run mlflow ui in the terminal and the model manager will use the local server.
+## Modules
 
-## Deployment
+### Interface
+Interface modules are used to interact with external data, usually an accelerators control systems but can be anything. They follow the following structure (see [base interface class](./poly-lithic/src/interfaces/BaseInterface.py)):
 
-This section outlines how to deploy the model on various systems.
+```python
+class BaseInterface(ABC):
+    @abstractmethod
+    def __init__(self, config):
+        pass
 
-### General Notes and Pre-flight checks
+    @abstractmethod
+    def monitor(self, name, handler, **kwargs): # not used at the moment but will be used to monitor the interface for changes, rather than polling when p4p can monitor more than 4 pv's
+        pass
 
-- [ ] Model is `LUMEBaseModel`, `TorchModule` or a custom model type that is compatible with the model manager. i.e. The model registered using pyfunc wrapper has a `.get_model()` method and the model itself has a `.evaluate()` method. See `examples/image_examples.ipynb` for an example of a custom model.
-- [ ] Model is in MLflow
-- [ ] Model is registered in MLflow
-- [ ] `pv_mappings.yaml` file is in the MLflow model_name directory.
-- [ ] Test configuration locally using `model_manager -n <model_name> -v <model_version> -e <env.json> -c <configs.yaml> -d`
-     - If not working check if you have valid PV names and that your interfaces are in contact with the PV servers
-     - Check on multiple machines if possible, you may also test inside `matindocker/lumeservicesdeployment:latest` container.
+    @abstractmethod
+    def get(self, name, **kwargs):              # get a value from the interface
+        pass
 
-Note: when the model is registered you have to ensure that you have a valid `pv_mappings.yaml` file in a directory with the __same name as your registered model name__! .i.e if your model is named `my_model` then the directory should be `my_model` and the `pv_mappings.yaml` file should be in that directory. As shown in figure below: 
-![mlflow](/images/capture_1.PNG)
+    @abstractmethod
+    def put(self, name, value, **kwargs):       # put a value to the interface
+        pass
 
-### SLAC/S3DF
+    @abstractmethod
+    def put_many(self, data, **kwargs):         # put many values to the interface
+        pass
 
-At SLAC the models can be deployed directly from the MLflow web UI. Once a model has been registered and saved to the MLflow server it can be deployed by setting the registered models tag `deployment_type` to `prod` or `continuous` (latter is becoming legacy). Within a minute the model will be deployed to the S3DF kubernates container and will be available for use. Additional fields relating to the deployment will be populated as shown below: 
-![deployment info](/images/capture_2.PNG)
-Note the timestamp is in UTC.
-
-In order to terminate a deployment the `deployment_terminate` tag should be set to `true`. This will terminate the deployment and the model will no longer be available for use.
-The model page should update to reflect that the model is no longer deployed: 
-![deployment info](/images/capture_3.PNG)
-
-### ISIS
-
-TODO
-
-### Local/Daemon (recommended for evaluation and testing)
-
-Deploying on local machines as is as simple as running 
-
-```bash
-model_manager -n <model_name> -v <model_version> -e <env.json>
-# optionaly you might wanna specify -c <configs.yaml> locally
-# -p flag is optional, it will publish the output to the output module
+    @abstractmethod
+    def get_many(self, data, **kwargs):         # get many values from the interface
+        pass
 ```
-Using local model getter is also possible, but not recommended for production deployments. 
+All values are expected to come in as dictionaries of dictionaries with the following format:
 
-```bash
-model_manager -l /path/to/model_and_factory -e <env.json> -c <configs.yaml>
+```python
+# for sigular puts and gets
+name = "key1"
+value = {"value" : 1, "timestamp": 1234567890, "metadata": "some meta data"}        # note tha the timestamp and metadata are optional and unusued at the moment
+
+# for _many 
+data = {
+    "key1": {"value" : 1, "timestamp": 1234567890, "metadata": "some meta data"},
+    "key2": {"value" : [1,2,3]},
+    "key3": {"value" : {...}}
+}
+```
+#### Interface Configs
+| Module | Description | YAML configuration | 
+| ------ | ----------- | ------------------ | 
+| `p4p` | EPICS data source, must have an external EPICS server running. Note that SoftIOCPVA will not work with this module. | [config](#p4p-sample-configuration) |
+| `p4p_server` | EPICS data source, host EPICS p4p server for specifed PVs | same [config](#p4p-sample-configuration) as `p4p`|
+| `k2eg` | Kafka to EPICS gateway, get data from Kafka and write it to EPICS | [config](#k2eg-sample-configuration) |
+
+##### `p4p` sample configuration
+```yaml
+deployment:
+    ...
+modules:
+    mymodule:
+    ...
+    config: 
+      EPICS_PVA_NAME_SERVERS: "epics.server.co.uk:5075"
+      # other EPICS_CONFIGS can go here
+      variables:
+        MY_VAR:TEST_A:
+          proto: pva
+          name: MY_VAR:TEST_A # name here is redundant as the name is the key in the variables dictionary, it will be removed in future versions
+        MY_VAR:TEST_B:
+          proto: pva
+          name: MY_VAR:TEST_B
+        MY_VAR:TEST_S:
+          proto: pva
+          name: MY_VAR:TEST_S
+          # default: 0 | [0.0, ... ,0.0] | no defaults for images   optional
+          # type: scalar | waverform | image (default scalar)       optional
 ```
 
-You can append `&` to the end of the command to run it in the background.
+##### `p4p_server` sample configuration
+```yaml
+    config: 
+      EPICS_PVA_NAME_SERVERS: "epics.server.co.uk:5075"
+      # other EPICS_CONFIGS can go here
+      variables:
+        MY_VAR:TEST_A:
+          proto: pva
+          name: MY_VAR:TEST_A
+        MY_VAR:TEST_B:
+          proto: pva
+          name: MY_VAR:TEST_B
+        MY_VAR:TEST_S:
+          proto: pva
+          name: MY_VAR:TEST_S
+          # default: 0 | [0.0, ... ,0.0] | no defaults for images   optional
+          # type: scalar | waverform | image (default scalar)       optional
+```
+Yes, it is identical to p4p, the only difference is that the p4p server will host the PVs for the specified variables.
 
-### Known issues
+#### `k2eg` Sample configuration
 
-- [ ] ~~`p4p_server` cannot be an input to the transformation layer.~~ Fix implemented needs more testing to tick off.
-- [ ] `k2eg` will not work correctly if the PVs or CAs are not available.
-- [ ] `p4p_server` does not publish out of s3df, so deployments using it have to be local or daemon ones. Such as the image example untill this is addressed.
+This module is built on top of SLAC's [k2eg](https://github.com/slaclab/k2eg), it's great because it allows you get data from `pva` and `ca` protocols over Kafka. currently its the only interface that supports `ca` protocol.
 
-### Future work
-- [ ] Batch processing for models that require it.
-- [x] Local model getter for easier testing, specific deployment.
-- [ ] Rate limiting for live deployments.
-- [ ] Visualisation of the data flow and data webpages.
-- [ ] Slack bot for deployment status and workflow building help. As well as help with spinning up and terminating deployments.
-- [ ] Better abstract classes for the system, transformation and model layers.
-- [ ] Compound interfaces for the system layer.
+> [!CAUTION]
+> need some more testing as it was last tested in Q1 2024. 
+
+```yaml
+input_data:
+  get_method: "k2eg"
+  config:
+    variables:
+      MY_VAR:TEST_A:
+        proto: ca # supports ca or pva
+        name: MY_VAR:TEST_A
+      MY_VAR:TEST_B:
+        proto: pva
+        name: MY_VAR:TEST_B
+```
+
+### Transformer
+
+Transformers are used to transform data from one format to another, they can be used to perform some data processing, aggregation or any other transformation action. They follow the structure (see [base transformer class](./poly-lithic/src/transformers/BaseTransformer.py)):
+
+```python
+class BaseTransformer:
+    @abstractmethod
+    def __init__(self, config: dict):
+        """
+        config: dict passed from the pv_mappings.yaml files.
+        """
+        pass
+
+    @abstractmethod
+    def transform(self):
+        """
+        Call transform function to transform the input data, see SimpleTransformer in model_manager/src/transformers/BaseTransformers.py for an example.
+        """
+        pass
+
+    @abstractmethod
+    def handler(self, pv_name: str, value: dict | float | int):
+        """
+        Handler function to handle the input data, in most cases it initiates the transform function when all the input data is available.
+        Handler is the only function exposed to the main loop of the program aside from initial configuration.
+        """
+        pass
+```
+#### Transformer Configs
+| Module | Description | YAML configuration |
+| ------ | ----------- | ------------------ |
+| `SimpleTransformer` | Simple transformer that can be used to transform scalar values (ca or pv values that have a `value` field) | [config](#simpletransformer-sample-configuration) |
+| `CAImageTransformer` | Transformer that can be used to transform a triplet of an array, x and y ca values into a np array | [config](#caimagetransformer-sample-configuration) |
+| `CompoundTransformer` | Compound transformer that can be used to have multiple transformers in parallel | [config](#compoundtransformer-sample-configuration) |
+| `PassThroughTransformer` | Transformer that can be used to pass data through without any transformation other than the tag | [config](#passthroughtransformer-sample-configuration) |
+
+##### `SimpleTransformer` Sample configuration
+```yaml
+modules:
+  input_transformer:
+    name: "input_transformer"
+    type: "transformer.SimpleTransformer"
+    pub: "model_input"
+    sub:
+    - "system_input"
+    module_args: None
+    config:
+      symbols:
+        - "LUME:MLFLOW:TEST_B"
+        - "LUME:MLFLOW:TEST_A"
+      variables:
+        x2:
+          formula: "LUME:MLFLOW:TEST_B"
+        x1: 
+          formula: "LUME:MLFLOW:TEST_A"
+```
+
+##### `CAImageTransformer` Sample configuration
+```yaml
+modules:
+  image_transformer:
+    name: "image_transformer"
+    type: "transformer.CAImageTransformer"
+    pub: "model_input"
+    sub:
+    - "update"
+    module_args: None
+    config:
+      variables:
+        img_1:
+          img_ch: "MY_TEST_CA"
+          img_x_ch: "MY_TEST_CA_X"
+          img_y_ch: "MY_TEST_CA_Y"
+        img_2:
+          img_ch: "MY_TEST_C2"
+          img_x_ch: "MY_TEST_CA_X2"
+          img_y_ch: "MY_TEST_CA_Y2"
+```
+
+##### `PassThroughTransformer` Sample configuration
+```yaml
+modules:
+  output_transformer:
+    name: "output_transformer"
+    type: "transformer.PassThroughTransformer"
+    pub: "system_output"
+    sub:
+    - "model_output"
+    module_args: None
+    config:
+      variables:
+        LUME:MLFLOW:TEST_IMAGE: "y_img"
+```
+##### `CompoundTransformer` Sample configuration
+> [!CAUTION]
+> This module will be deprecated in the future, pub-sub model means that compound transformers are no longer needed.
+
+```yaml
+modules:
+  compound_transformer:
+    name: "compound_transformer"
+    type: "transformer.CompoundTransformer"
+    pub: "model_input"
+    sub:
+    - "update"
+    module_args: None
+    config:
+      transformers:
+        transformer_1:
+          type: "SimpleTransformer"
+          config:
+            symbols:
+              - "MY_TEST_A"
+              - "MY_TEST_B"
+            variables:
+              x2:
+                formula: "MY_TEST_A*2"
+              x1: 
+                formula: "MY_TEST_B+MY_TEST_A"
+        transformer_2:
+          type: "CAImageTransformer"
+          config:
+            variables:
+              img_1:
+                img_ch: "MY_TEST_CA"
+                img_x_ch: "MY_TEST_CA_X"
+                img_y_ch: "MY_TEST_CA_Y"
+              img_2:
+                img_ch: "MY_TEST_C2"
+                img_x_ch: "MY_TEST_CA_X2"
+                img_y_ch: "MY_TEST_CA_Y2"
+```
 
 
+### Model
+
+Models are the core of the deployment, they can be retrieved locally or from MLFlow and accept data in form of dictionries. By deafault models pivot the dictionry or rather remove the additional keys from messages to simplify the data structure that the model has to process.
+
+All models have to implement the `evaluate` method that takes a dictionary of inputs and returns a dictionary of outputs. 
+
+#### Model Config 
+
+```yaml
+model:                              # this is the name of the model module, it is used to identify the model in the graph
+    name: "model"                   # name of the model used to identify it in the graph, overrides the name in the module section
+    type: "model.SimpleModel"       # type of module, used to identify the model class and subclass, in this case we are saying it a model 
+    pub: "model"                    # where the model will publish its outputs, this is the topic that the model will publish to
+    sub: "in_transformer"           # topic that the model will subscribe to, this is the topic that the model will listen for inputs
+    module_args: None               # defines what arguments to pass to the model observer, if any this can inform unpacking etc
+    config:
+      type: "modelGetter"           # defines the type of model getter, this is used to identify the model getter class
+      args:                         # arguments to pass to the model getter class, in this case we are passing the path to the model definition file
+
+```
+See the following examples for usage
 
 
+###### Example Model - Local Model
+
+```python
+  
+class SimpleModel(torch.nn.Module):
+    def __init__(self):
+        super(SimpleModel, self).__init__()
+        self.linear1 = torch.nn.Linear(2, 10)
+        self.linear2 = torch.nn.Linear(10, 1)
+
+    def forward(self, x): # this is for our benefit, it is not used by poly-lithic
+        x = torch.relu(self.linear1(x))
+        x = self.linear2(x)
+        return x
+
+    # this method is necessary for the model to be evaluated by poly-lithic
+    def evaluate(self, x: dict) -> dict:
+        # x will be a dicrt of keys and values
+        # {"x": x, "y": y}
+        input_tensor = torch.tensor([x['x'], x['y']], dtype=torch.float32)
+        # you may want to do somethinf more complex here
+        output_tensor = self.forward(input_tensor)
+        # return a dictionary of keys and values
+        return {'output': output_tensor.item()}
+  ```
+
+  Lets say we want to retreive the model locally, we need to specify a factory class:
+
+```python
+  
+class ModelFactory:
+    # can do more complex things here but we will just load the model from a locally saved file
+    def __init__(self):
+        # add this path to python environment
+        os.environ['PYTHONPATH'] = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), '..', '..', '..')
+        )
+        print('PYTHONPATH set to:', os.environ['PYTHONPATH'])
+        self.model = SimpleModel()
+        model_path = 'examples/base/local/model.pth'
+        if os.path.exists(model_path):
+            self.model.load_state_dict(torch.load(model_path))
+            print('Model loaded successfully.')
+        else:
+            print(
+                f"Warning: Model file '{model_path}' not found. Using untrained model."
+            )
+        print('ModelFactory initialized')
+
+    # this method is necessary for the model to be retrieved by poly-lithic
+    def get_model(self):
+        return self.model
+```
+The in the config file:
+
+```yaml
+...
+model:
+    name: "model"
+    type: "model.SimpleModel"
+    pub: "model"
+    sub: "in_transformer"
+    module_args: None
+    config:
+      type: "LocalModelGetter"
+      args: 
+        model_path: "examples/base/local/model_definition.py"           # path to the model definition
+        model_factory_class: "ModelFactory"                             # class that you use to create the model
+      variables:
+        max:
+          type: "scalar"
+...
+```
+
+Then to run the model:
+```bash
+pl --publish -c examples/base/local/deployment_config.yaml
+```
+See the [local example notebook](./examples/base/simple_model_local.ipynb) for more details.
+
+#### Example Model - MLFLow Model
+See the [MLFlow example notebook](./examples/base/simple_model_mlflow.ipynb) for more details.
+
+
+## Roadmap
+
+| Feature / Task                                | Timeline     | Priority | Status        |
+|-----------------------------------------------|--------------|----------|---------------|
+| 🖌️ 🎨 **Make logo**                            | 1–3 Months   | 🥇       | 🚧 In Progress |
+| 🧠 🔧 **Lume-Model Integration**               | 1–3 Months   | 🥇       | 🚧 In Progress |
+| ⚡ 🔄 **Event driven mode**                    | 1-3 Months   | 🥈       | ⏳ Planned     |
+| 📦 🤖 **MLflow 3.x Support**                   | 1–3 Months   | 🥇       | ⏳ Planned     |
+| 🌐 🚀 **Move to `gh-pages`**                   | 1–3 Months   | 🥈       | 🚧 In Progress |
+| 🔗 🧪 **p4p4isis Interface**                   | 6–12 Months  | 🥉       | ⏳ Planned     |
+| 📊 🧭 **Time Series Aggregation**              | 3–6 Months   | 🥉       | ⏳ Planned     |
+| 📈 🔍 **Model Evaluator Module**               | 3–6 Months   | 🥉       | ⏳ Planned     |
+| 🔁 🔧 **Model Retrainer Module**               | 6–12 Months  | 🥈       | ⏳ Planned     |

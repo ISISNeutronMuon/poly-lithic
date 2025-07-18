@@ -1,0 +1,72 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs", "wheel", "numpy<2.0"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[project]
+name = "poly-lithic"
+dynamic = ["version"]
+description = "A package for deploying AI and other models and more using lume inspired interfaces"
+authors = [
+    {"name" = "Mateusz Leputa"},
+    {"name" = "Kathryn Baker"},
+    {"name" = "Mihnea Romanovschi"},
+    {"name" = "Jesse Bellister"},
+]
+dependencies = [
+    "pandas>=2.0.1",
+    "numpy<2.0",
+    "keras>=3.1.1",
+    "mlflow>=2.12.1",
+    "boto3>=1.34.65",
+    "psycopg2-binary",
+    "k2eg==0.2.7",
+    "psutil>=6.0.0",
+    "colorlog>=6.8.2",
+    "p4p==4.2.0",
+    "pyepics==3.5.7",
+]
+
+[tool.hatch.version]
+source = "vcs" #test
+
+[tool.hatch.build.hooks.vcs]
+version-file = "poly_lithic/_version.py"
+
+[tool.hatch.build.targets.sdist]
+# exclude everying apart gthan the src directory
+include =["poly_lithic"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["poly_lithic"]
+only-packages = true
+
+[tool.ruff.format]
+preview = true
+quote-style = "single"
+
+[project.scripts]
+poly_lithic = "poly_lithic.scripts.main:main"
+pl = "poly_lithic.scripts.main:main"
+model_manager = "poly_lithic.scripts.main:main" # legacy alias for poly_lithic
+
+
+[tool.hatch.envs.default.env-vars]
+PYTHONPATH = "poly_lithic/src"
+
+[tool.hatch.envs.default.scripts]
+test = "pytest"
+
+[tool.hatch.version.raw-options]
+local_scheme = "no-local-version"
+
+[tool.hatch.scripts]
+pre_install = "poly_lithic/pre_install.py"
+
+[tool.hatch.envs.default.pipelines]
+pre_install = ["pre_install"]
+
+[[tool.hatch.envs.default.pipelines.install]]
+hooks = ["pre_install"]
