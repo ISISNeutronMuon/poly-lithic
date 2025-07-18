@@ -1,14 +1,11 @@
 name: Build & Push Docker Images on Tag
 
 on:
-#   push:
-#     tags:
-#       - 'v*'  # Triggers on tags like v0.1.2, v0.1.2.dev1, etc.
-#   workflow_dispatch:
     workflow_run:
       workflows: ["Main build and test workflow"]
       types:
         - completed
+    workflow_dispatch:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest

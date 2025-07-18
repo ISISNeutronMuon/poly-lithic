@@ -10,6 +10,7 @@ on:
     tags:
       - '*'
     # on push to dev or main branch if tags are pushed
+  workflow_dispatch:
 
 jobs:
   Build:
