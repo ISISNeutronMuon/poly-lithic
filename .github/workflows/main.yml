@@ -7,8 +7,6 @@ on:
     #   - '*'
     # paths:
     #   - .github/workflows/**.yml
-    branches:
-      - dev
     tags:
       - '*'
     # on push to dev or main branch if tags are pushed
