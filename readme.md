@@ -1,6 +1,15 @@
 <!-- NEW DOCS in progress
 use old docs in the meantime: [old docs](./readme_old.md) -->
 
+
+
+[![Main build and test workflow](https://github.com/ISISNeutronMuon/poly-lithic/actions/workflows/main.yml/badge.svg)](https://github.com/ISISNeutronMuon/poly-lithic/actions/workflows/main.yml)
+
+[![Build & Push Docker Images on Tag](https://github.com/ISISNeutronMuon/poly-lithic/actions/workflows/docker-build.yml/badge.svg)](https://github.com/ISISNeutronMuon/poly-lithic/actions/workflows/docker-build.yml)
+
+[![Build & Deploy Sphinx Docs](https://github.com/ISISNeutronMuon/poly-lithic/actions/workflows/docs.yml/badge.svg)](https://github.com/ISISNeutronMuon/poly-lithic/actions/workflows/docs.yml)
+
+
 # Table of Contents
   - [Installation](#installation)
   - [Usage](#usage)
