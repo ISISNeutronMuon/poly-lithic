@@ -1,7 +1,7 @@
 <!-- NEW DOCS in progress
 use old docs in the meantime: [old docs](./readme_old.md) -->
 
-
+![Poly-Lithic Logo](./images/logo.svg)
 
 [![Main build and test workflow](https://github.com/ISISNeutronMuon/poly-lithic/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/ISISNeutronMuon/poly-lithic/actions/workflows/main.yml)
 
