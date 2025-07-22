@@ -1,0 +1,53 @@
+# build and test various Python versions
+name: Test Python Versions
+on:
+    push:
+        branches:
+            - main
+        tags:
+            - '*'
+
+    workflow_dispatch:
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: False
+      matrix:
+          python-version: ["3.11"]
+          
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Clean up disk space
+        run: |
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+          sudo rm -rf /tmp/*
+          sudo rm -rf /var/tmp/*
+          df -h
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install hatch
+          pip install pytest
+          pip install -r requirements.txt
+      
+      - name: Hatch build
+        run: |
+          hatch build
+          ls -l dist
+
+      - name: Install package and run tests
+        run: |
+          pip install dist/*.whl
+          pytest

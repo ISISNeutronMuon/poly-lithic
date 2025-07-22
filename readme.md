@@ -513,3 +513,4 @@ See the [MLFlow example notebook](./examples/base/simple_model_mlflow.ipynb) for
 | 📊 🧭 **Time Series Aggregation**              | 3–6 Months   | 🥉       | ⏳ Planned     |
 | 📈 🔍 **Model Evaluator Module**               | 3–6 Months   | 🥉       | ⏳ Planned     |
 | 🔁 🔧 **Model Retrainer Module**               | 6–12 Months  | 🥈       | ⏳ Planned     |
+
