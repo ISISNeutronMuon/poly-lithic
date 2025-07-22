@@ -1,5 +1,5 @@
 # build and test various Python versions
-name: Test Python Versions
+name: Test Python Version 3.12
 on:
     push:
         branches:
