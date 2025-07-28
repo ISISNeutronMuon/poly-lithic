@@ -70,3 +70,6 @@ pre_install = ["pre_install"]
 
 [[tool.hatch.envs.default.pipelines.install]]
 hooks = ["pre_install"]
+
+[tool.ruff.lint]
+select = ["NPY201"]
