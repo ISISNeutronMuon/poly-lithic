@@ -1,12 +1,13 @@
+# not implemented error
+import sys
+import warnings
+
 import mlflow
 from mlflow import MlflowClient
 from mlflow.models.model import get_model_info
+
 from poly_lithic.src.logging_utils import get_logger
 from poly_lithic.src.model_utils import ModelGetterBase
-import warnings
-
-# not implemented error
-import sys
 
 logger = get_logger()
 

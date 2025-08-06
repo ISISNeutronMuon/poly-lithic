@@ -1,15 +1,17 @@
+import logging
+import os
+
 import pytest
+
+from poly_lithic.src.interfaces import registered_interfaces
+from poly_lithic.src.transformers.BaseTransformers import SimpleTransformer
 from poly_lithic.src.utils.messaging import (
-    Message,
-    ModelObserver,
     InterfaceObserver,
+    Message,
     MessageBroker,
+    ModelObserver,
     TransformerObserver,
 )
-from poly_lithic.src.transformers.BaseTransformers import SimpleTransformer
-from poly_lithic.src.interfaces import registered_interfaces
-import os
-import logging
 
 
 class MockModel:

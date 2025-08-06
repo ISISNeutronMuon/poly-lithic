@@ -1,4 +1,5 @@
 import yaml
+
 from .config_object import ConfigObject
 
 

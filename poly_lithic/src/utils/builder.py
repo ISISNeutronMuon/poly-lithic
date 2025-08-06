@@ -3,9 +3,9 @@ from poly_lithic.src.interfaces import registered_interfaces
 from poly_lithic.src.logging_utils import get_logger
 from poly_lithic.src.transformers import registered_transformers
 from poly_lithic.src.utils.messaging import (
-    ModelObserver,
     InterfaceObserver,
     MessageBroker,
+    ModelObserver,
     TransformerObserver,
 )
 

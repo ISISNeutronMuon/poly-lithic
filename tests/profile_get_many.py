@@ -1,6 +1,7 @@
 import cProfile
-import pstats
 import io
+import pstats
+
 from poly_lithic.src.interfaces import registered_interfaces
 
 SimplePVAInterfaceServer = registered_interfaces['p4p_server']

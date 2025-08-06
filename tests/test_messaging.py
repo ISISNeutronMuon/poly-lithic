@@ -1,12 +1,14 @@
+import logging
+
 import pytest
+
+from poly_lithic.src.transformers.BaseTransformers import SimpleTransformer
 from poly_lithic.src.utils.messaging import (
     Message,
     MessageBroker,
     Observer,
     TransformerObserver,
 )
-from poly_lithic.src.transformers.BaseTransformers import SimpleTransformer
-import logging
 
 
 class TestObserver(Observer):

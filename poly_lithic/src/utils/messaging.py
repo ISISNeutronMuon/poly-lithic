@@ -1,21 +1,22 @@
+# from deepdiff import DeepDiff
+import hashlib
+import os
+import time
 from abc import ABC, abstractmethod
-from typing import Dict, Any, Optional, Union
+from typing import Any, Dict, Optional, Union
+
+import psutil
 from pydantic import (
     BaseModel,
     Field,
-    field_validator,
     computed_field,
+    field_validator,
 )
-import time
-from poly_lithic.src.logging_utils import get_logger
-from poly_lithic.src.transformers import BaseTransformer
-from poly_lithic.src.interfaces import BaseInterface
-from poly_lithic.src.model_utils import registered_model_getters
-import os
 
-# from deepdiff import DeepDiff
-import hashlib
-import psutil
+from poly_lithic.src.interfaces import BaseInterface
+from poly_lithic.src.logging_utils import get_logger
+from poly_lithic.src.model_utils import registered_model_getters
+from poly_lithic.src.transformers import BaseTransformer
 
 current_process = psutil.Process()
 logger = get_logger()
@@ -186,6 +187,7 @@ class MessageBroker:
 
             for observer in self._observers[message.topic]:
                 logger.debug(f'notifying {observer}')
+                # logger.debug(f'updating {observer} with {message}')
                 start = time.time()
                 result = observer.update(message)
                 end = time.time()

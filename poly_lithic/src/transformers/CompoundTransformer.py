@@ -3,7 +3,6 @@ import time
 
 from poly_lithic.src.logging_utils.make_logger import get_logger
 from poly_lithic.src.transformers import registered_transformers
-
 from poly_lithic.src.transformers.BaseTransformer import BaseTransformer
 
 logger = get_logger()

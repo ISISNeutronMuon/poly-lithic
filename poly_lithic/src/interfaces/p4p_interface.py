@@ -9,6 +9,7 @@ from p4p.nt import NTNDArray, NTScalar
 from p4p.server import Server, StaticProvider
 from p4p.server.raw import ServOpWrap
 from p4p.server.thread import SharedPV
+
 from poly_lithic.src.logging_utils import get_logger
 
 from .BaseInterface import BaseInterface

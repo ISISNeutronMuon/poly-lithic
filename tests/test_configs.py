@@ -3,9 +3,11 @@
 Script to list all registered models in MLflow
 """
 
-import os
 import json
+import os
+
 from mlflow import MlflowClient
+
 from poly_lithic.src.logging_utils import get_logger
 
 logger = get_logger()

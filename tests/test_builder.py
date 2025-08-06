@@ -1,10 +1,12 @@
-from poly_lithic.src.utils.builder import Builder
-from poly_lithic.src.utils.messaging import Message
-import pytest
-import os
 import json
 import logging
+import os
+
+import pytest
 import requests  # to check if we can rech the mlflow server
+
+from poly_lithic.src.utils.builder import Builder
+from poly_lithic.src.utils.messaging import Message
 
 
 @pytest.fixture

@@ -7,12 +7,10 @@ import sys
 import time
 import traceback
 
+from poly_lithic._version import __version__
 from poly_lithic.src.config import ConfigParser
 from poly_lithic.src.logging_utils import get_logger, make_logger
-
 from poly_lithic.src.utils.builder import Builder
-
-from poly_lithic._version import __version__
 
 logger = get_logger()
 

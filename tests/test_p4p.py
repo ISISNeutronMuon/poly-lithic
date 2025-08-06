@@ -1,11 +1,12 @@
 # from poly_lithic.src.interfaces import SimplePVAInterface
 import subprocess
+import sys
 
 import numpy as np
 import pytest
+
 from poly_lithic.src.interfaces import registered_interfaces
 from poly_lithic.src.logging_utils.make_logger import make_logger
-import sys
 
 SimplePVAInterface = registered_interfaces['p4p']
 # start mailbox.py as a subprocess

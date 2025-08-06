@@ -2,6 +2,7 @@ def main():
     import asyncio
     import logging
     import os
+
     from poly_lithic.src.cli import model_main, setup
     from poly_lithic.src.logging_utils import make_logger, reset_logging
 

@@ -1,6 +1,8 @@
-from poly_lithic.src.config.parser import ConfigParser
 import logging
+
 import pytest
+
+from poly_lithic.src.config.parser import ConfigParser
 
 
 @pytest.fixture

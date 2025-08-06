@@ -1,8 +1,10 @@
-import pytest
 import os
+
 import numpy as np
-from poly_lithic.src.utils.messaging import Message, InterfaceObserver
+import pytest
+
 from poly_lithic.src.interfaces import registered_interfaces
+from poly_lithic.src.utils.messaging import InterfaceObserver, Message
 
 
 @pytest.fixture

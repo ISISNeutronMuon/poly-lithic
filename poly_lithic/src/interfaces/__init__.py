@@ -6,7 +6,7 @@ class InterfaceLoader(AbstractInterfaceLoader):
         super().__init__()
 
     def keys(self):
-        return ['k2eg', 'p4p', 'p4p_server', 'h5df']
+        return ['k2eg', 'p4p', 'p4p_server', 'h5df', 'k2simFrame']
 
     def _load_interface(self, key):
         if key == 'k2eg':
@@ -17,6 +17,8 @@ class InterfaceLoader(AbstractInterfaceLoader):
             return self.import_module(
                 '.interfaces.p4p_interface', 'SimlePVAInterfaceServer'
             )
+        elif key == 'k2simFrame':
+            return self.import_module('.interfaces.k2simframe_interface', 'k2simFrame')
         elif key == 'h5df':
             return self.import_module('.interfaces.file_interface', 'h5dfInterface')
         else:

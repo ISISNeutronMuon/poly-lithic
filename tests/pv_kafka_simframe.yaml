@@ -1,0 +1,35 @@
+deployment:
+  type: "continuous"
+  rate: 1 #seconds
+
+modules: 
+  
+  kafka_simframe:
+    name: "kafka_simframe"
+    type: "interface.k2simFrame"
+    pub: "in_interface"
+    sub: 
+      - "get_all"
+      - "model"        
+    module_args: None 
+    config: 
+      settings: {}
+      host: "0.0.0.0"
+      port: 9091
+      kafka_url: "athena.isis.rl.ac.uk:9092"
+      
+  model:
+    name: "model"
+    type: "model.SimpleModel"
+    pub: "model"
+    sub: "in_interface"
+    module_args: None
+    config:
+      type: "LocalModelGetter"
+      args: 
+        model_path: "tests/model/kafka2simframe_model.py"           # path to the model definition
+        model_factory_class: "ModelFactory"                             # class that you use to create the model
+      variables:
+
+
+    

@@ -41,3 +41,7 @@ class BaseInterface(ABC):
     @abstractmethod
     def get_many(self, data, **kwargs):
         pass
+    
+    @abstractmethod
+    def close(self):
+        pass
