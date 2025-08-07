@@ -61,8 +61,11 @@ class k2simFrame(BaseInterface):
         self.server = None
         self.server_thread = None
         
+        
+        
         logger.debug(f'Initializing k2simFrame interface on {self.host}:{self.port}')
         
+        self.run()  # Start the FastAPI server
         
         ## setup api routes
 
@@ -107,6 +110,7 @@ class k2simFrame(BaseInterface):
 
     def run(self):
         """Start the FastAPI server in a separate thread (non-blocking)."""
+        print(f"Starting server on {self.host}:{self.port}")
         if self.server_thread is not None and self.server_thread.is_alive():
             logger.warning("Server is already running")
             return

@@ -13,9 +13,13 @@ modules:
       - "model"        
     module_args: None 
     config: 
-      settings: {}
+      settings: 
+        test: 
+          - 1
+          - 2
+          - 3 
       host: "0.0.0.0"
-      port: 9091
+      port: 9999
       kafka_url: "athena.isis.rl.ac.uk:9092"
       
   model:
