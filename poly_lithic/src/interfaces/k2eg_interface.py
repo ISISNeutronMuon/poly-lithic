@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 import k2eg
 from poly_lithic.src.logging_utils import get_logger
 
+from k2eg.serialization import Scalar
 from .BaseInterface import BaseInterface
 
 executor = ThreadPoolExecutor(20)
@@ -20,8 +21,7 @@ class K2EGInterface(BaseInterface):
         try:
             self.client = k2eg.dml(
                 'env',
-                'app-test-3',
-                group_name=f'model-deployment-{str(uuid.uuid4())[0:15]}',
+                'app-three',
             )
         except Exception as e:
             print(f'Error initializing K2EGInterface: {e}')
@@ -66,7 +66,7 @@ class K2EGInterface(BaseInterface):
     def put(self, name, value, **kwargs):
         # print(f"putting {name} with value {value}")
         try:
-            self.client.put(self.reverse_url_lookup[name], value)
+            self.client.put(self.reverse_url_lookup[name], Scalar("value", value["value"]))
         except Exception as e:
             print(f'Error putting: {e}')
             raise e

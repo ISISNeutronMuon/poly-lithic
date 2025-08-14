@@ -1,0 +1,182 @@
+deployment:
+  type: "continuous"
+  rate: 1
+
+modules:
+  k2eg:
+    name: "k2eg"
+    type: "interface.k2eg"
+    pub:
+      - "in_interface"
+    sub:
+      - "get_all"
+      - "out_transformer" # look we can do this now!
+    module_args: None # defines what arguments to pass to the module observer, if any this can inform unpacking etc
+    config:
+      variables:
+        SOLN:IN20:121:BACT:
+          proto: ca
+          name: SOLN:IN20:121:BACT
+        QUAD:IN20:121:BACT:
+          proto: ca
+          name: QUAD:IN20:121:BACT
+        QUAD:IN20:122:BACT:
+          proto: ca
+          name: QUAD:IN20:122:BACT
+        ACCL:IN20:300:L0A_PDES:
+          proto: ca
+          name: ACCL:IN20:300:L0A_PDES
+        ACCL:IN20:400:L0B_PDES:
+          proto: ca
+          name: ACCL:IN20:400:L0B_PDES
+        ACCL:IN20:300:L0A_ADES:
+          proto: ca
+          name: ACCL:IN20:300:L0A_ADES
+        ACCL:IN20:400:L0B_ADES:
+          proto: ca
+          name: ACCL:IN20:400:L0B_ADES
+        QUAD:IN20:361:BACT:
+          proto: ca
+          name: QUAD:IN20:361:BACT
+        QUAD:IN20:371:BACT:
+          proto: ca
+          name: QUAD:IN20:371:BACT
+        QUAD:IN20:425:BACT:
+          proto: ca
+          name: QUAD:IN20:425:BACT
+        QUAD:IN20:441:BACT:
+          proto: ca
+          name: QUAD:IN20:441:BACT
+        QUAD:IN20:511:BACT:
+          proto: ca
+          name: QUAD:IN20:511:BACT
+        QUAD:IN20:525:BACT:
+          proto: ca
+          name: QUAD:IN20:525:BACT
+        FBCK:BCI0:1:CHRG_S:
+          proto: ca
+          name: FBCK:BCI0:1:CHRG_S
+        CAMR:IN20:186:XRMS:
+          proto: ca
+          name: CAMR:IN20:186:XRMS
+        CAMR:IN20:186:YRMS:
+          proto: ca
+          name: CAMR:IN20:186:YRMS
+        SIOC:SYS0:ML06:AO001:
+          proto: ca
+          name: SIOC:SYS0:ML06:AO001
+        SIOC:SYS0:ML06:AO002:
+          proto: ca
+          name: SIOC:SYS0:ML06:AO002
+        SIOC:SYS0:ML06:AO003:
+          proto: ca
+          name: SIOC:SYS0:ML06:AO003
+        SIOC:SYS0:ML06:AO004:
+          proto: ca
+          name: SIOC:SYS0:ML06:AO004
+        SIOC:SYS0:ML06:AO005:
+          proto: ca
+          name: SIOC:SYS0:ML06:AO005
+        SIOC:SYS0:ML06:AO006:
+          proto: ca
+          name: SIOC:SYS0:ML06:AO006
+
+  input_transformer:
+    name: "input_transformer"
+    type: "transformer.SimpleTransformer"
+    pub: "in_transformer"
+    sub: "in_interface"
+    module_args: None
+    config:
+      symbols:
+        - "CAMR:IN20:186:XRMS"
+        - "CAMR:IN20:186:YRMS"
+        - "SOLN:IN20:121:BACT"
+        - "QUAD:IN20:121:BACT"
+        - "QUAD:IN20:122:BACT"
+        - "ACCL:IN20:300:L0A_PDES"
+        - "ACCL:IN20:400:L0B_PDES"
+        - "ACCL:IN20:300:L0A_ADES"
+        - "ACCL:IN20:400:L0B_ADES"
+        - "QUAD:IN20:361:BACT"
+        - "QUAD:IN20:371:BACT"
+        - "QUAD:IN20:425:BACT"
+        - "QUAD:IN20:441:BACT"
+        - "QUAD:IN20:511:BACT"
+        - "QUAD:IN20:525:BACT"
+        - "FBCK:BCI0:1:CHRG_S"
+      variables:
+        distgen:t_dist:length:value:
+          formula: "1.8550514181818183" # constant
+        distgen:r_dist:sigma_xy:value:
+          formula: "(CAMR:IN20:186:XRMS**2 + CAMR:IN20:186:YRMS**2)**(1/2)"
+        SOL1:solenoid_field_scale:
+          formula: "SOLN:IN20:121:BACT" # no transformation just pass the value
+        CQ01:b1_gradient:
+          formula: "QUAD:IN20:121:BACT"
+        SQ01:b1_gradient:
+          formula: "QUAD:IN20:122:BACT"
+        L0A_phase:dtheta0_deg:
+          formula: "ACCL:IN20:300:L0A_PDES"
+        L0B_phase:dtheta0_deg:
+          formula: "ACCL:IN20:400:L0B_PDES"
+        L0A_scale:voltage:
+          formula: "ACCL:IN20:300:L0A_ADES"
+        L0B_scale:voltage:
+          formula: "ACCL:IN20:400:L0B_ADES"
+        QA01:b1_gradient:
+          formula: "QUAD:IN20:361:BACT"
+        QA02:b1_gradient:
+          formula: "QUAD:IN20:371:BACT"
+        QE01:b1_gradient:
+          formula: "QUAD:IN20:425:BACT"
+        QE02:b1_gradient:
+          formula: "QUAD:IN20:441:BACT"
+        QE03:b1_gradient:
+          formula: "QUAD:IN20:511:BACT"
+        QE04:b1_gradient:
+          formula: "QUAD:IN20:525:BACT"
+        distgen:total_charge:value:
+          formula: "FBCK:BCI0:1:CHRG_S"
+  model:
+    name: "model"
+    type: "model.SimpleModel" # this is unrelated to our model name its just the name of the Poly-Lithic module
+    pub: "model"
+    sub: "in_transformer" #?
+    module_args: None
+    config:
+      type: "MlflowModelGetter"
+      args:
+        model_name: "lcls_cu_injector_model"
+        model_version: 20
+        # or
+        # model_uri: "models:/mlflow_model/1"
+      
+  output_transformer:
+    name: "output_transformer"
+    type: "transformer.SimpleTransformer"
+    pub: "out_transformer"
+    sub:
+      - "model"
+    module_args: None
+    config:
+      symbols:
+        - sigma_x
+        - sigma_y
+        - sigma_z
+        - norm_emit_x
+        - norm_emit_y
+      variables:
+        SIOC:SYS0:ML06:AO001:
+          formula: "sigma_x"
+        SIOC:SYS0:ML06:AO002:
+          formula: "sigma_y"
+        SIOC:SYS0:ML06:AO003:
+          formula: "sigma_z"
+        SIOC:SYS0:ML06:AO004:
+          formula: "norm_emit_x"
+        SIOC:SYS0:ML06:AO005:
+          formula: "norm_emit_y"
+        SIOC:SYS0:ML06:AO006:
+          formula: "(sigma_x**2 + sigma_y**2)**(1/2)"
+
