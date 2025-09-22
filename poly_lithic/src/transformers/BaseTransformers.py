@@ -150,7 +150,7 @@ class SimpleTransformer(BaseTransformer):
                     pvs_renamed[symbol.replace(':', '_')] for symbol in self.input_list
                 ])
 
-                if isinstance(transformed[key], np.ndarray):
+                if isinstance(transformed[key], np.ndarray) and len(transformed[key].shape)>0:
                     if transformed[key].shape[-1] == 1:
                         transformed[key] = transformed[key].squeeze()
                 else:
