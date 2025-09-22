@@ -2,6 +2,8 @@ name: Main build and test workflow
 
 # only on tagged commits or manual trigger or on change to main.yml
 on:
+  pull_request:
+      types: [opened, synchronize, reopened]
   push:
     # tags:
     #   - '*'
