@@ -49,3 +49,4 @@ test_files/
 old_examples/
 *code-workspace
 test-env
+.venv*
