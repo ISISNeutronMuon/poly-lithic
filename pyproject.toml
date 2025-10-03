@@ -17,17 +17,46 @@ authors = [
 ]
 dependencies = [
     "pandas>=2.0.1",
-    "numpy<2.0",
+    "numpy>=2.0.0",
     "keras>=3.1.1",
-    "mlflow>=2.12.1",
+    "mlflow==2.22.2",
     "boto3>=1.34.65",
     "psycopg2-binary",
-    "k2eg==0.2.7",
+    "k2eg>=0.2.16",
     "psutil>=6.0.0",
     "colorlog>=6.8.2",
-    "p4p==4.2.0",
-    "pyepics==3.5.7",
+    "p4p>=4.2.1",
+    "pyepics>=3.5.7",
+    "h5py>=3.12.1",
+    "lume-model>=2.0.0",
+    "matplotlib>=3.10.1",
+    "networkx>=3.4.2",
+    "pydantic>=2.10.6",
+    "pyyaml>=6.0.2",
+    "requests>=2.32.3",
+    "sympy>=1.13.1",
 ]
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "black",
+    "flake8",
+    "ruff",
+    "isort",
+    "pre-commit",
+    "sphinx",
+    "sphinx-rtd-theme",
+    "twine",
+    "wheel",
+    "hatchling",
+    "hatch-vcs",
+    "torch>=2.6.0",
+]
+torch = ["torch>=2.6.0", "lume-model>=2.0.0"]
+tensorflow = ["keras>=3.1.1", "tensorflow>=2.14.0"] 
+tensorflow_cpu = ["keras>=3.1.1", "tensorflow-cpu>=2.14.0"]
+
 
 [tool.hatch.version]
 source = "vcs" #test
