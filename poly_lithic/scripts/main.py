@@ -1,23 +1,31 @@
+"""
+Main entry point for poly_lithic CLI.
+
+Provides backward compatibility while supporting new Click-based commands.
+"""
+
+
 def main():
-    import asyncio
-    import logging
-    import os
-    from poly_lithic.src.cli import model_main, setup
-    from poly_lithic.src.logging_utils import make_logger, reset_logging
+    """
+    Main entry point that supports both old and new CLI styles.
 
-    logger = make_logger('model_manager')
-    logger.info('Starting model manager')
+    Old style (still works):
+        python -m poly_lithic.scripts.main --config config.yaml --debug
 
-    (args, config, broker) = setup()
-    print('resetting logging...')
-    reset_logging()
+    New style (recommended):
+        poly-lithic --config config.yaml --debug
+        poly-lithic run --config config.yaml
+        poly-lithic plugin init --name my-plugin
+    """
+    import sys
+    from poly_lithic.src.cli import cli
 
-    if os.environ.get('DEBUG') == 'True':
-        logger = make_logger('model_manager', level=logging.DEBUG)
-    else:
-        logger = make_logger('model_manager')
+    # If no arguments, show help
+    if len(sys.argv) == 1:
+        sys.argv.append('--help')
 
-    asyncio.run(model_main(args, config, broker))
+    # Run the Click CLI
+    cli()
 
 
 if __name__ == '__main__':
