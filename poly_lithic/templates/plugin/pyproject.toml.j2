@@ -1,0 +1,41 @@
+{# filepath: /home/gbm96348/nfs_home/lume-deployment/poly_lithic/templates/plugin/pyproject.toml.j2 #}
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "{{ package_name }}"
+version = "0.1.0"
+description = "{{ description }}"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "{{ license }}"}
+authors = [
+    {name = "{{ author }}", email = "{{ email }}"},
+]
+dependencies = [
+    "poly-lithic>=0.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+
+# Plugin entry points - uncomment the ones you need
+[project.entry-points."poly_lithic.interfaces"]
+{{ package_name }}_interface = "{{ package_name }}.plugins:CustomInterface"
+
+[project.entry-points."poly_lithic.transformers"]
+{{ package_name }}_transformer = "{{ package_name }}.plugins:CustomTransformer"
+
+[project.entry-points."poly_lithic.model_getters"]
+{{ package_name }}_model_getter = "{{ package_name }}.plugins:CustomModelGetter"
+
+[tool.setuptools]
+packages = ["{{ package_name }}"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
