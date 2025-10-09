@@ -3,16 +3,20 @@ Model utilities module.
 """
 
 from poly_lithic.src.model_utils.ModelGetterBase import ModelGetterBase
-from poly_lithic.src.model_utils.MlflowModelGetter import MLflowModelGetter
+from poly_lithic.src.model_utils.MlflowModelGetter import (
+    MLflowModelGetter,
+    MLflowModelGetterLegacy,
+)
 from poly_lithic.src.model_utils.LocalModelGetter import LocalModelGetter
 
 registered_model_getters = {
     'mlflow': MLflowModelGetter,
-    'local': LocalModelGetter,
+    'mlflow_legacy': MLflowModelGetterLegacy,  # Add this line
+    'local': LocalModelGetter
 }
 
 __all__ = [
-    'ModelGetterBase',
+    'MLflowModelGetterLegacy',
     'MLflowModelGetter',
     'LocalModelGetter',
     'registered_model_getters',

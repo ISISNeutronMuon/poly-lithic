@@ -8,13 +8,13 @@ name = "{{ package_name }}"
 version = "0.1.0"
 description = "{{ description }}"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = {text = "{{ license }}"}
 authors = [
     {name = "{{ author }}", email = "{{ email }}"},
 ]
 dependencies = [
-    "poly-lithic>=0.1.0",
+    "poly-lithic>=0.1.7.1",
 ]
 
 [project.optional-dependencies]
@@ -23,7 +23,7 @@ dev = [
     "pytest-cov>=4.0",
 ]
 
-# Plugin entry points - uncomment the ones you need
+# Plugin entry points - comment out the ones you don't need
 [project.entry-points."poly_lithic.interfaces"]
 {{ package_name }}_interface = "{{ package_name }}.plugins:CustomInterface"
 

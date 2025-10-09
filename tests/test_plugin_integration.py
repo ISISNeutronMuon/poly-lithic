@@ -18,7 +18,7 @@ from poly_lithic.src.utils.plugin_registry import (
     model_getter_plugin_registry,
 )
 from poly_lithic.src.interfaces.BaseInterface import BaseInterface as Interface
-from poly_lithic.src.transformers.BaseTransformers import BaseTransformer as Transformer
+from poly_lithic.src.transformers.BaseTransformer import BaseTransformer as Transformer
 from poly_lithic.src.model_utils.ModelGetterBase import ModelGetterBase
 
 
@@ -95,13 +95,21 @@ def clean_registries():
     original_transformers = dict(transformer_plugin_registry._plugins)
     original_getters = dict(model_getter_plugin_registry._plugins)
     
-    # Clear registries
+    # Store loaded flags
+    original_if_loaded = interface_plugin_registry._loaded
+    original_tf_loaded = transformer_plugin_registry._loaded
+    original_mg_loaded = model_getter_plugin_registry._loaded
+    
+    # Clear registries completely
     interface_plugin_registry._plugins.clear()
     transformer_plugin_registry._plugins.clear()
     model_getter_plugin_registry._plugins.clear()
-    interface_plugin_registry._loaded = False
-    transformer_plugin_registry._loaded = False
-    model_getter_plugin_registry._loaded = False
+    
+    # Keep loaded=True to prevent auto-discovery of real plugins
+    # Tests that need discovery should call it explicitly with mocks
+    interface_plugin_registry._loaded = True
+    transformer_plugin_registry._loaded = True
+    model_getter_plugin_registry._loaded = True
     
     yield
     
@@ -109,9 +117,11 @@ def clean_registries():
     interface_plugin_registry._plugins = original_interfaces
     transformer_plugin_registry._plugins = original_transformers
     model_getter_plugin_registry._plugins = original_getters
-    interface_plugin_registry._loaded = False
-    transformer_plugin_registry._loaded = False
-    model_getter_plugin_registry._loaded = False
+    
+    # Restore loaded flags
+    interface_plugin_registry._loaded = original_if_loaded
+    transformer_plugin_registry._loaded = original_tf_loaded
+    model_getter_plugin_registry._loaded = original_mg_loaded
 
 
 @pytest.fixture
@@ -134,36 +144,43 @@ def mock_entry_points():
                 return MockCustomModelGetter
             raise ImportError(f"Cannot load {self.value}")
     
-    # Create a dictionary that mimics the SelectableGroups object
-    class MockSelectableGroups(dict):
-        def select(self, **kwargs):
-            group = kwargs.get('group')
+    # Create mock entry points for each group
+    mock_interfaces = [
+        MockEntryPoint('mock_interface', 'test.plugins:MockCustomInterface', 'poly_lithic.interfaces'),
+    ]
+    mock_transformers = [
+        MockEntryPoint('mock_transformer', 'test.plugins:MockCustomTransformer', 'poly_lithic.transformers'),
+    ]
+    mock_getters = [
+        MockEntryPoint('mock_getter', 'test.plugins:MockCustomModelGetter', 'poly_lithic.model_getters'),
+    ]
+    
+    # Create the entry points object that mimics importlib.metadata.entry_points()
+    class MockEntryPoints:
+        def __init__(self):
+            self._groups = {
+                'poly_lithic.interfaces': mock_interfaces,
+                'poly_lithic.transformers': mock_transformers,
+                'poly_lithic.model_getters': mock_getters,
+            }
+        
+        def select(self, group=None):
+            """Python 3.10+ API"""
             if group:
-                return self.get(group, [])
-            # Return all entry points
+                return self._groups.get(group, [])
+            # Return all if no group specified
             all_eps = []
-            for eps in self.values():
+            for eps in self._groups.values():
                 all_eps.extend(eps)
             return all_eps
+        
+        def get(self, group, default=None):
+            """Python 3.9 fallback API"""
+            return self._groups.get(group, default if default is not None else [])
     
-    mock_eps = MockSelectableGroups({
-        'poly_lithic.interfaces': [
-            MockEntryPoint('mock_interface', 'test.plugins:MockCustomInterface', 'poly_lithic.interfaces'),
-        ],
-        'poly_lithic.transformers': [
-            MockEntryPoint('mock_transformer', 'test.plugins:MockCustomTransformer', 'poly_lithic.transformers'),
-        ],
-        'poly_lithic.model_getters': [
-            MockEntryPoint('mock_getter', 'test.plugins:MockCustomModelGetter', 'poly_lithic.model_getters'),
-        ],
-    })
+    mock_eps = MockEntryPoints()
     
-    def mock_entry_points_func(group=None):
-        if group:
-            return mock_eps.get(group, [])
-        return mock_eps
-    
-    with patch('importlib.metadata.entry_points', side_effect=mock_entry_points_func):
+    with patch('importlib.metadata.entry_points', return_value=mock_eps):
         yield mock_eps
 
 
@@ -177,6 +194,7 @@ class TestPluginDiscoveryIntegration:
     def test_discover_interface_plugins(self, clean_registries, mock_entry_points):
         """Test discovering interface plugins via entry points"""
         registry = PluginRegistry("poly_lithic.interfaces")
+        registry._loaded = False
         registry.discover_plugins()
         
         assert registry.has_plugin("mock_interface")
@@ -185,6 +203,7 @@ class TestPluginDiscoveryIntegration:
     def test_discover_transformer_plugins(self, clean_registries, mock_entry_points):
         """Test discovering transformer plugins via entry points"""
         registry = PluginRegistry("poly_lithic.transformers")
+        registry._loaded = False
         registry.discover_plugins()
         
         assert registry.has_plugin("mock_transformer")
@@ -193,6 +212,7 @@ class TestPluginDiscoveryIntegration:
     def test_discover_model_getter_plugins(self, clean_registries, mock_entry_points):
         """Test discovering model getter plugins via entry points"""
         registry = PluginRegistry("poly_lithic.model_getters")
+        registry._loaded = False
         registry.discover_plugins()
         
         assert registry.has_plugin("mock_getter")
@@ -200,6 +220,10 @@ class TestPluginDiscoveryIntegration:
     
     def test_discover_all_plugin_types(self, clean_registries, mock_entry_points):
         """Test discovering all plugin types"""
+        interface_plugin_registry._loaded = False
+        transformer_plugin_registry._loaded = False
+        model_getter_plugin_registry._loaded = False
+        
         interface_plugin_registry.discover_plugins()
         transformer_plugin_registry.discover_plugins()
         model_getter_plugin_registry.discover_plugins()
@@ -319,6 +343,9 @@ class TestPluginRegistryIntegration:
         # Register manually first
         interface_plugin_registry.register("mock_interface", CustomMockInterface)
         
+        # Reset loaded flag to allow discovery
+        interface_plugin_registry._loaded = False
+        
         # Then discover (should not override)
         interface_plugin_registry.discover_plugins()
         
@@ -332,17 +359,22 @@ class TestPluginRegistryIntegration:
         """Test iterating over registered plugins"""
         interface_plugin_registry.register("plugin1", MockCustomInterface)
         interface_plugin_registry.register("plugin2", MockCustomInterface)
-        
+
         names = list(interface_plugin_registry)
         assert "plugin1" in names
         assert "plugin2" in names
-        
+        assert len(names) == 2
+
         for name, plugin_class in interface_plugin_registry.items():
             assert name in ["plugin1", "plugin2"]
             assert plugin_class == MockCustomInterface
     
     def test_plugin_listing(self, clean_registries, mock_entry_points):
         """Test listing all available plugins"""
+        interface_plugin_registry._loaded = False
+        transformer_plugin_registry._loaded = False
+        model_getter_plugin_registry._loaded = False
+        
         interface_plugin_registry.discover_plugins()
         transformer_plugin_registry.discover_plugins()
         model_getter_plugin_registry.discover_plugins()
@@ -374,11 +406,16 @@ class TestPluginErrorHandling:
             def load(self):
                 raise ImportError("Cannot import bad plugin")
         
-        with patch('importlib.metadata.entry_points') as mock_eps:
-            mock_eps.return_value = [BadEntryPoint()]
+        class BadEntryPoints:
+            def select(self, group=None):
+                return [BadEntryPoint()]
             
+            def get(self, group, default=None):
+                return [BadEntryPoint()]
+        
+        with patch('importlib.metadata.entry_points', return_value=BadEntryPoints()):
             registry = PluginRegistry("poly_lithic.interfaces")
-            # Should not crash, just skip bad plugins
+            registry._loaded = False
             registry.discover_plugins()
             
             assert not registry.has_plugin("bad_plugin")
@@ -404,7 +441,6 @@ class TestPluginWorkflow:
         """Test a complete interface workflow with plugins"""
         interface_plugin_registry.register("mock_interface", MockCustomInterface)
         
-        # Simulate workflow
         config = {
             "variables": {
                 "input:pv": {"name": "input:pv", "proto": "mock"},
@@ -415,21 +451,16 @@ class TestPluginWorkflow:
         InterfaceClass = interface_plugin_registry.get("mock_interface")
         interface = InterfaceClass(config)
         
-        # Connect
         interface.connect()
         
-        # Read input
         name, input_value = interface.get("input:pv")
         assert input_value["value"] == 42
         
-        # Process (double the value)
         processed_value = input_value["value"] * 2
         
-        # Write output
         result = interface.put("output:pv", processed_value)
         assert result["output:pv"] == 84
         
-        # Disconnect
         interface.close()
         assert not interface.connected
     
@@ -437,13 +468,11 @@ class TestPluginWorkflow:
         """Test a complete transformer workflow with plugins"""
         transformer_plugin_registry.register("mock_transformer", MockCustomTransformer)
         
-        # Simulate workflow
         config = {"operation": "double"}
         
         TransformerClass = transformer_plugin_registry.get("mock_transformer")
         transformer = TransformerClass(config)
         
-        # Transform data
         input_data = {"x": 10, "y": 20, "z": 30}
         output_data = transformer.transform(input_data)
         
@@ -454,7 +483,6 @@ class TestPluginWorkflow:
         """Test a complete model getter workflow with plugins"""
         model_getter_plugin_registry.register("mock_getter", MockCustomModelGetter)
         
-        # Simulate workflow
         config = {
             "model_path": "/models/my_model",
             "version": "v1.0"
@@ -463,7 +491,6 @@ class TestPluginWorkflow:
         GetterClass = model_getter_plugin_registry.get("mock_getter")
         getter = GetterClass(config)
         
-        # Load model
         model = getter.load_model()
         
         assert getter.model_loaded
@@ -471,35 +498,28 @@ class TestPluginWorkflow:
     
     def test_combined_workflow(self, clean_registries):
         """Test a workflow combining interface, transformer, and model"""
-        # Register all plugins
         interface_plugin_registry.register("mock_interface", MockCustomInterface)
         transformer_plugin_registry.register("mock_transformer", MockCustomTransformer)
         model_getter_plugin_registry.register("mock_getter", MockCustomModelGetter)
         
-        # Setup components
         interface = interface_plugin_registry.get("mock_interface")({
             "variables": {"input:pv": {"name": "input:pv", "proto": "mock"}}
         })
         transformer = transformer_plugin_registry.get("mock_transformer")({})
         model_getter = model_getter_plugin_registry.get("mock_getter")({"model_path": "/model"})
         
-        # Workflow: Read -> Transform -> Process with Model -> Write
         interface.connect()
         
-        # 1. Read from interface
         name, raw_data = interface.get("input:pv")
         input_dict = {"value": raw_data["value"]}
         
-        # 2. Transform
         transformed = transformer.transform(input_dict)
         
-        # 3. Load model (in real scenario, would use model for prediction)
         model = model_getter.load_model()
         
-        # 4. Write result
         result = interface.put("output:pv", transformed["value"])
         
-        assert result["output:pv"] == 84  # 42 * 2
+        assert result["output:pv"] == 84
         interface.close()
 
 
@@ -513,11 +533,9 @@ class TestPluginCompatibility:
         InterfaceClass = interface_plugin_registry.get("mock_interface")
         instance = InterfaceClass({})
         
-        # Check inheritance
         assert isinstance(instance, Interface)
         assert isinstance(instance, MockCustomInterface)
         
-        # Check base class methods are available
         assert hasattr(instance, 'put')
         assert hasattr(instance, 'get')
         assert hasattr(instance, 'get_many')
@@ -531,9 +549,9 @@ class TestPluginCompatibility:
         interface_plugin_registry.register("mock_interface", MockCustomInterface)
         
         configs = [
-            {"variables": {"pv1": {"name": "pv1"}}},  # Minimal config
-            {"variables": {}, "other_field": "value"},  # Extra fields
-            {"variables": {"pv1": {"name": "pv1", "proto": "mock", "extra": True}}},  # Extra nested
+            {"variables": {"pv1": {"name": "pv1"}}},
+            {"variables": {}, "other_field": "value"},
+            {"variables": {"pv1": {"name": "pv1", "proto": "mock", "extra": True}}},
         ]
         
         InterfaceClass = interface_plugin_registry.get("mock_interface")
@@ -561,7 +579,6 @@ class TestPluginDocumentation:
         
         InterfaceClass = interface_plugin_registry.get("mock_interface")
         
-        # Check required methods exist
         assert callable(getattr(InterfaceClass, 'put', None))
         assert callable(getattr(InterfaceClass, 'get', None))
         assert callable(getattr(InterfaceClass, 'get_many', None))

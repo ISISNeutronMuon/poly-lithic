@@ -2,6 +2,11 @@ from poly_lithic.src.config import ConfigParser
 from poly_lithic.src.interfaces import registered_interfaces
 from poly_lithic.src.logging_utils import get_logger
 from poly_lithic.src.transformers import registered_transformers
+from poly_lithic.src.utils.plugin_registry import (
+    interface_plugin_registry,
+    transformer_plugin_registry,
+    model_getter_plugin_registry,
+)
 from poly_lithic.src.utils.messaging import (
     ModelObserver,
     InterfaceObserver,
@@ -65,10 +70,15 @@ class Builder:
                     args = self.config.modules[module].module_args
                 else:
                     args = {}
+                
+                # Try plugin registry first, fall back to hardcoded registry
+                if interface_plugin_registry.has_plugin(module_subtype):
+                    interface_class = interface_plugin_registry.get(module_subtype)
+                else:
+                    interface_class = registered_interfaces[module_subtype]
+                
                 interface = InterfaceObserver(
-                    registered_interfaces[module_subtype](
-                        self.config.modules[module].config
-                    ),
+                    interface_class(self.config.modules[module].config),
                     self.config.modules[module].pub,
                     *args,
                 )
@@ -78,10 +88,15 @@ class Builder:
                     args = self.config.modules[module].module_args
                 else:
                     args = {}
+                
+                # Try plugin registry first, fall back to hardcoded registry
+                if transformer_plugin_registry.has_plugin(module_subtype):
+                    transformer_class = transformer_plugin_registry.get(module_subtype)
+                else:
+                    transformer_class = registered_transformers[module_subtype]
+                
                 transformer = TransformerObserver(
-                    registered_transformers[module_subtype](
-                        self.config.modules[module].config
-                    ),
+                    transformer_class(self.config.modules[module].config),
                     self.config.modules[module].pub,
                     *args,
                 )

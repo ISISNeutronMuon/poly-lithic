@@ -9,6 +9,20 @@
 pip install -e .
 ```
 
+## Quick Start
+
+Test your plugin with the included deployment configuration:
+
+```bash
+# Run the test deployment
+pl run --config test_deployment.yaml --debug
+
+# Or test with one-shot mode (runs once and exits)
+pl run --config test_deployment.yaml --debug --one-shot
+```
+
+**Note:** Edit `test_deployment.yaml` and comment out the modules for plugin types you don't need.
+
 ## Usage
 
 This package provides three types of plugins. Comment out the ones you don't need:

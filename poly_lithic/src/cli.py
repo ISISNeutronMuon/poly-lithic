@@ -7,10 +7,13 @@ import sys
 import time
 import traceback
 
-from poly_lithic.src.config import ConfigParser
-from poly_lithic.src.logging_utils import get_logger, make_logger
-from poly_lithic.src.utils.builder import Builder
+
 from poly_lithic._version import __version__
+from poly_lithic.src.logging_utils import get_logger, make_logger
+
+def import_poly_lithic_deps():
+    from poly_lithic.src.config import ConfigParser
+    from poly_lithic.src.utils.builder import Builder
 
 
 # ============================================================================
@@ -28,9 +31,12 @@ def load_build_info():
 
 def print_banner():
     """Print the startup banner."""
-    click.echo('=' * 120)
-    click.echo(f'Version: {__version__}')
-    click.echo('=' * 120 + '\n')
+    width = 80
+    border = click.style('=' * width, fg='green')
+    version = click.style(f"🚀 Poly-Lithic Version: {__version__} 🚀", fg='yellow', bold=True)
+    click.echo(border)
+    click.echo(version.center(width))
+    click.echo(border + "\n")
 
 
 def setup_logging(debug):
@@ -80,25 +86,21 @@ async def model_main(args, config, broker):
             time_start = time.time()
             
             while True:
-                # Check if we need to poll based on rate
                 if time.time() - time_start > config.deployment.rate:
                     time_start = time.time()
                     broker.get_all()
                 else:
-                    # Process queue if not empty
                     if len(broker.queue) > 0:
                         broker.parse_queue()
                 
-                # Process queue if not empty
                 if len(broker.queue) > 0:
                     broker.parse_queue()
                     
-                    # Exit if one-shot mode
                     if args.one_shot:
                         logger.info('One shot mode, exiting')
                         break
                 
-                await asyncio.sleep(0.01)  # sleep for 10ms
+                await asyncio.sleep(0.01)
         
         else:
             raise Exception(f'Deployment type "{config.deployment.type}" not supported')
@@ -126,17 +128,14 @@ def cli(ctx):
     
     Examples:
 
-        poly-lithic --config config.yaml              # Run model manager
-        poly-lithic --config config.yaml --debug      # Run with debug logging
-        poly-lithic plugin init --name my-plugin      # Create a plugin
+        poly-lithic --config config.yaml
+        poly-lithic --config config.yaml --debug
+        poly-lithic plugin init --name my-plugin
     """
-    # Load build info and print banner
     load_build_info()
     print_banner()
     
-    # If no subcommand, we'll run the model (default behavior)
     if ctx.invoked_subcommand is None:
-        # Get the run command and invoke it with current context
         ctx.invoke(run_model, **ctx.params)
 
 
@@ -163,18 +162,16 @@ def run_model(config, model_getter, debug, env, one_shot, publish, requirements)
     
     This is the default command when no subcommand is specified.
     
-    Examples:\n
+    Examples:
     
         poly-lithic run --config config.yaml
         poly-lithic run --config config.yaml --debug --publish
         poly-lithic run --config config.yaml --one-shot
     """
     try:
-        # Setup logging
         logger = setup_logging(debug)
         logger.info('Model Manager CLI')
         
-        # Setup publishing
         if publish:
             logger.warning('Publishing data to system')
             os.environ['PUBLISH'] = 'True'
@@ -182,11 +179,9 @@ def run_model(config, model_getter, debug, env, one_shot, publish, requirements)
             logger.warning('Not publishing data to system. To publish, use --publish')
             os.environ['PUBLISH'] = 'False'
         
-        # Load environment config if provided
         if env:
             load_env_config(env)
         
-        # Handle config
         if not config:
             logger.info('No configuration file provided, getting config from model artifacts')
             if 'MODEL_CONFIG_FILE' not in os.environ:
@@ -197,17 +192,17 @@ def run_model(config, model_getter, debug, env, one_shot, publish, requirements)
         else:
             logger.info(f'Configuration file provided: {config}')
         
-        # Build the system
+        # Import heavy dependencies only when needed
+        from poly_lithic.src.utils.builder import Builder
+        
         click.echo('Building model manager...')
         builder = Builder(config)
         broker = builder.build()
         
-        # Handle requirements-only mode
         if requirements:
             click.echo('Requirements-only mode - exiting after installation')
             sys.exit(0)
         
-        # Create args namespace for compatibility with existing code
         import argparse
         args = argparse.Namespace(
             config=config,
@@ -219,7 +214,6 @@ def run_model(config, model_getter, debug, env, one_shot, publish, requirements)
             requirements=requirements,
         )
         
-        # Run the main async loop
         logger.info('Starting model manager main loop')
         asyncio.run(model_main(args, builder.config, broker))
         
@@ -280,13 +274,9 @@ def init(name, author, email, description, output_dir, license, no_prompt):
         
         click.echo(click.style('\n🚀 Creating Plugin Project\n', fg='cyan', bold=True))
         
-        # Expand and resolve the output directory path
         output_path = Path(output_dir).expanduser().resolve()
-        
-        # Show where the plugin will be created
         plugin_dir_name = PluginGenerator._normalize_package_name(name)
         
-        # Create output directory if it doesn't exist
         if not output_path.exists():
             if no_prompt or click.confirm(f"Directory '{output_path}' doesn't exist. Create it?", default=True):
                 output_path.mkdir(parents=True, exist_ok=True)
@@ -310,13 +300,15 @@ def init(name, author, email, description, output_dir, license, no_prompt):
         click.echo(f"  1. cd {project_path.name}")
         click.echo("  2. Edit the plugin files and comment out types you don't need")
         click.echo("  3. pip install -e .")
-        click.echo("  4. Run tests: pytest")
+        click.echo("  4. Test the plugin: pl run --config test_deployment.yaml --debug --one-shot")
+        click.echo("  5. Run tests: pytest")
         
-        click.echo(click.style("\n💡 Tip:", fg='cyan'))
-        click.echo("  The template includes examples of all three plugin types.")
-        click.echo("  Simply comment out the ones you don't need in:")
-        click.echo(f"  - {plugin_dir_name}/__init__.py")
-        click.echo(f"  - pyproject.toml (entry points section)")
+        click.echo(click.style("\n💡 Tips:", fg='cyan'))
+        click.echo("  • The template includes examples of all three plugin types")
+        click.echo("  • Comment out types you don't need in:")
+        click.echo(f"    - {plugin_dir_name}/__init__.py")
+        click.echo(f"    - pyproject.toml (entry points section)")
+        click.echo(f"    - test_deployment.yaml (module configurations)")
         click.echo()
         
     except FileExistsError as e:
@@ -350,7 +342,12 @@ def list(plugin_type):
         model_getter_plugin_registry,
     )
     
-    click.echo(click.style("\n📦 Available Plugins\n", fg='cyan', bold=True))
+    try:
+        from yaspin import yaspin
+        from yaspin.spinners import Spinners
+        use_spinner = True
+    except ImportError:
+        use_spinner = False
     
     registries = []
     if not plugin_type or plugin_type in ['interface', 'all']:
@@ -360,8 +357,23 @@ def list(plugin_type):
     if not plugin_type or plugin_type in ['model_getter', 'all']:
         registries.append(('Model Getters', model_getter_plugin_registry))
     
+    if use_spinner:
+        with yaspin(Spinners.dots12, text="Discovering plugins...", color="green") as spinner:
+            for name, registry in registries:
+                spinner.text = f"Scanning {name.lower()}..."
+                registry.discover_plugins()
+            spinner.text = "Scanning complete!"
+            spinner.ok("✓")
+    else:
+        with click.progressbar(registries, label='Scanning for plugins',
+                              bar_template='%(label)s  [%(bar)s]  %(info)s',
+                              show_percent=False, show_pos=True) as bar:
+            for name, registry in bar:
+                registry.discover_plugins()
+    
+    click.echo(click.style("\n📦 Available Plugins\n", fg='cyan', bold=True))
+    
     for name, registry in registries:
-        registry.discover_plugins()
         plugins = registry.list_plugins()
         
         if plugins:
@@ -373,7 +385,7 @@ def list(plugin_type):
             click.echo(click.style(f"{name}: None found", fg='yellow'))
             click.echo()
     
-    if not any(registries):
+    if not any(reg[1].list_plugins() for reg in registries):
         click.echo(click.style("No plugins found", fg='yellow'))
 
 
@@ -420,7 +432,6 @@ def info(plugin_name, plugin_type):
                 click.echo(f"\nDescription:")
                 click.echo(f"  {plugin_class.__doc__.strip()}")
             
-            # Show methods
             methods = [m for m in dir(plugin_class) 
                       if not m.startswith('_') and callable(getattr(plugin_class, m))]
             if methods:
@@ -453,22 +464,20 @@ def validate(config_file, env):
         poly-lithic validate config.yaml --env env.json
     """
     try:
-        # Setup minimal logging
+        from poly_lithic.src.config import ConfigParser
+        
         logger = make_logger(level=logging.INFO)
         
-        # Load environment config if provided
         if env:
             load_env_config(env)
         
         click.echo(f'Validating configuration file: {config_file}')
         
-        # Initialize config
         config_parser = ConfigParser(config_file)
         config = config_parser.parse()
         
         click.echo(click.style('✓ Configuration is valid', fg='green', bold=True))
         
-        # Print summary
         click.echo('\nConfiguration Summary:')
         click.echo(f'  Deployment type: {config.deployment.type}')
         click.echo(f'  Deployment rate: {config.deployment.rate}')
@@ -504,7 +513,6 @@ def setup():
     """
     import argparse
     
-    # Parse arguments using argparse for compatibility
     parser = argparse.ArgumentParser(description='Model Manager CLI')
     
     parser.add_argument('-d', '--debug', action='store_true', help='Debug mode')
@@ -522,7 +530,6 @@ def setup():
         print(f'Poly-Lithic version: {__version__}')
         sys.exit(0)
     
-    # Setup using the same logic as the Click command
     logger = setup_logging(args.debug)
     
     if args.publish:
@@ -535,6 +542,8 @@ def setup():
     
     if not args.config and 'MODEL_CONFIG_FILE' not in os.environ:
         raise Exception('No configuration file provided')
+    
+    from poly_lithic.src.utils.builder import Builder
     
     config = args.config or os.environ['MODEL_CONFIG_FILE']
     builder = Builder(config)

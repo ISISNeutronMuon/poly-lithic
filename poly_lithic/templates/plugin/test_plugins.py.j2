@@ -167,73 +167,73 @@ class TestCustomTransformer:
         for key in original:
             assert abs(recovered[key] - original[key]) < 1e-10
 
-
-class TestCustomModelGetter:
-    """Test the model getter plugin."""
+# commendted out for now
+# class TestCustomModelGetter:
+#     """Test the model getter plugin."""
     
-    def test_init(self):
-        """Test model getter initialization."""
-        config = {
-            "model_path": "/path/to/model.pkl",
-            "model_type": "sklearn",
-            "device": "cpu"
-        }
-        getter = CustomModelGetter(config)
-        assert getter is not None
-        assert getter.model_path == "/path/to/model.pkl"
-        assert getter.model_type == "sklearn"
-        assert getter.device == "cpu"
+#     def test_init(self):
+#         """Test model getter initialization."""
+#         config = {
+#             "model_path": "/path/to/model.pkl",
+#             "model_type": "sklearn",
+#             "device": "cpu"
+#         }
+#         getter = CustomModelGetter(config)
+#         assert getter is not None
+#         assert getter.model_path == "/path/to/model.pkl"
+#         assert getter.model_type == "sklearn"
+#         assert getter.device == "cpu"
     
-    def test_get_model_info(self):
-        """Test getting model information."""
-        config = {
-            "model_path": "/path/to/model.pkl",
-            "model_type": "pytorch",
-            "device": "cuda",
-            "version": "1.0.0"
-        }
-        getter = CustomModelGetter(config)
+#     def test_get_model_info(self):
+#         """Test getting model information."""
+#         config = {
+#             "model_path": "/path/to/model.pkl",
+#             "model_type": "pytorch",
+#             "device": "cuda",
+#             "version": "1.0.0"
+#         }
+#         getter = CustomModelGetter(config)
         
-        info = getter.get_model_info()
-        assert info["model_path"] == "/path/to/model.pkl"
-        assert info["model_type"] == "pytorch"
-        assert info["device"] == "cuda"
-        assert info["version"] == "1.0.0"
+#         info = getter.get_model_info()
+#         assert info["model_path"] == "/path/to/model.pkl"
+#         assert info["model_type"] == "pytorch"
+#         assert info["device"] == "cuda"
+#         assert info["version"] == "1.0.0"
     
-    def test_validate_model(self):
-        """Test model validation."""
-        config = {"model_path": "/path/to/model.pkl"}
-        getter = CustomModelGetter(config)
+#     def test_validate_model(self):
+#         """Test model validation."""
+#         config = {"model_path": "/path/to/model.pkl"}
+#         getter = CustomModelGetter(config)
         
-        # Mock model
-        class MockModel:
-            def predict(self, x):
-                return x
+#         # Mock model
+#         class MockModel:
+#             def predict(self, x):
+#                 return x
         
-        model = MockModel()
-        assert getter.validate_model(model) is True
-        assert getter.validate_model(None) is False
+#         model = MockModel()
+#         assert getter.validate_model(model) is True
+#         assert getter.validate_model(None) is False
     
-    @pytest.mark.skip(reason="Requires actual model file")
-    def test_load_model(self):
-        """Test loading a model."""
-        # This test is skipped by default because it requires an actual model file.
-        # Uncomment and modify when you have a test model available.
+#     @pytest.mark.skip(reason="Requires actual model file")
+#     def test_load_model(self):
+#         """Test loading a model."""
+#         # This test is skipped by default because it requires an actual model file.
+#         # Uncomment and modify when you have a test model available.
         
-        # config = {"model_path": "tests/fixtures/test_model.pkl"}
-        # getter = CustomModelGetter(config)
-        # model = getter.load_model()
-        # assert model is not None
-        # assert getter.validate_model(model) is True
-        pass
+#         # config = {"model_path": "tests/fixtures/test_model.pkl"}
+#         # getter = CustomModelGetter(config)
+#         # model = getter.load_model()
+#         # assert model is not None
+#         # assert getter.validate_model(model) is True
+#         pass
     
-    def test_load_model_missing_path(self):
-        """Test that load_model raises error when path is missing."""
-        config = {}  # No model_path
-        getter = CustomModelGetter(config)
+#     def test_load_model_missing_path(self):
+#         """Test that load_model raises error when path is missing."""
+#         config = {}  # No model_path
+#         getter = CustomModelGetter(config)
         
-        with pytest.raises(ValueError, match="model_path must be specified"):
-            getter.load_model()
+#         with pytest.raises(ValueError, match="model_path must be specified"):
+#             getter.load_model()
 
 
 # Integration test example

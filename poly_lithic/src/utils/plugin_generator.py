@@ -82,6 +82,7 @@ class PluginGenerator:
         self._render_template('__init__.py.j2', src_path / '__init__.py', context)
         self._render_template('plugins.py.j2', src_path / 'plugins.py', context)
         self._render_template('test_plugins.py.j2', test_path / 'test_plugins.py', context)
+        self._render_template('test_deployment.yaml.j2', project_path / 'test_deployment.yaml', context)
         self._render_template('gitignore.j2', project_path / '.gitignore', context)
         
         # Create empty __init__.py in tests

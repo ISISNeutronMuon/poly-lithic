@@ -126,7 +126,7 @@ class SimplePVAInterface(BaseInterface):
         self.ctxt.close()
 
 
-class SimlePVAInterfaceServer(SimplePVAInterface):
+class SimplePVAInterfaceServer(SimplePVAInterface):
     """
     Simple PVA integfcae with a server rather than just a client, this will host the PVs provided in the config
     """

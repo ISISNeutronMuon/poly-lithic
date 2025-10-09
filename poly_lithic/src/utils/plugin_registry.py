@@ -15,219 +15,153 @@ my_transformer = "my_package.transformers:MyTransformer"
 [project.entry-points."poly_lithic.model_getters"]
 my_model_getter = "my_package.models:MyModelGetter"
 """
+from typing import Any
+from importlib.metadata import entry_points
+import logging
 
-import importlib
-import importlib.metadata
-from typing import Dict, Any, Callable
-from poly_lithic.src.logging_utils import get_logger
-
-logger = get_logger()
+logger = logging.getLogger(__name__)
 
 
 class PluginRegistry:
     """Registry for dynamically discovered plugins via entry points."""
 
-    def __init__(self, entry_point_group: str):
-        """
-        Initialize the plugin registry for a specific entry point group.
-
-        Args:
-            entry_point_group: The entry point group name (e.g., 'poly_lithic.interfaces')
-        """
-        self.entry_point_group = entry_point_group
-        self._plugins: Dict[str, Any] = {}
-        self._loaded = False
+    def __init__(self, group_name: str):
+        self.group_name = group_name
+        self.entry_point_group = group_name
+        self._plugins = {}
+        self._entry_points = {}
+        self._discovered = False
+        self._loaded = {}
 
     def discover_plugins(self):
-        """
-        Discover and load all plugins registered via entry points.
-        """
-        if self._loaded:
+        if self._discovered:
             return
 
-        try:
-            # Use importlib.metadata to discover entry points (Python 3.10+)
-            entry_points = importlib.metadata.entry_points()
-            
-            # Handle both new and old entry point API
-            if hasattr(entry_points, 'select'):
-                # Python 3.10+
-                group_entries = entry_points.select(group=self.entry_point_group)
-            else:
-                # Python 3.9 fallback
-                group_entries = entry_points.get(self.entry_point_group, [])
+        discovered = entry_points(group=self.group_name)
+        for ep in discovered:
+            self._entry_points[ep.name] = ep
+            self._loaded[ep.name] = False
+            logger.debug(f"Discovered plugin: {ep.name}")
+        
+        self._discovered = True
 
-            for entry_point in group_entries:
-                try:
-                    plugin_class = entry_point.load()
-                    # Only register if not already manually registered
-                    if entry_point.name not in self._plugins:
-                        self._plugins[entry_point.name] = plugin_class
-                        logger.info(
-                            f"Loaded plugin '{entry_point.name}' from {entry_point.value} "
-                            f"for group '{self.entry_point_group}'"
-                        )
-                    else:
-                        logger.info(
-                            f"Skipping plugin '{entry_point.name}' from {entry_point.value} "
-                            f"- already manually registered in '{self.entry_point_group}'"
-                        )
-                except Exception as e:
-                    logger.error(
-                        f"Failed to load plugin '{entry_point.name}' "
-                        f"from group '{self.entry_point_group}': {e}"
-                    )
-
-        except Exception as e:
-            logger.error(f"Error discovering plugins for '{self.entry_point_group}': {e}")
-
-        self._loaded = True
-
-    def register(self, name: str, plugin_class: Any):
-        """
-        Manually register a plugin.
-
-        Args:
-            name: The name/key for the plugin
-            plugin_class: The plugin class to register
-        """
-        if name in self._plugins:
-            logger.warning(
-                f"Plugin '{name}' already registered in '{self.entry_point_group}'. "
-                f"Overwriting."
-            )
+    def register(self, name: str, plugin_class):
         self._plugins[name] = plugin_class
-        logger.info(f"Manually registered plugin '{name}' in '{self.entry_point_group}'")
-
-    def unregister(self, name: str):
-        """
-        Unregister a plugin.
-
-        Args:
-            name: The name/key of the plugin to unregister
-        """
-        if name in self._plugins:
-            del self._plugins[name]
-            logger.info(f"Unregistered plugin '{name}' from '{self.entry_point_group}'")
-        else:
-            logger.warning(
-                f"Cannot unregister '{name}': not found in '{self.entry_point_group}'"
-            )
-
-    def get(self, name: str) -> Any:
-        """
-        Get a plugin by name.
-
-        Args:
-            name: The name/key of the plugin
-
-        Returns:
-            The plugin class
-
-        Raises:
-            KeyError: If the plugin is not found
-        """
-        if not self._loaded:
-            self.discover_plugins()
-
-        if name not in self._plugins:
-            raise KeyError(
-                f"Plugin '{name}' not found in '{self.entry_point_group}'. "
-                f"Available plugins: {list(self._plugins.keys())}"
-            )
-        return self._plugins[name]
-
-    def list_plugins(self) -> list[str]:
-        """
-        List all registered plugin names.
-
-        Returns:
-            List of plugin names
-        """
-        if not self._loaded:
-            self.discover_plugins()
-        return list(self._plugins.keys())
+        logger.info(f"Registered plugin: {name}")
 
     def has_plugin(self, name: str) -> bool:
-        """
-        Check if a plugin is registered.
-
-        Args:
-            name: The name/key of the plugin
-
-        Returns:
-            True if the plugin exists, False otherwise
-        """
-        if not self._loaded:
+        if not self._discovered:
             self.discover_plugins()
-        return name in self._plugins
+        return name in self._plugins or name in self._entry_points
 
-    def __contains__(self, name: str) -> bool:
-        """Support 'in' operator."""
-        return self.has_plugin(name)
+    def list_plugins(self):
+        if not self._discovered:
+            self.discover_plugins()
+        return list(set(self._plugins.keys()) | set(self._entry_points.keys()))
 
-    def __getitem__(self, name: str) -> Any:
-        """Support dictionary-like access."""
+    def unregister(self, name: str):
+        if name in self._plugins:
+            del self._plugins[name]
+        if name in self._entry_points:
+            del self._entry_points[name]
+        if name in self._loaded:
+            del self._loaded[name]
+        logger.info(f"Unregistered plugin: {name}")
+
+    def get(self, name: str):
+        if name in self._plugins:
+            return self._plugins[name]
+        
+        if not self._discovered:
+            self.discover_plugins()
+        
+        if name in self._entry_points:
+            try:
+                plugin_class = self._entry_points[name].load()
+                self._plugins[name] = plugin_class
+                self._loaded[name] = True
+                logger.debug(f"Loaded plugin: {name}")
+                return plugin_class
+            except Exception as e:
+                logger.error(f"Failed to load plugin {name}: {e}")
+                raise
+        
+        raise KeyError(f"Plugin '{name}' not found")
+
+    def __getitem__(self, name: str):
         return self.get(name)
 
-    def __iter__(self):
-        """Support iteration over plugin names."""
-        if not self._loaded:
-            self.discover_plugins()
-        return iter(self._plugins)
+    def __contains__(self, name: str) -> bool:
+        return self.has_plugin(name)
 
-    def items(self):
-        """Support dictionary-like items() method."""
-        if not self._loaded:
+    def __iter__(self):
+        if not self._discovered:
             self.discover_plugins()
-        return self._plugins.items()
+        return iter(set(self._plugins.keys()) | set(self._entry_points.keys()))
+
+    def __len__(self) -> int:
+        if not self._discovered:
+            self.discover_plugins()
+        return len(set(self._plugins.keys()) | set(self._entry_points.keys()))
 
     def keys(self):
-        """Support dictionary-like keys() method."""
-        return self.list_plugins()
+        if not self._discovered:
+            self.discover_plugins()
+        return set(self._plugins.keys()) | set(self._entry_points.keys())
 
     def values(self):
-        """Support dictionary-like values() method."""
-        if not self._loaded:
+        if not self._discovered:
             self.discover_plugins()
+        for name in list(self._entry_points.keys()):
+            if name not in self._plugins:
+                try:
+                    self.get(name)
+                except Exception as e:
+                    logger.warning(f"Could not load plugin {name}: {e}")
         return self._plugins.values()
 
+    def items(self):
+        if not self._discovered:
+            self.discover_plugins()
+        
+        for name in self:
+            try:
+                yield name, self.get(name)
+            except Exception as e:
+                logger.warning(f"Could not load plugin {name}: {e}")
 
-# Global plugin registries
+    def get_registered_plugins(self):
+        if not self._discovered:
+            self.discover_plugins()
+        
+        for name in list(self._entry_points.keys()):
+            if name not in self._plugins:
+                try:
+                    self.get(name)
+                except Exception as e:
+                    logger.warning(f"Could not load plugin {name}: {e}")
+        
+        return dict(self._plugins)
+
+    def clear(self):
+        self._plugins.clear()
+        self._entry_points.clear()
+        self._loaded.clear()
+        self._discovered = False
+
+
 interface_plugin_registry = PluginRegistry("poly_lithic.interfaces")
 transformer_plugin_registry = PluginRegistry("poly_lithic.transformers")
 model_getter_plugin_registry = PluginRegistry("poly_lithic.model_getters")
 
 
-# Convenience functions for manual registration
 def register_interface(name: str, interface_class: Any):
-    """
-    Manually register an interface plugin.
-
-    Args:
-        name: The name/key for the interface
-        interface_class: The interface class to register
-    """
     interface_plugin_registry.register(name, interface_class)
 
 
 def register_transformer(name: str, transformer_class: Any):
-    """
-    Manually register a transformer plugin.
-
-    Args:
-        name: The name/key for the transformer
-        transformer_class: The transformer class to register
-    """
     transformer_plugin_registry.register(name, transformer_class)
 
 
 def register_model_getter(name: str, model_getter_class: Any):
-    """
-    Manually register a model getter plugin.
-
-    Args:
-        name: The name/key for the model getter
-        model_getter_class: The model getter class to register
-    """
     model_getter_plugin_registry.register(name, model_getter_class)
