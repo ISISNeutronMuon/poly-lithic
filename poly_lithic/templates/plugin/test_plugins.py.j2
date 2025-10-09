@@ -24,7 +24,7 @@ class TestCustomInterface:
         interface = CustomInterface(config)
         assert interface is not None
         assert interface.config == config
-        assert interface.variables == config["variables"]
+        assert interface.variable_list == config["variables"]
     
     def test_get(self):
         """Test getting a variable value."""

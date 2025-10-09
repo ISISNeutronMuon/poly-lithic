@@ -52,6 +52,9 @@ class PluginRegistry:
     def has_plugin(self, name: str) -> bool:
         if not self._discovered:
             self.discover_plugins()
+        # print(self._loaded)
+        # print(self._plugins)
+        # print(self._entry_points)
         return name in self._plugins or name in self._entry_points
 
     def list_plugins(self):

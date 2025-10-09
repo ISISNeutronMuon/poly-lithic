@@ -6,8 +6,19 @@ This package includes examples of all three plugin types.
 Comment out the ones you don't need.
 """
 
-__version__ = "0.1.0"
+# Import plugin classes
+from simframe_services.plugins import (
+    CustomInterface,
+    CustomTransformer,
+    CustomModelGetter,
+)
 
-# Note: Plugin classes are defined in {{ package_name }}.plugins
-# They are automatically discovered via entry points, so no need to import them here
-# unless you want to use them directly in your code.
+# Export them
+__all__ = [
+    'CustomInterface',
+    'CustomTransformer',
+    'CustomModelGetter',
+]
+
+# Package metadata
+__version__ = "0.1.0"

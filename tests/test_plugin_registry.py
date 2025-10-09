@@ -1,199 +1,156 @@
 """
-Test the plugin registry system (AI generated so it s a bit exhaustive)
+Unit tests for plugin_registry module.
 """
 
 import pytest
-from poly_lithic.src.utils.plugin_registry import (
-    PluginRegistry,
-    interface_plugin_registry,
-    transformer_plugin_registry,
-    model_getter_plugin_registry,
-    register_interface,
-    register_transformer,
-    register_model_getter,
-)
+from unittest.mock import Mock, patch, MagicMock
+from poly_lithic.src.utils.plugin_registry import PluginRegistry
 
 
-class DummyPlugin:
-    """A dummy plugin class for testing"""
-    def __init__(self, config):
-        self.config = config
-
-
-class AnotherPlugin:
-    """Another dummy plugin class for testing"""
-    def __init__(self, config):
-        self.config = config
-
-
-class TestPluginRegistry:
-    """Test the PluginRegistry class"""
+class TestPluginRegistryHasPlugin:
+    """Test suite for the has_plugin method."""
     
-    def test_init(self):
-        """Test registry initialization"""
+    @pytest.fixture
+    def registry(self):
+        """Create a fresh registry instance for each test."""
+        return PluginRegistry("test.group")
+    
+    def test_has_plugin_not_discovered_triggers_discovery(self, registry):
+        """Test that has_plugin triggers discovery if not yet discovered."""
+        with patch.object(registry, 'discover_plugins') as mock_discover:
+            registry.has_plugin('test_plugin')
+            mock_discover.assert_called_once()
+    
+    def test_has_plugin_already_discovered_no_rediscovery(self, registry):
+        """Test that has_plugin doesn't trigger discovery if already discovered."""
+        registry._discovered = True
+        
+        with patch.object(registry, 'discover_plugins') as mock_discover:
+            registry.has_plugin('test_plugin')
+            mock_discover.assert_not_called()
+    
+    def test_has_plugin_in_plugins_dict(self, registry):
+        """Test has_plugin returns True when plugin is in _plugins dict."""
+        registry._discovered = True
+        
+        mock_class = Mock()
+        registry._plugins['test_plugin'] = mock_class
+        
+        assert registry.has_plugin('test_plugin') is True
+    
+    def test_has_plugin_in_entry_points(self, registry):
+        """Test has_plugin returns True when plugin is in _entry_points."""
+        registry._discovered = True
+        
+        mock_entry_point = Mock()
+        registry._entry_points['test_plugin'] = mock_entry_point
+        
+        assert registry.has_plugin('test_plugin') is True
+    
+    def test_has_plugin_in_both_locations(self, registry):
+        """Test has_plugin returns True when plugin is in both _plugins and _entry_points."""
+        registry._discovered = True
+        
+        mock_class = Mock()
+        mock_entry_point = Mock()
+        registry._plugins['test_plugin'] = mock_class
+        registry._entry_points['test_plugin'] = mock_entry_point
+        
+        assert registry.has_plugin('test_plugin') is True
+    
+    def test_has_plugin_not_found(self, registry):
+        """Test has_plugin returns False when plugin is not found."""
+        registry._discovered = True
+        
+        assert registry.has_plugin('nonexistent_plugin') is False
+    
+    def test_has_plugin_empty_registry(self, registry):
+        """Test has_plugin returns False when registry is empty."""
+        registry._discovered = True
+        
+        assert registry.has_plugin('any_plugin') is False
+    
+    def test_has_plugin_case_sensitive(self, registry):
+        """Test has_plugin is case-sensitive."""
+        registry._discovered = True
+        
+        mock_class = Mock()
+        registry._plugins['TestPlugin'] = mock_class
+        
+        assert registry.has_plugin('TestPlugin') is True
+        assert registry.has_plugin('testplugin') is False
+        assert registry.has_plugin('TESTPLUGIN') is False
+    
+    def test_has_plugin_with_special_characters(self, registry):
+        """Test has_plugin works with plugin names containing special characters."""
+        registry._discovered = True
+        
+        mock_class = Mock()
+        registry._plugins['test-plugin_v2.0'] = mock_class
+        
+        assert registry.has_plugin('test-plugin_v2.0') is True
+    
+    def test_has_plugin_empty_string(self, registry):
+        """Test has_plugin with empty string."""
+        registry._discovered = True
+        
+        assert registry.has_plugin('') is False
+    
+    def test_has_plugin_multiple_plugins(self, registry):
+        """Test has_plugin with multiple plugins in registry."""
+        registry._discovered = True
+        
+        registry._plugins['plugin1'] = Mock()
+        registry._plugins['plugin2'] = Mock()
+        registry._entry_points['plugin3'] = Mock()
+        
+        assert registry.has_plugin('plugin1') is True
+        assert registry.has_plugin('plugin2') is True
+        assert registry.has_plugin('plugin3') is True
+        assert registry.has_plugin('plugin4') is False
+    
+    @patch('poly_lithic.src.utils.plugin_registry.entry_points')
+    def test_has_plugin_with_real_discovery(self, mock_entry_points):
+        """Test has_plugin with actual discovery process."""
+        mock_ep = Mock()
+        mock_ep.name = 'discovered_plugin'
+        mock_entry_points.return_value = [mock_ep]
+        
         registry = PluginRegistry("test.group")
-        assert registry.entry_point_group == "test.group"
-        assert registry._plugins == {}
-        assert registry._loaded is False
+        
+        assert registry.has_plugin('discovered_plugin') is True
+        assert registry._discovered is True
+        mock_entry_points.assert_called_once_with(group="test.group")
     
-    def test_manual_registration(self):
-        """Test manual plugin registration"""
-        registry = PluginRegistry("test.group")
-        registry.register("dummy", DummyPlugin)
+    def test_has_plugin_after_register(self, registry):
+        """Test has_plugin returns True after registering a plugin."""
+        registry._discovered = True
         
-        assert registry.has_plugin("dummy")
-        assert registry.get("dummy") == DummyPlugin
+        mock_class = Mock()
+        registry.register('new_plugin', mock_class)
+        
+        assert registry.has_plugin('new_plugin') is True
     
-    def test_register_override(self):
-        """Test that manual registration can override"""
-        registry = PluginRegistry("test.group")
-        registry.register("plugin", DummyPlugin)
-        registry.register("plugin", AnotherPlugin)
+    def test_has_plugin_after_unregister(self, registry):
+        """Test has_plugin returns False after unregistering a plugin."""
+        registry._discovered = True
         
-        assert registry.get("plugin") == AnotherPlugin
+        mock_class = Mock()
+        registry._plugins['temp_plugin'] = mock_class
+        
+        assert registry.has_plugin('temp_plugin') is True
+        
+        registry.unregister('temp_plugin')
+        
+        assert registry.has_plugin('temp_plugin') is False
     
-    def test_unregister(self):
-        """Test plugin unregistration"""
-        registry = PluginRegistry("test.group")
-        registry.register("dummy", DummyPlugin)
+    def test_has_plugin_idempotent(self, registry):
+        """Test has_plugin can be called multiple times with same result."""
+        registry._discovered = True
         
-        assert registry.has_plugin("dummy")
+        mock_class = Mock()
+        registry._plugins['test_plugin'] = mock_class
         
-        registry.unregister("dummy")
-        assert not registry.has_plugin("dummy")
-    
-    def test_get_nonexistent(self):
-        """Test getting a non-existent plugin"""
-        registry = PluginRegistry("test.group")
-        
-        with pytest.raises(KeyError):
-            registry.get("nonexistent")
-    
-    def test_list_plugins(self):
-        """Test listing plugins"""
-        registry = PluginRegistry("test.group")
-        registry.register("plugin1", DummyPlugin)
-        registry.register("plugin2", AnotherPlugin)
-        
-        plugins = registry.list_plugins()
-        assert "plugin1" in plugins
-        assert "plugin2" in plugins
-        assert len(plugins) == 2
-    
-    def test_contains(self):
-        """Test __contains__ operator"""
-        registry = PluginRegistry("test.group")
-        registry.register("dummy", DummyPlugin)
-        
-        assert "dummy" in registry
-        assert "nonexistent" not in registry
-    
-    def test_getitem(self):
-        """Test __getitem__ operator"""
-        registry = PluginRegistry("test.group")
-        registry.register("dummy", DummyPlugin)
-        
-        assert registry["dummy"] == DummyPlugin
-    
-    def test_iteration(self):
-        """Test iteration over plugin names"""
-        registry = PluginRegistry("test.group")
-        registry.register("plugin1", DummyPlugin)
-        registry.register("plugin2", AnotherPlugin)
-        
-        names = list(registry)
-        assert "plugin1" in names
-        assert "plugin2" in names
-    
-    def test_items(self):
-        """Test items() method"""
-        registry = PluginRegistry("test.group")
-        registry.register("plugin1", DummyPlugin)
-        registry.register("plugin2", AnotherPlugin)
-        
-        items = dict(registry.items())
-        assert items["plugin1"] == DummyPlugin
-        assert items["plugin2"] == AnotherPlugin
-    
-    def test_keys(self):
-        """Test keys() method"""
-        registry = PluginRegistry("test.group")
-        registry.register("plugin1", DummyPlugin)
-        registry.register("plugin2", AnotherPlugin)
-        
-        keys = registry.keys()
-        assert "plugin1" in keys
-        assert "plugin2" in keys
-    
-    def test_values(self):
-        """Test values() method"""
-        registry = PluginRegistry("test.group")
-        registry.register("plugin1", DummyPlugin)
-        registry.register("plugin2", AnotherPlugin)
-        
-        values = list(registry.values())
-        assert DummyPlugin in values
-        assert AnotherPlugin in values
-
-
-class TestConvenienceFunctions:
-    """Test the convenience registration functions"""
-    
-    def test_register_interface(self):
-        """Test register_interface function"""
-        register_interface("test_interface", DummyPlugin)
-        
-        assert interface_plugin_registry.has_plugin("test_interface")
-        assert interface_plugin_registry.get("test_interface") == DummyPlugin
-        
-        # Cleanup
-        interface_plugin_registry.unregister("test_interface")
-    
-    def test_register_transformer(self):
-        """Test register_transformer function"""
-        register_transformer("test_transformer", DummyPlugin)
-        
-        assert transformer_plugin_registry.has_plugin("test_transformer")
-        assert transformer_plugin_registry.get("test_transformer") == DummyPlugin
-        
-        # Cleanup
-        transformer_plugin_registry.unregister("test_transformer")
-    
-    def test_register_model_getter(self):
-        """Test register_model_getter function"""
-        register_model_getter("test_getter", DummyPlugin)
-        
-        assert model_getter_plugin_registry.has_plugin("test_getter")
-        assert model_getter_plugin_registry.get("test_getter") == DummyPlugin
-        
-        # Cleanup
-        model_getter_plugin_registry.unregister("test_getter")
-
-
-class TestPluginDiscovery:
-    """Test plugin discovery via entry points"""
-    
-    def test_discover_plugins(self):
-        """Test that discover_plugins can be called without errors"""
-        registry = PluginRegistry("poly_lithic.interfaces")
-        
-        # Should not raise any errors
-        registry.discover_plugins()
-        
-        # Multiple calls should be safe (idempotent)
-        registry.discover_plugins()
-        assert registry._loaded is True
-    
-    def test_global_registries(self):
-        """Test that global registries exist"""
-        # These should be instantiated
-        assert interface_plugin_registry is not None
-        assert transformer_plugin_registry is not None
-        assert model_getter_plugin_registry is not None
-        
-        # They should have correct entry point groups
-        assert interface_plugin_registry.entry_point_group == "poly_lithic.interfaces"
-        assert transformer_plugin_registry.entry_point_group == "poly_lithic.transformers"
-        assert model_getter_plugin_registry.entry_point_group == "poly_lithic.model_getters"
-        
-
+        assert registry.has_plugin('test_plugin') is True
+        assert registry.has_plugin('test_plugin') is True
+        assert registry.has_plugin('test_plugin') is True

@@ -38,7 +38,7 @@ class CustomInterface(BaseInterface):
         """
         super().__init__(config)
         self.config = config
-        self.variables = config.get('variables', {})
+        self.variable_list = config.get('variables', {})
         
         # TODO: Add your initialization logic here
         # Example: self.client = YourClient(config.get('host'), config.get('port'))
@@ -265,6 +265,8 @@ class CustomTransformer(BaseTransformer):
         # Example: self.model = load_preprocessor(config.get('model_path'))
         
         # Example configuration
+
+        self.updated = False
         self.scale = config.get('scale', 1.0)
         self.offset = config.get('offset', 0.0)
         self.input_vars = config.get('input_vars', [])
@@ -297,6 +299,8 @@ class CustomTransformer(BaseTransformer):
             else:
                 # Pass through non-numeric values
                 transformed[key] = value
+
+        self.updated = True
         
         return transformed
     

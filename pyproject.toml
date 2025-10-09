@@ -23,7 +23,7 @@ dependencies = [
     "k2eg>=0.2.16",
     "psutil>=6.0.0",
     "colorlog>=6.8.2",
-    "p4p>=4.2.1",
+    "p4p>=4.2.0",
     "pyepics>=3.5.7",
     "h5py>=3.12.1",
     "matplotlib>=3.10.1",
@@ -39,6 +39,8 @@ dependencies = [
 dev = [
     "pytest",
     "pytest-asyncio",
+    "pytest-xdist",
+    "pytest-cov",
     "black",
     "flake8",
     "ruff",
@@ -51,6 +53,7 @@ dev = [
     "hatchling",
     "hatch-vcs",
     "torch>=2.6.0",
+    "lume-model>=2.0.0",
 ]
 torch = ["torch>=2.6.0", "lume-model>=2.0.0"]
 tensorflow = ["keras>=3.1.1", "tensorflow>=2.14.0"] 
@@ -101,7 +104,7 @@ pre_install = "poly_lithic/pre_install.py"
 pre_install = ["pre_install"]
 
 [[tool.hatch.envs.default.pipelines.install]]
-hooks = ["pre_install"]
+hooks = ["pre_install"] # doesnt really work so will be moved in the future.
 
 [tool.ruff.lint]
 select = ["NPY201"]

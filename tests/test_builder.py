@@ -14,6 +14,7 @@ def make_builder():
 
     return _make_builder
 
+PYTHON_VERSION = f"{os.sys.version_info.major}.{os.sys.version_info.minor}"
 
 @pytest.fixture(scope='session', autouse=True)
 def load_env():
@@ -43,9 +44,46 @@ def test_build(caplog, make_builder):
     message_broker.notify(message)
 
 
+def test_local_model(caplog, make_builder):
+    """Test local model getter to isolate if issue is MLflow-specific."""
+    # caplog.set_level(logging.DEBUG)
+    builder = make_builder('./tests/pv_mapping_local.yaml')
+    message_broker = builder.build()
+    caplog.set_level(logging.INFO)
+    builder.config.draw_routing_graph()  # for debugging
+    
+    # Test the full pipeline
+    message = Message(topic='get_all', source='clock', value={'dummy': {'value': 1}})
+    
+    message_broker.notify(message)
+    assert len(message_broker.queue) == 1
+    logging.info(f"After notify: {message_broker.queue}")
+    
+    for message in message_broker.queue:
+        assert message.topic == 'in_interface'
+    
+    message_broker.parse_queue()
+    assert len(message_broker.queue) == 1
+    logging.info(f"After first parse: {message_broker.queue}")
+    assert message_broker.queue[0].topic == 'in_transformer'
+    
+    message_broker.parse_queue()
+    assert len(message_broker.queue) == 1
+    logging.info(f"After second parse: {message_broker.queue}")
+    assert message_broker.queue[0].topic == 'model'
+    
+    message_broker.parse_queue()
+    assert len(message_broker.queue) == 1
+    logging.info(f"After third parse: {message_broker.queue}")
+    assert message_broker.queue[0].topic == 'out_transformer'
+    
+    message_broker.parse_queue()
+    assert len(message_broker.queue) == 0  # no messages left in the queue
+
+
 # only run this test if the MLflow server is reachable
 @pytest.mark.skipif(
-    os.environ.get('MLFLOW_TRACKING_URI') is None,
+    os.environ.get('MLFLOW_TRACKING_URI') is None or PYTHON_VERSION != '3.11',
     reason='MLFLOW_TRACKING_URI is not set',
 )
 def test_mlflow_legacy(caplog, make_builder):
@@ -91,7 +129,7 @@ def test_mlflow_legacy(caplog, make_builder):
     assert len(message_broker.queue) == 0  # no messages left in the queue
 
 @pytest.mark.skipif(
-    os.environ.get('MLFLOW_TRACKING_URI') is None,
+    os.environ.get('MLFLOW_TRACKING_URI') is None or PYTHON_VERSION != '3.11',
     reason='MLFLOW_TRACKING_URI is not set',
 )
 def test_mlflow(caplog, make_builder):

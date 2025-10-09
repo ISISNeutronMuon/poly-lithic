@@ -6,7 +6,7 @@
 #   make testall        # run pytest in each venv
 #   make clean-venvs    # remove created venv directories
 
-PYTHONS := 3.10 3.11 3.12 3.13
+PYTHONS := 3.10 3.11 3.12 3.13 # 3.14 in the near future
 VENV_PREFIX := .venv-
 CC ?= gcc
 export CC
