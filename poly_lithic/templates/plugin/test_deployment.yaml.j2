@@ -1,0 +1,58 @@
+{# filepath: /home/gbm96348/nfs_home/lume-deployment/poly_lithic/templates/plugin/test_deployment.yaml.j2 #}
+# Test deployment configuration for {{ package_name }}
+# This is a minimal example for testing your plugin
+
+deployment:
+  type: "continuous"
+  rate: 1  # seconds
+
+modules:
+  # Example using your custom interface plugin
+  test_interface:
+    name: "test_interface"
+    type: "interface.{{ package_name }}_interface"
+    pub: 
+      - "interface_output"
+    sub: 
+      - "get_all"
+    module_args: None
+    config:
+      variables:
+        TEST:PV1:
+          name: "TEST:PV1"
+          default: 0
+        TEST:PV2:
+          name: "TEST:PV2"
+          default: 0
+
+  # Example using your custom transformer plugin
+  test_transformer:
+    name: "test_transformer"
+    type: "transformer.{{ package_name }}_transformer"
+    pub: "transformer_output"
+    sub: "interface_output"
+    module_args: None
+    config:
+      symbols:
+        - "TEST:PV1"
+        - "TEST:PV2"
+      variables:
+        x:
+          formula: "TEST:PV1"
+        y:
+          formula: "TEST:PV2"
+
+  # Example using your custom model getter plugin
+  # Uncomment and configure if you need model loading
+  # model:
+  #   name: "model"
+  #   type: "model.SimpleModel"
+  #   pub: "model_output"
+  #   sub: "transformer_output"
+  #   module_args: None
+  #   config:
+  #     type: "{{ package_name }}_model_getter"
+  #     model_config:
+  #       model_path: "/path/to/model"
+
+# Note: Comment out the modules for plugin types you don't need
