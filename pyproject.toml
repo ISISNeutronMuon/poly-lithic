@@ -60,7 +60,9 @@ tensorflow = ["keras>=3.1.1", "tensorflow>=2.14.0"]
 tensorflow_cpu = ["keras>=3.1.1", "tensorflow-cpu>=2.14.0"]
 lume = ["lume-model>=2.0.0"]
 simframe-local = [
-    "simframe_services @ file:///home/gbm96348/nfs_home/simframe_services",
+    # "simframe_services @ file:///home/gbm96348/nfs_home/simframe_services",
+    # Please set the path to simframe_services via an environment variable or local editable install.
+    # Example: "simframe_services @ file://${SIMFRAME_SERVICES_PATH}"
 ]
 
 
