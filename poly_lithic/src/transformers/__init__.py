@@ -1,37 +1,27 @@
-from poly_lithic.src.utils.lazyInterfaceLoader import AbstractInterfaceLoader
+"""
+Transformers module.
 
+Contains base transformer classes and built-in transformer implementations.
+"""
 
-class TransformerLoader(AbstractInterfaceLoader):
-    def __init__(self):
-        super().__init__()
+from poly_lithic.src.transformers.BaseTransformer import BaseTransformer
+from poly_lithic.src.transformers.CompoundTransformer import CompoundTransformer
+from poly_lithic.src.transformers.BaseTransformers import SimpleTransformer
+from poly_lithic.src.transformers.BaseTransformers import PassThroughTransformer
+from poly_lithic.src.transformers.BaseTransformers import CAImageTransfomer
 
-    def keys(self):
-        return [
-            'SimpleTransformer',
-            'CAImageTransfomer',
-            'CompoundTransformer',
-            'PassThroughTransformer',
-        ]
+registered_transformers = {
+    'SimpleTransformer': SimpleTransformer,
+    'CompoundTransformer': CompoundTransformer,
+    'PassThroughTransformer': PassThroughTransformer,
+    'CAImageTransfomer': CAImageTransfomer,
+}
 
-    def _load_interface(self, key):
-        if key == 'SimpleTransformer':
-            return self.import_module(
-                '.transformers.BaseTransformers', 'SimpleTransformer'
-            )
-        elif key == 'CAImageTransfomer':
-            return self.import_module(
-                '.transformers.BaseTransformers', 'CAImageTransfomer'
-            )
-        elif key == 'CompoundTransformer':
-            return self.import_module(
-                '.transformers.CompoundTransformer', 'CompoundTransformer'
-            )
-        elif key == 'PassThroughTransformer':
-            return self.import_module(
-                '.transformers.BaseTransformers', 'PassThroughTransformer'
-            )
-        else:
-            raise KeyError(f"Interface '{key}' not registered.")
-
-
-registered_transformers = TransformerLoader()
+__all__ = [
+    'BaseTransformer',
+    'SimpleTransformer',
+    'CompoundTransformer',
+    'PassThroughTransformer',
+    'CAImageTransfomer',
+    'registered_transformers',
+]

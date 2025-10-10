@@ -1,0 +1,72 @@
+{# filepath: /home/gbm96348/nfs_home/lume-deployment/poly_lithic/templates/plugin/README.md.j2 #}
+# {{ package_name }}
+
+{{ description }}
+
+## Installation
+
+```bash
+pip install -e .
+```
+
+## Quick Start
+
+Test your plugin with the included deployment configuration:
+
+```bash
+# Run the test deployment
+pl run --config test_deployment.yaml --debug
+
+# Or test with one-shot mode (runs once and exits)
+pl run --config test_deployment.yaml --debug --one-shot
+```
+
+**Note:** Edit `test_deployment.yaml` and comment out the modules for plugin types you don't need.
+
+## Usage
+
+This package provides three types of plugins. Comment out the ones you don't need:
+
+### Interface Plugin
+```python
+from poly_lithic.src.utils.plugin_registry import interface_plugin_registry
+
+interface = interface_plugin_registry.get("{{ package_name }}_interface")
+instance = interface(config)
+```
+
+### Transformer Plugin
+```python
+from poly_lithic.src.utils.plugin_registry import transformer_plugin_registry
+
+transformer = transformer_plugin_registry.get("{{ package_name }}_transformer")
+instance = transformer(config)
+```
+
+### Model Getter Plugin
+```python
+from poly_lithic.src.utils.plugin_registry import model_getter_plugin_registry
+
+getter = model_getter_plugin_registry.get("{{ package_name }}_model_getter")
+model = getter.load_model()
+```
+
+## Development
+
+```bash
+# Install development dependencies
+pip install -e ".[dev]"
+
+# Run tests
+pytest
+```
+
+## Customization
+
+1. Edit `{{ package_name }}/plugins.py` to implement your plugin logic
+2. Comment out plugin types you don't need in `{{ package_name }}/__init__.py`
+3. Update `pyproject.toml` entry points to match your needs
+
+## License
+
+{{ package_name }} is released under the {{ license }} License.

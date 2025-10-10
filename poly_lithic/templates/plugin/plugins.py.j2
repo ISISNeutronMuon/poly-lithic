@@ -1,0 +1,438 @@
+{# filepath: /home/gbm96348/nfs_home/lume-deployment/poly_lithic/templates/plugin/plugins.py.j2 #}
+"""
+Plugin implementations for {{ package_name }}.
+
+This module contains examples of all three plugin types.
+Comment out or delete the ones you don't need.
+"""
+
+import time
+from typing import Dict, Any, Tuple
+from poly_lithic.src.interfaces.BaseInterface import BaseInterface
+from poly_lithic.src.transformers.BaseTransformers import BaseTransformer
+from poly_lithic.src.model_utils.ModelGetterBase import ModelGetterBase
+
+
+# ============================================================================
+# Interface Plugin Example
+# ============================================================================
+
+class CustomInterface(BaseInterface):
+    """
+    Example interface plugin for {{ package_name }}.
+    
+    Interfaces connect to external systems for reading/writing data.
+    Comment out this class if you don't need an interface plugin.
+    """
+    
+    def __init__(self, config: Dict[str, Any]):
+        """
+        Initialize the interface.
+        
+        Args:
+            config: Configuration dictionary containing:
+                - variables: Dict of variable configurations
+                - host: Optional host/connection info
+                - port: Optional port number
+                - timeout: Optional timeout in seconds
+        """
+        super().__init__(config)
+        self.config = config
+        self.variable_list = config.get('variables', {})
+        
+        # TODO: Add your initialization logic here
+        # Example: self.client = YourClient(config.get('host'), config.get('port'))
+        # Example: self.timeout = config.get('timeout', 5.0)
+        
+        # For demonstration, we'll use a simple in-memory store
+        self._data_store = {}
+    
+    def get(self, variable: str) -> Tuple[str, Dict[str, Any]]:
+        """
+        Get a variable value from the external system.
+        
+        Args:
+            variable: Variable name to read
+            
+        Returns:
+            Tuple of (variable_name, value_dict) where value_dict contains:
+                - value: The actual value
+                - timestamp: Unix timestamp
+                - status: Optional status information
+        """
+        # TODO: Replace this with your actual get logic
+        # Example:
+        # try:
+        #     value = self.client.read(variable)
+        #     return variable, {
+        #         "value": value,
+        #         "timestamp": time.time(),
+        #         "status": "OK"
+        #     }
+        # except Exception as e:
+        #     return variable, {
+        #         "value": None,
+        #         "timestamp": time.time(),
+        #         "status": f"ERROR: {e}"
+        #     }
+        
+        # Example implementation using in-memory store
+        value = self._data_store.get(variable, 0.0)
+        return variable, {
+            "value": value,
+            "timestamp": time.time(),
+            "status": "OK"
+        }
+    
+    def put(self, variable: str, value: Any) -> Dict[str, Any]:
+        """
+        Set a variable value in the external system.
+        
+        Args:
+            variable: Variable name to write
+            value: Value to write
+            
+        Returns:
+            Dict mapping variable name to the value that was set
+        """
+        # TODO: Replace this with your actual put logic
+        # Example:
+        # try:
+        #     self.client.write(variable, value)
+        #     return {variable: value}
+        # except Exception as e:
+        #     raise Exception(f"Failed to write {variable}: {e}")
+        
+        # Example implementation using in-memory store
+        self._data_store[variable] = value
+        return {variable: value}
+    
+    def get_many(self, variables: list) -> Dict[str, Dict[str, Any]]:
+        """
+        Get multiple variable values at once.
+        
+        Args:
+            variables: List of variable names to read
+            
+        Returns:
+            Dict mapping variable names to value dicts
+        """
+        # TODO: Replace this with your actual batch get logic
+        # Example:
+        # results = {}
+        # for variable in variables:
+        #     try:
+        #         value = self.client.read(variable)
+        #         results[variable] = {
+        #             "value": value,
+        #             "timestamp": time.time(),
+        #             "status": "OK"
+        #         }
+        #     except Exception as e:
+        #         results[variable] = {
+        #             "value": None,
+        #             "timestamp": time.time(),
+        #             "status": f"ERROR: {e}"
+        #         }
+        # return results
+        
+        # Example implementation using in-memory store
+        results = {}
+        for variable in variables:
+            value = self._data_store.get(variable, 0.0)
+            results[variable] = {
+                "value": value,
+                "timestamp": time.time(),
+                "status": "OK"
+            }
+        return results
+    
+    def put_many(self, variable_values: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Set multiple variable values at once.
+        
+        Args:
+            variable_values: Dict mapping variable names to values
+            
+        Returns:
+            Dict mapping variable names to the values that were set
+        """
+        # TODO: Replace this with your actual batch put logic
+        # Example:
+        # results = {}
+        # for variable, value in variable_values.items():
+        #     try:
+        #         self.client.write(variable, value)
+        #         results[variable] = value
+        #     except Exception as e:
+        #         raise Exception(f"Failed to write {variable}: {e}")
+        # return results
+        
+        # Example implementation using in-memory store
+        for variable, value in variable_values.items():
+            self._data_store[variable] = value
+        return variable_values
+    
+    def monitor(self, variables: list, callback) -> None:
+        """
+        Monitor variables for changes and call callback when they change.
+        
+        Args:
+            variables: List of variable names to monitor
+            callback: Function to call when variables change.
+                     Should accept (variable_name, value_dict) as arguments.
+        """
+        # TODO: Replace this with your actual monitoring logic
+        # Example for subscription-based monitoring:
+        # for variable in variables:
+        #     self.client.subscribe(variable, lambda v, val: callback(v, {
+        #         "value": val,
+        #         "timestamp": time.time(),
+        #         "status": "OK"
+        #     }))
+        
+        # Example for polling-based monitoring:
+        # import threading
+        # def poll():
+        #     while self._monitoring:
+        #         for variable in variables:
+        #             value = self.client.read(variable)
+        #             callback(variable, {
+        #                 "value": value,
+        #                 "timestamp": time.time(),
+        #                 "status": "OK"
+        #             })
+        #         time.sleep(0.1)
+        # self._monitoring = True
+        # self._monitor_thread = threading.Thread(target=poll, daemon=True)
+        # self._monitor_thread.start()
+        
+        # Minimal implementation (does nothing)
+        pass
+    
+    def connect(self) -> None:
+        """
+        Establish connection to the external system.
+        
+        Override this if your interface needs explicit connection management.
+        """
+        # TODO: Add connection logic if needed
+        # Example:
+        # self.client.connect()
+        pass
+    
+    def disconnect(self) -> None:
+        """
+        Close connection to the external system.
+        
+        Override this if your interface needs explicit connection management.
+        """
+        # TODO: Add disconnection logic if needed
+        # Example:
+        # self.client.disconnect()
+        pass
+
+
+# ============================================================================
+# Transformer Plugin Example
+# ============================================================================
+
+class CustomTransformer(BaseTransformer):
+    """
+    Example transformer plugin for {{ package_name }}.
+    
+    Transformers modify data between reading and model input.
+    Comment out this class if you don't need a transformer plugin.
+    """
+    
+    def __init__(self, config: Dict[str, Any]):
+        """
+        Initialize the transformer.
+        
+        Args:
+            config: Configuration dictionary containing:
+                - scale: Optional scaling factor
+                - offset: Optional offset to add
+                - input_vars: List of input variable names
+                - output_vars: List of output variable names
+        """
+        super().__init__(config)
+        self.config = config
+        
+        # TODO: Add your initialization logic here
+        # Example: self.scale = config.get('scale', 1.0)
+        # Example: self.offset = config.get('offset', 0.0)
+        # Example: self.model = load_preprocessor(config.get('model_path'))
+        
+        # Example configuration
+
+        self.updated = False
+        self.scale = config.get('scale', 1.0)
+        self.offset = config.get('offset', 0.0)
+        self.input_vars = config.get('input_vars', [])
+        self.output_vars = config.get('output_vars', [])
+    
+    def transform(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Transform input data.
+        
+        Args:
+            input_data: Dictionary of variable names to values
+            
+        Returns:
+            Dictionary of transformed variable names to values
+        """
+        # TODO: Implement your transformation logic
+        
+        # Example 1 - Simple passthrough:
+        # return input_data
+        
+        # Example 2 - Scale and offset all values:
+        # return {k: v * self.scale + self.offset for k, v in input_data.items()}
+        
+        # Example 3 - Complex transformation with validation:
+        transformed = {}
+        for key, value in input_data.items():
+            if isinstance(value, (int, float)):
+                # Apply scaling and offset to numeric values
+                transformed[key] = value * self.scale + self.offset
+            else:
+                # Pass through non-numeric values
+                transformed[key] = value
+
+        self.updated = True
+        
+        return transformed
+    
+    def inverse_transform(self, output_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Apply inverse transformation to output data.
+        
+        Args:
+            output_data: Dictionary of variable names to values
+            
+        Returns:
+            Dictionary of inverse-transformed variable names to values
+        """
+        # TODO: Implement inverse transformation if needed
+        
+        # Example - inverse of scale and offset:
+        inverse_transformed = {}
+        for key, value in output_data.items():
+            if isinstance(value, (int, float)) and self.scale != 0:
+                inverse_transformed[key] = (value - self.offset) / self.scale
+            else:
+                inverse_transformed[key] = value
+        
+        return inverse_transformed
+
+
+# ============================================================================
+# Model Getter Plugin Example
+# ============================================================================
+
+class CustomModelGetter(ModelGetterBase):
+    """
+    Example model getter plugin for {{ package_name }}.
+    
+    Model getters load ML models from various sources.
+    Comment out this class if you don't need a model getter plugin.
+    """
+    
+    def __init__(self, config: Dict[str, Any]):
+        """
+        Initialize the model getter.
+        
+        Args:
+            config: Configuration dictionary containing:
+                - model_path: Path to the model file
+                - model_type: Type of model (e.g., 'pytorch', 'tensorflow', 'sklearn')
+                - device: Optional device for loading (e.g., 'cpu', 'cuda')
+                - model_name: Optional model name for model registry
+                - version: Optional model version
+        """
+        super().__init__(config)
+        self.config = config
+        self.model_path = config.get('model_path')
+        self.model_type = config.get('model_type', 'pickle')
+        self.device = config.get('device', 'cpu')
+        
+        # TODO: Add your initialization logic here
+        # Example: self.registry_url = config.get('registry_url')
+        # Example: self.credentials = config.get('credentials')
+    
+    def load_model(self) -> Any:
+        """
+        Load and return the model.
+        
+        Returns:
+            The loaded model object (any type: PyTorch, TensorFlow, sklearn, etc.)
+        """
+        # TODO: Implement your model loading logic
+        
+        # Example 1 - PyTorch model:
+        # import torch
+        # model = torch.load(self.model_path, map_location=self.device)
+        # model.eval()
+        # return model
+        
+        # Example 2 - TensorFlow/Keras model:
+        # from tensorflow import keras
+        # model = keras.models.load_model(self.model_path)
+        # return model
+        
+        # Example 3 - Scikit-learn model:
+        # import joblib
+        # model = joblib.load(self.model_path)
+        # return model
+        
+        # Example 4 - ONNX model:
+        # import onnxruntime as ort
+        # session = ort.InferenceSession(self.model_path)
+        # return session
+        
+        # Simple example implementation using pickle
+        import pickle
+        if self.model_path is None:
+            raise ValueError("model_path must be specified in config")
+        
+        with open(self.model_path, 'rb') as f:
+            model = pickle.load(f)
+        
+        return model
+    
+    def get_model_info(self) -> Dict[str, Any]:
+        """
+        Get information about the model.
+        
+        Returns:
+            Dictionary containing model metadata
+        """
+        # TODO: Implement model info retrieval
+        
+        # Example:
+        return {
+            'model_path': self.model_path,
+            'model_type': self.model_type,
+            'device': self.device,
+            'version': self.config.get('version', 'unknown'),
+        }
+    
+    def validate_model(self, model: Any) -> bool:
+        """
+        Validate that the loaded model is correct.
+        
+        Args:
+            model: The loaded model object
+            
+        Returns:
+            True if model is valid, False otherwise
+        """
+        # TODO: Add validation logic
+        
+        # Example - check if model has required methods:
+        # required_methods = ['predict', 'transform']
+        # return all(hasattr(model, method) for method in required_methods)
+        
+        # Simple example - check if model is not None
+        return model is not None

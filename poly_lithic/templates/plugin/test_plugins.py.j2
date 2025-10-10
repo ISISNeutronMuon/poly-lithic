@@ -1,0 +1,264 @@
+{# filepath: /home/gbm96348/nfs_home/lume-deployment/poly_lithic/templates/plugin/test_plugins.py.j2 #}
+"""
+Tests for {{ package_name }} plugins.
+
+Add your tests here. Comment out tests for plugin types you don't use.
+"""
+
+import pytest
+import time
+from {{ package_name }} import CustomInterface, CustomTransformer, CustomModelGetter
+
+
+class TestCustomInterface:
+    """Test the interface plugin."""
+    
+    def test_init(self):
+        """Test interface initialization."""
+        config = {
+            "variables": {
+                "test:var1": {"name": "test:var1"},
+                "test:var2": {"name": "test:var2"}
+            }
+        }
+        interface = CustomInterface(config)
+        assert interface is not None
+        assert interface.config == config
+        assert interface.variable_list == config["variables"]
+    
+    def test_get(self):
+        """Test getting a variable value."""
+        config = {"variables": {"test:var": {"name": "test:var"}}}
+        interface = CustomInterface(config)
+        
+        # First get should return default value
+        var_name, value_dict = interface.get("test:var")
+        assert var_name == "test:var"
+        assert "value" in value_dict
+        assert "timestamp" in value_dict
+        assert "status" in value_dict
+        assert isinstance(value_dict["timestamp"], float)
+    
+    def test_put(self):
+        """Test setting a variable value."""
+        config = {"variables": {"test:var": {"name": "test:var"}}}
+        interface = CustomInterface(config)
+        
+        # Put a value
+        result = interface.put("test:var", 42.5)
+        assert "test:var" in result
+        assert result["test:var"] == 42.5
+        
+        # Verify the value was stored
+        var_name, value_dict = interface.get("test:var")
+        assert value_dict["value"] == 42.5
+    
+    def test_put_get_roundtrip(self):
+        """Test that put and get work together."""
+        config = {"variables": {"test:var": {"name": "test:var"}}}
+        interface = CustomInterface(config)
+        
+        # Put multiple values
+        interface.put("var1", 100)
+        interface.put("var2", 200)
+        interface.put("var3", 300)
+        
+        # Get them back
+        _, val1 = interface.get("var1")
+        _, val2 = interface.get("var2")
+        _, val3 = interface.get("var3")
+        
+        assert val1["value"] == 100
+        assert val2["value"] == 200
+        assert val3["value"] == 300
+    
+    def test_connect_disconnect(self):
+        """Test connection management."""
+        config = {"variables": {}}
+        interface = CustomInterface(config)
+        
+        # Should not raise errors
+        interface.connect()
+        interface.disconnect()
+
+
+class TestCustomTransformer:
+    """Test the transformer plugin."""
+    
+    def test_init(self):
+        """Test transformer initialization."""
+        config = {
+            "scale": 2.0,
+            "offset": 10.0,
+            "input_vars": ["x", "y"],
+            "output_vars": ["x_scaled", "y_scaled"]
+        }
+        transformer = CustomTransformer(config)
+        assert transformer is not None
+        assert transformer.scale == 2.0
+        assert transformer.offset == 10.0
+    
+    def test_transform_default_config(self):
+        """Test transformation with default config."""
+        config = {}
+        transformer = CustomTransformer(config)
+        
+        input_data = {"x": 1.0, "y": 2.0, "z": 3.0}
+        output = transformer.transform(input_data)
+        
+        assert output is not None
+        assert "x" in output
+        assert "y" in output
+        assert "z" in output
+    
+    def test_transform_with_scaling(self):
+        """Test transformation with scaling and offset."""
+        config = {"scale": 2.0, "offset": 5.0}
+        transformer = CustomTransformer(config)
+        
+        input_data = {"x": 10.0, "y": 20.0}
+        output = transformer.transform(input_data)
+        
+        # x: 10 * 2 + 5 = 25
+        # y: 20 * 2 + 5 = 45
+        assert output["x"] == 25.0
+        assert output["y"] == 45.0
+    
+    def test_transform_non_numeric(self):
+        """Test transformation with non-numeric values."""
+        config = {"scale": 2.0, "offset": 5.0}
+        transformer = CustomTransformer(config)
+        
+        input_data = {
+            "numeric": 10.0,
+            "string": "test",
+            "none": None
+        }
+        output = transformer.transform(input_data)
+        
+        # Numeric value should be transformed
+        assert output["numeric"] == 25.0
+        # Non-numeric should pass through
+        assert output["string"] == "test"
+        assert output["none"] is None
+    
+    def test_inverse_transform(self):
+        """Test inverse transformation."""
+        config = {"scale": 2.0, "offset": 5.0}
+        transformer = CustomTransformer(config)
+        
+        # Transform and inverse should be identity
+        input_data = {"x": 10.0, "y": 20.0}
+        transformed = transformer.transform(input_data)
+        inverse = transformer.inverse_transform(transformed)
+        
+        assert abs(inverse["x"] - input_data["x"]) < 1e-10
+        assert abs(inverse["y"] - input_data["y"]) < 1e-10
+    
+    def test_transform_inverse_roundtrip(self):
+        """Test that transform and inverse_transform are inverses."""
+        config = {"scale": 3.0, "offset": -10.0}
+        transformer = CustomTransformer(config)
+        
+        original = {"a": 5.0, "b": 15.0, "c": 25.0}
+        transformed = transformer.transform(original)
+        recovered = transformer.inverse_transform(transformed)
+        
+        for key in original:
+            assert abs(recovered[key] - original[key]) < 1e-10
+
+# commendted out for now
+# class TestCustomModelGetter:
+#     """Test the model getter plugin."""
+    
+#     def test_init(self):
+#         """Test model getter initialization."""
+#         config = {
+#             "model_path": "/path/to/model.pkl",
+#             "model_type": "sklearn",
+#             "device": "cpu"
+#         }
+#         getter = CustomModelGetter(config)
+#         assert getter is not None
+#         assert getter.model_path == "/path/to/model.pkl"
+#         assert getter.model_type == "sklearn"
+#         assert getter.device == "cpu"
+    
+#     def test_get_model_info(self):
+#         """Test getting model information."""
+#         config = {
+#             "model_path": "/path/to/model.pkl",
+#             "model_type": "pytorch",
+#             "device": "cuda",
+#             "version": "1.0.0"
+#         }
+#         getter = CustomModelGetter(config)
+        
+#         info = getter.get_model_info()
+#         assert info["model_path"] == "/path/to/model.pkl"
+#         assert info["model_type"] == "pytorch"
+#         assert info["device"] == "cuda"
+#         assert info["version"] == "1.0.0"
+    
+#     def test_validate_model(self):
+#         """Test model validation."""
+#         config = {"model_path": "/path/to/model.pkl"}
+#         getter = CustomModelGetter(config)
+        
+#         # Mock model
+#         class MockModel:
+#             def predict(self, x):
+#                 return x
+        
+#         model = MockModel()
+#         assert getter.validate_model(model) is True
+#         assert getter.validate_model(None) is False
+    
+#     @pytest.mark.skip(reason="Requires actual model file")
+#     def test_load_model(self):
+#         """Test loading a model."""
+#         # This test is skipped by default because it requires an actual model file.
+#         # Uncomment and modify when you have a test model available.
+        
+#         # config = {"model_path": "tests/fixtures/test_model.pkl"}
+#         # getter = CustomModelGetter(config)
+#         # model = getter.load_model()
+#         # assert model is not None
+#         # assert getter.validate_model(model) is True
+#         pass
+    
+#     def test_load_model_missing_path(self):
+#         """Test that load_model raises error when path is missing."""
+#         config = {}  # No model_path
+#         getter = CustomModelGetter(config)
+        
+#         with pytest.raises(ValueError, match="model_path must be specified"):
+#             getter.load_model()
+
+
+# Integration test example
+class TestPluginIntegration:
+    """Test integration between different plugin types."""
+    
+    def test_interface_transformer_pipeline(self):
+        """Test data flow from interface through transformer."""
+        # Setup interface
+        interface_config = {"variables": {"test:var": {"name": "test:var"}}}
+        interface = CustomInterface(interface_config)
+        
+        # Setup transformer
+        transformer_config = {"scale": 2.0, "offset": 0.0}
+        transformer = CustomTransformer(transformer_config)
+        
+        # Put data through interface
+        interface.put("test:var", 10.0)
+        
+        # Get data from interface
+        _, value_dict = interface.get("test:var")
+        
+        # Transform the data
+        input_data = {"test:var": value_dict["value"]}
+        transformed = transformer.transform(input_data)
+        
+        # Verify transformation
+        assert transformed["test:var"] == 20.0  # 10 * 2 + 0

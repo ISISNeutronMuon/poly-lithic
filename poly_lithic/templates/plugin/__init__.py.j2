@@ -1,0 +1,24 @@
+{# filepath: /home/gbm96348/nfs_home/lume-deployment/poly_lithic/templates/plugin/__init__.py.j2 #}
+"""
+{{ package_name }} - A poly_lithic plugin package.
+
+This package includes examples of all three plugin types.
+Comment out the ones you don't need.
+"""
+
+# Import plugin classes
+from {{ package_name }}.plugins import (
+    CustomInterface,
+    CustomTransformer,
+    CustomModelGetter,
+)
+
+# Export them
+__all__ = [
+    'CustomInterface',
+    'CustomTransformer',
+    'CustomModelGetter',
+]
+
+# Package metadata
+__version__ = "0.1.0"
