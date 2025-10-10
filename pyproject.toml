@@ -112,4 +112,7 @@ hooks = ["pre_install"] # doesnt really work so will be moved in the future.
 select = ["NPY201"]
 
 [tool.uv.sources]
+# NOTE: The following dependency uses a relative path to a sibling directory.
+# This will break in environments where '../pl-wrangler-simframe' does not exist.
+# Intended for local development only. For CI or production, install 'pl-wrangler-simframe' from PyPI or provide the directory.
 pl-wrangler-simframe = { path = "../pl-wrangler-simframe", editable = true }
