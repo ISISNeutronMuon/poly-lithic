@@ -299,6 +299,10 @@ class InterfaceObserver(Observer):
 
             return messages
         else:
+            # check if os.environ['PUBLISH'] exists and is True
+            if 'PUBLISH' not in os.environ:
+                os.environ['PUBLISH'] = 'False'
+            
             logger.debug(f'updating {self}')
             if os.environ['PUBLISH'] == 'True':
                 self.interface.put_many(message.value)
