@@ -266,7 +266,7 @@ class CustomTransformer(BaseTransformer):
         
         # Example configuration
 
-        self.updated = False
+        self.updated = False # this is mandatory, it will be made into a mandatory attribute in future versions
         self.scale = config.get('scale', 1.0)
         self.offset = config.get('offset', 0.0)
         self.input_vars = config.get('input_vars', [])

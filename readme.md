@@ -53,6 +53,18 @@ pip install -r reqirements.txt
 pip install -e .
 ```
 
+Alternatively with uv:
+
+```bash
+uv pip install poly-lithic
+```
+
+for development with uv:
+```bash
+uv pip install -r requirements.txt
+uv pip install -e .
+```
+
 with docker:
 
 ```bash
@@ -62,11 +74,11 @@ docker compose -f ./docker/docker_compose.yml up
 ## Usage
 
 ```python
-model_manager --publish -c ./tests/pv_mapping_mlflow.yaml -e ./tests/env.json
+model_manager run --publish -c ./tests/pv_mapping_mlflow.yaml -e ./tests/env.json
 ```
 or
 ```python
-pl --publish -c ./tests/pv_mapping_mlflow.yaml -e ./tests/env.json
+pl run --publish -c ./tests/pv_mapping_mlflow.yaml -e ./tests/env.json
 ```
 The env file is a json file that contains the environment variables that are used in the deployment. In this example we are pulling the [torch](./examples/torch_and_generic.ipynb) model and wrapping it with simple transformers and a simple p4p server.  
 
@@ -504,10 +516,11 @@ See the [MLFlow example notebook](./examples/base/simple_model_mlflow.ipynb) for
 
 | Feature / Task                                | Timeline     | Priority | Status        |
 |-----------------------------------------------|--------------|----------|---------------|
-| 🖌️ 🎨 **Make logo**                            | 1–3 Months   | 🥇       | 🚧 In Progress |
+| 🖌️ 🎨 **Make logo**                            | 1–3 Months   | 🥇       | Compelte! |
+| 🔌 🧩 **Plugin System for Modules**                      | 1–3 Months   | 🥇       | Complete! |
 | 🧠 🔧 **Lume-Model Integration**               | 1–3 Months   | 🥇       | 🚧 In Progress |
-| ⚡ 🔄 **Event driven mode**                    | 1-3 Months   | 🥈       | ⏳ Planned     |
-| 📦 🤖 **MLflow 3.x Support**                   | 1–3 Months   | 🥇       | ⏳ Planned     |
+| ⚡ 🔄 **Event driven mode**                    | 1-3 Months   | 🥈       | 🚧 In Progress     |
+| 📦 🤖 **MLflow 3.x Support**                   | 6–12 Months   | 🥇       | ⏳ Planned     |
 | 🌐 🚀 **Move to `gh-pages`**                   | 1–3 Months   | 🥈       | 🚧 In Progress |
 | 🔗 🧪 **p4p4isis Interface**                   | 6–12 Months  | 🥉       | ⏳ Planned     |
 | 📊 🧭 **Time Series Aggregation**              | 3–6 Months   | 🥉       | ⏳ Planned     |
