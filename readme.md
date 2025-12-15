@@ -14,6 +14,7 @@ use old docs in the meantime: [old docs](./readme_old.md) -->
   - [Installation](#installation)
   - [Usage](#usage)
   - [Configuration file](#configuration-file-formerly-pv_mappings-files)
+  - [Plugin API](#plugin-api)
   - [Modules](#modules)
     - [Interface](#interface)
       - [Interface Configs](#interface-configs)
@@ -155,6 +156,11 @@ Under the hood we are passing messages in the format:
 ```
 Note that the data is a dictionary of dictionaries.
 
+## Plugin API 
+
+Read more in the [plugin readme](./poly_lithic/templates/plugin/README.md).
+
+
 ## Modules
 
 ### Interface
@@ -254,9 +260,6 @@ Yes, it is identical to p4p, the only difference is that the p4p server will hos
 #### `k2eg` Sample configuration
 
 This module is built on top of SLAC's [k2eg](https://github.com/slaclab/k2eg), it's great because it allows you get data from `pva` and `ca` protocols over Kafka. currently its the only interface that supports `ca` protocol.
-
-> [!CAUTION]
-> need some more testing as it was last tested in Q1 2024. 
 
 ```yaml
 input_data:

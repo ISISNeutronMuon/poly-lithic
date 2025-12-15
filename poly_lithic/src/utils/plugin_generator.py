@@ -30,7 +30,6 @@ class PluginGenerator:
         email: str = '',
         description: str = '',
         output_dir: str = '.',
-        license: str = 'MIT',
     ) -> Path:
         """
         Generate a plugin project from templates.

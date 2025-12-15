@@ -435,7 +435,17 @@ class ModelObserver(Observer):
             return model
 
         else:
-            raise ValueError(f'model type not recognised: {self.config["type"]}')
+            # try the plugin then fail
+            try: 
+                model_getter = registered_model_getters[self.config['type']](
+                    self.config['args']
+                )
+                model = model_getter.get_model()
+                return model
+            except KeyError:
+                raise ValueError(f'model type not recognised: {self.config["type"]}')
+            
+            # raise ValueError(f'model type not recognised: {self.config["type"]}')
 
     def update(self, message: Message) -> list[Message]:
         messages = []

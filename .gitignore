@@ -1,52 +1,157 @@
-main_local.py
-env
-cred.json
+# Python
 __pycache__/
-*lcls-cu-inj-nn/*
-*lcls_cu_inj_nn/*
-kube
-old
-.pytest_cache
-*.egg-info
-mlruns
-generic_model
-torch_model
-model1.txt
-metric2.png
-local_test
-.coverage
-image.png
-output.log
-slack.py
-test.ipynb
-image_model
-test.h5
-.vscode
-/build
-env.json
-creds.json
-test.py
-cookiecutter-*
-.ruff_cache
-build-info*
-*-deployment-*/
-*-deployment/
-cookiecutter-*/
-astra_*/
-configs/
-lebt_*/
-*-surrograte/
-waterfall*/
-_version.py
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
 dist/
-graphs/
+build/
+*.prof
+*.profile
+
+# Virtual Environments
+env/
+.env
+.venv*/
+test-env/
+.venv-*/
+
+# IDE & Editors
+.vscode/
+*.code-workspace
+
+# Testing & Coverage
+.pytest_cache/
 .coverage
-.vscode
-tmp*
-notify.profile
-test.yaml
 test_files/
+
+# Build Tools
+.ruff_cache/
+build-info*
+
+# MLFlow & Models
+mlruns/
+*lcls-cu-inj-nn/
+*lcls_cu_inj_nn/
+generic_model/
+torch_model/
+image_model/
+astra_*/
+*-surrograte/
+
+# Kubernetes & Deployment
+kube/
+configs/
+*-deployment/
+*-deployment-*/
+cookiecutter-*/
+lebt_*/
+waterfall*/
+
+# Credentials & Secrets
+env.json
+cred.json
+creds.json
+
+# Documentation
+graphs/
+
+# Temporary & Local Files
+tmp*
+old/
 old_examples/
-*code-workspace
-test-env
-.venv*
+local_test/
+*.log
+*.png
+*.txt
+*.h5
+test.ipynb
+test.py
+test.yaml
+image.png
+main_local.py
+slack.py
+_version.py
+notify.profile
+</attachment>
+
+This organizes the `.gitignore` into logical sections with comments, removes redundancy (like combining `env` and `.env`), and groups similar patterns together for easier maintenance.# filepath: /home/gbm96348/nfs_home/lume-deployment/.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+*.prof
+*.profile
+
+# Virtual Environments
+env/
+.env
+.venv*/
+test-env/
+.venv-*/
+
+# IDE & Editors
+.vscode/
+*.code-workspace
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+test_files/
+
+# Build Tools
+.ruff_cache/
+build-info*
+
+# MLFlow & Models
+mlruns/
+*lcls-cu-inj-nn/
+*lcls_cu_inj_nn/
+generic_model/
+torch_model/
+image_model/
+astra_*/
+*-surrograte/
+
+# Kubernetes & Deployment
+kube/
+configs/
+*-deployment/
+*-deployment-*/
+cookiecutter-*/
+lebt_*/
+waterfall*/
+
+# Credentials & Secrets
+env.json
+cred.json
+creds.json
+
+# Documentation
+graphs/
+
+# Temporary & Local Files
+tmp*
+old/
+old_examples/
+local_test/
+*.log
+*.png
+*.txt
+*.h5
+test.ipynb
+test.py
+test.yaml
+image.png
+main_local.py
+slack.py
+_version.py
+notify.profile
+!image.png

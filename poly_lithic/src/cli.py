@@ -202,7 +202,7 @@ def run_model(config, model_getter, debug, env, one_shot, publish, requirements)
         if requirements:
             click.echo('Requirements-only mode - exiting after installation')
             sys.exit(0)
-        
+        # ugly but we needed to do some legacy support, this will eventially all be click handled
         import argparse
         args = argparse.Namespace(
             config=config,
@@ -242,21 +242,19 @@ def plugin():
 
 
 @plugin.command()
-@click.option('--name', '-n', prompt='Plugin name', 
+@click.option('--name', '-n', default=None,
               help='Name of the plugin package')
-@click.option('--author', '-a', prompt='Author name', default='',
+@click.option('--author', '-a', default=None,
               help='Author name')
-@click.option('--email', prompt='Author email', default='example@email.com',
+@click.option('--email', default=None,
               help='Author email')
-@click.option('--description', '-d', prompt='Short description', default='',
+@click.option('--description', '-d', default=None,
               help='Plugin description')
 @click.option('--output-dir', '--dir', '-o', type=click.Path(), default='.',
               help='Output directory for the plugin project (default: current directory)')
-@click.option('--license', default='MIT',
-              help='License type')
 @click.option('--no-prompt', is_flag=True,
               help='Skip interactive prompts (use defaults or provided values)')
-def init(name, author, email, description, output_dir, license, no_prompt):
+def init(name, author, email, description, output_dir, no_prompt):
     """
     Initialize a new plugin project from template.
     
@@ -274,6 +272,18 @@ def init(name, author, email, description, output_dir, license, no_prompt):
         
         click.echo(click.style('\n🚀 Creating Plugin Project\n', fg='cyan', bold=True))
         
+        # Handle prompts manually based on no_prompt flag
+        if no_prompt:
+            name = name or 'my_plugin'
+            author = author or 'Author Name'
+            email = email or 'example@email.com'
+            description = description or 'A poly_lithic plugin package'
+        else:
+            name = name or click.prompt('Plugin name')
+            author = author or click.prompt('Author name', default='')
+            email = email or click.prompt('Author email', default='example@email.com')
+            description = description or click.prompt('Short description', default='')
+        
         output_path = Path(output_dir).expanduser().resolve()
         plugin_dir_name = PluginGenerator._normalize_package_name(name)
         
@@ -285,13 +295,13 @@ def init(name, author, email, description, output_dir, license, no_prompt):
                 sys.exit(1)
         
         generator = PluginGenerator()
+        
         project_path = generator.generate(
             name=name,
             author=author,
             email=email,
             description=description,
             output_dir=str(output_path),
-            license=license,
         )
         
         click.echo(click.style(f"✓ Plugin project created: {project_path.name}", fg='green', bold=True))

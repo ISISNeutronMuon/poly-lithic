@@ -28,7 +28,7 @@ jobs:
           echo "VERSION=${TAG_NAME}" >> $GITHUB_ENV
           echo "version=${TAG_NAME}" >> $GITHUB_OUTPUT
 
-      - name: Determine if version is pure semver (e.g. v0.1.2)
+      - name: Determine if version is pure semver
         id: semver_check
         run: |
           if echo "${{ steps.vars.outputs.version }}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
