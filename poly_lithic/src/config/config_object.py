@@ -89,3 +89,19 @@ class ConfigObject(pydantic.BaseModel):
         if not os.path.exists('./graphs'):
             os.makedirs('./graphs')
         plt.savefig('./graphs/{}_routing_graph.png'.format(uuid4()))
+
+    def save_routing_graph(self, path: str) -> None:
+        """Save routing graph to the specified file"""
+        plt.figure(figsize=(10, 10))
+        G = self.graph
+        # Sort based on topology
+        for i, l in enumerate(nx.topological_generations(G)):
+            for n in l:
+                G.nodes[n]['layer'] = i
+        nx.draw(
+            G,
+            with_labels=True,
+            node_size=4096, # Arbitrary; looks good enough...
+            pos=nx.multipartite_layout(G, subset_key='layer', align='horizontal', scale=-2)
+        )
+        plt.savefig(path)

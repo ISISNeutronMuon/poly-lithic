@@ -509,6 +509,24 @@ def validate(config_file, env):
             traceback.print_exc()
         sys.exit(1)
 
+@cli.command()
+@click.argument('config_file', type=click.Path(exists=True))
+@click.option('--output', '-o', type=click.Path(), required=True, help='Image file output path')
+def visualize(config_file, output):
+    """
+    Visualize the configuration as an image file
+    """
+
+    try:
+        from poly_lithic.src.config import ConfigParser
+        parser = ConfigParser(config_file)
+        cfg = parser.parse()
+        cfg.save_routing_graph(output)
+        click.echo(click.style(f'Saved to {output}', fg='green'))
+
+    except Exception as e:
+        click.echo(click.style(f'Configuration error: {e}', fg='red'), err=True)
+        sys.exit(1)
 
 # ============================================================================
 # Legacy Support Functions
