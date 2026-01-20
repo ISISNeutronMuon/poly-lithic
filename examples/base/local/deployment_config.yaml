@@ -37,9 +37,9 @@ modules:
         - "ML:LOCAL:TEST_A"
       variables:
         x: # note this is where we change the name to match what the model expects
-          formula: "ML:LOCAL:TEST_A"
+          formula: "ML:LOCAL:TEST_A * 2 + 10"
         y: 
-          formula: "ML:LOCAL:TEST_B"
+          formula: "ML:LOCAL:TEST_B + 120"
   model:
     name: "model"
     type: "model.SimpleModel"

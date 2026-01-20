@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Copyright 2025 UK Research and Innovation, Science and Technology Facilities Council, ISIS
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 from poly_lithic.src.utils.builder import Builder
 from poly_lithic.src.utils.messaging import Message
 import pytest

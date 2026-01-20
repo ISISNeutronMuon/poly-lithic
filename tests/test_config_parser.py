@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: Copyright 2025 UK Research and Innovation, Science and Technology Facilities Council, ISIS
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 from poly_lithic.src.config.parser import ConfigParser
 import logging
 import pytest
