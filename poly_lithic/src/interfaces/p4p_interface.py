@@ -218,15 +218,27 @@ class SimplePVAInterfaceServer(SimplePVAInterface):
                     pv_type_init = 0.0
                 self.value_build_fn = None
 
-            pv_item = {pv: SharedPV(initial=pv_type_init, nt=pv_type_nt)}
+            class Handler():
+                """Simple handler to reject writes to read-only outputs"""
+                def __init__(self, read_only: bool = False):
+                    self.read_only = read_only
+
+                def put(self, pv: SharedPV, op: ServOpWrap):
+                    if self.read_only:
+                        op.done(error='Model outputs are read-only')
+                        return
+                    pv.post(op.value(), timestamp=time.time())
+                    op.done()
+
+            # PVs that are exclusively outputs are considered read-only
+            read_only = False
+            if 'mode' in config['variables'][pv]:
+                read_only = config['variables'][pv]['mode'] == 'out'
+
+            pv_item = {pv: SharedPV(initial=pv_type_init, nt=pv_type_nt, handler=Handler(read_only))}
             # print(f"pv_item: {pv_item}")
             # print(f"pv_type_init: {pv_type_init}")
             # print(f"pv_type_nt: {pv_type_nt}")
-
-            @pv_item[pv].put
-            def put(pv: SharedPV, op: ServOpWrap):
-                pv.post(op.value(), timestamp=time.time())
-                op.done()
 
             self.shared_pvs[pv] = pv_item[pv]
 
