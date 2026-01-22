@@ -326,9 +326,9 @@ class InterfaceObserver(Observer):
         messages = []
         output_dict = {}
 
-        self.interface.get_many(self.interface.variable_list)
+        self.interface.get_many(self.interface.get_inputs())
         # print(f"values: {values}")
-        for key in self.interface.variable_list:
+        for key in self.interface.get_inputs():
             key, value = self.interface.get(key)
             if value is not None:
                 output_dict[key] = value

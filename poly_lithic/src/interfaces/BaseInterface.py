@@ -41,3 +41,13 @@ class BaseInterface(ABC):
     @abstractmethod
     def get_many(self, data, **kwargs):
         pass
+
+    @abstractmethod
+    def get_outputs(self) -> list[str]:
+        """Get a list of outputs that we should publish to"""
+        raise NotImplementedError()
+
+    @abstractmethod
+    def get_inputs(self) -> list[str]:
+        """Get a list of inputs that we should publish to"""
+        raise NotImplementedError()

@@ -40,18 +40,26 @@ class SimplePVAInterface(BaseInterface):
             os.environ['EPICS_PVA_NAME_SERVERS'] = 'localhost:5075'
 
         pv_dict = config['variables']
-        pv_list = []
-        # print(f"pv_dict: {pv_dict}")
+        self.in_list = []
+        self.out_list = []
         for pv in pv_dict:
             try:
                 assert pv_dict[pv]['proto'] == 'pva'
             except Exception:
                 logger.error(f'Protocol for {pv} is not pva')
                 raise AssertionError
-            pv_list.append(pv_dict[pv]['name'])
-        self.pv_list = pv_list
-        self.variable_list = list(pv_dict.keys())
-        logger.debug(f'SimplePVAInterface initialized with pv_url_list: {self.pv_list}')
+
+            mode = pv_dict[pv]['mode'] if 'mode' in pv_dict[pv] else 'inout'
+            if mode not in ['in', 'out', 'inout']:
+                logger.error(f'Mode must be "in", "out" or "inout"')
+                raise Exception(f'Mode must be "in", "out" or "inout"')
+
+            if mode == 'inout' or mode == 'out':
+                self.out_list.append(pv_dict[pv]['name'])
+            if mode == 'inout' or mode == 'in':
+                self.in_list.append(pv_dict[pv]['name'])
+
+        logger.debug(f'SimplePVAInterface initialized with out_list: {self.out_list} in_list: {self.in_list}')
 
     def __handler_wrapper(self, handler, name):
         # unwrap p4p.Value into name, value
@@ -63,7 +71,7 @@ class SimplePVAInterface(BaseInterface):
         return wrapped_handler
 
     def monitor(self, handler, **kwargs):
-        for pv in self.pv_list:
+        for pv in self.in_list:
             try:
                 new_handler = self.__handler_wrapper(handler, pv)
                 self.ctxt.monitor(pv, new_handler)
@@ -125,6 +133,11 @@ class SimplePVAInterface(BaseInterface):
         logger.debug('Closing SimplePVAInterface')
         self.ctxt.close()
 
+    def get_outputs(self):
+        return self.out_list
+
+    def get_inputs(self):
+        return self.in_list
 
 class SimplePVAInterfaceServer(SimplePVAInterface):
     """
@@ -155,7 +168,7 @@ class SimplePVAInterfaceServer(SimplePVAInterface):
 
         # print(f"self.init_pvs: {self.init_pvs}")
 
-        for pv in self.pv_list:
+        for pv in set(self.in_list + self.out_list):
             if 'type' in config['variables'][pv]:
                 pv_type = config['variables'][pv]['type']
                 if pv_type == 'image':
