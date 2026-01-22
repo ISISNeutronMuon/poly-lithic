@@ -86,3 +86,9 @@ class K2EGInterface(BaseInterface):
         self.client.close()
         print('K2EGInterface closed')
         return True
+
+    def get_inputs(self):
+        return self.variable_list
+
+    def get_outputs(self):
+        return self.variable_list
