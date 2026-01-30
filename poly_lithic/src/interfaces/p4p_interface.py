@@ -40,18 +40,26 @@ class SimplePVAInterface(BaseInterface):
             os.environ['EPICS_PVA_NAME_SERVERS'] = 'localhost:5075'
 
         pv_dict = config['variables']
-        pv_list = []
-        # print(f"pv_dict: {pv_dict}")
+        self.in_list = []
+        self.out_list = []
         for pv in pv_dict:
             try:
                 assert pv_dict[pv]['proto'] == 'pva'
             except Exception:
                 logger.error(f'Protocol for {pv} is not pva')
                 raise AssertionError
-            pv_list.append(pv_dict[pv]['name'])
-        self.pv_list = pv_list
-        self.variable_list = list(pv_dict.keys())
-        logger.debug(f'SimplePVAInterface initialized with pv_url_list: {self.pv_list}')
+
+            mode = pv_dict[pv]['mode'] if 'mode' in pv_dict[pv] else 'inout'
+            if mode not in ['in', 'out', 'inout']:
+                logger.error(f'Mode must be "in", "out" or "inout"')
+                raise Exception(f'Mode must be "in", "out" or "inout"')
+
+            if mode == 'inout' or mode == 'out':
+                self.out_list.append(pv_dict[pv]['name'])
+            if mode == 'inout' or mode == 'in':
+                self.in_list.append(pv_dict[pv]['name'])
+
+        logger.debug(f'SimplePVAInterface initialized with out_list: {self.out_list} in_list: {self.in_list}')
 
     def __handler_wrapper(self, handler, name):
         # unwrap p4p.Value into name, value
@@ -63,7 +71,7 @@ class SimplePVAInterface(BaseInterface):
         return wrapped_handler
 
     def monitor(self, handler, **kwargs):
-        for pv in self.pv_list:
+        for pv in self.in_list:
             try:
                 new_handler = self.__handler_wrapper(handler, pv)
                 self.ctxt.monitor(pv, new_handler)
@@ -125,6 +133,11 @@ class SimplePVAInterface(BaseInterface):
         logger.debug('Closing SimplePVAInterface')
         self.ctxt.close()
 
+    def get_outputs(self):
+        return self.out_list
+
+    def get_inputs(self):
+        return self.in_list
 
 class SimplePVAInterfaceServer(SimplePVAInterface):
     """
@@ -155,7 +168,7 @@ class SimplePVAInterfaceServer(SimplePVAInterface):
 
         # print(f"self.init_pvs: {self.init_pvs}")
 
-        for pv in self.pv_list:
+        for pv in set(self.in_list + self.out_list):
             if 'type' in config['variables'][pv]:
                 pv_type = config['variables'][pv]['type']
                 if pv_type == 'image':
@@ -205,15 +218,27 @@ class SimplePVAInterfaceServer(SimplePVAInterface):
                     pv_type_init = 0.0
                 self.value_build_fn = None
 
-            pv_item = {pv: SharedPV(initial=pv_type_init, nt=pv_type_nt)}
+            class Handler():
+                """Simple handler to reject writes to read-only outputs"""
+                def __init__(self, read_only: bool = False):
+                    self.read_only = read_only
+
+                def put(self, pv: SharedPV, op: ServOpWrap):
+                    if self.read_only:
+                        op.done(error='Model outputs are read-only')
+                        return
+                    pv.post(op.value(), timestamp=time.time())
+                    op.done()
+
+            # PVs that are exclusively outputs are considered read-only
+            read_only = False
+            if 'mode' in config['variables'][pv]:
+                read_only = config['variables'][pv]['mode'] == 'out'
+
+            pv_item = {pv: SharedPV(initial=pv_type_init, nt=pv_type_nt, handler=Handler(read_only))}
             # print(f"pv_item: {pv_item}")
             # print(f"pv_type_init: {pv_type_init}")
             # print(f"pv_type_nt: {pv_type_nt}")
-
-            @pv_item[pv].put
-            def put(pv: SharedPV, op: ServOpWrap):
-                pv.post(op.value(), timestamp=time.time())
-                op.done()
 
             self.shared_pvs[pv] = pv_item[pv]
 
