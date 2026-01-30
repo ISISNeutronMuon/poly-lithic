@@ -47,7 +47,7 @@ class ConfigObject(pydantic.BaseModel):
         edges = []
         # to collect edges we need to go through each item , look at what its publishing and find matching subsribers, this will form an edge
         for key, value in self.modules.items():
-            if value.pub is not None or value.pub.lower() != 'none':
+            if value.pub is not None or str(value.pub).lower() != 'none':
                 if isinstance(value.pub, str):
                     value.pub = [value.pub]
                 for key2, value2 in self.modules.items():
