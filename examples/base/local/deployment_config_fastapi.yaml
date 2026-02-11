@@ -1,0 +1,106 @@
+deployment:
+  type: "continuous"
+  rate: 1 #seconds
+
+modules: 
+  fastapi_server:
+    name: "fastapi_server"
+    type: "interface.fastapi_server"
+    pub: 
+      - "in_interface"
+    sub: 
+      - "get_all"
+      - "out_transformer"
+    module_args: None
+    config: 
+      name: "fastapi_server"
+      host: "127.0.0.1"
+      port: 8000
+      start_server: true
+      wait_for_server_start: true
+      startup_timeout_s: 5.0
+      input_queue_max: 1000
+      output_queue_max: 1000
+      variables:
+        ML:LOCAL:TEST_B:
+          mode: in
+          type: scalar
+          default: 0.0
+        ML:LOCAL:TEST_A:
+          mode: in
+          type: scalar
+          default: 0.0
+        ML:LOCAL:TEST_S:
+          mode: out
+          type: scalar
+          default: 0.0
+
+  p4p_server: # p4p spigot, we can have multiple interfaces in the same deployment as long as we have once source of truth for the variables, in this case the fastapi server, which is where the data is coming in and going out, we can have as many spigots as we like that read and write to the same variables
+    name: "p4p_server"
+    type: "interface.p4p_server"
+    pub: 
+      - "in_interface"
+    sub: 
+      - "in_interface"
+      - "out_transformer"             
+    module_args: None
+    config: 
+      EPICS_PVA_NAME_SERVERS: "localhost:5075"
+      variables:
+        ML:LOCAL:TEST_B:
+          proto: pva
+          mode: out
+          name: ML:LOCAL:TEST_B 
+        ML:LOCAL:TEST_A:
+          proto: pva
+          mode: out
+          name: ML:LOCAL:TEST_A
+        ML:LOCAL:TEST_S:
+          proto: pva
+          mode: out
+          name: ML:LOCAL:TEST_S
+  
+  input_transformer:
+    name: "input_transformer"
+    type: "transformer.SimpleTransformer"
+    pub: "in_transformer"
+    sub: "in_interface"
+    module_args: None
+    config:
+      symbols:
+        - "ML:LOCAL:TEST_B"
+        - "ML:LOCAL:TEST_A"
+      variables:
+        x:
+          formula: "ML:LOCAL:TEST_A * 2 + 10"
+        y: 
+          formula: "ML:LOCAL:TEST_B + 120"
+
+  model:
+    name: "model"
+    type: "model.SimpleModel"
+    pub: "model"
+    sub: "in_transformer"
+    module_args: None
+    config:
+      type: "LocalModelGetter"
+      args: 
+        model_path: "examples/base/local/model_definition.py"
+        model_factory_class: "ModelFactory"
+      variables:
+        max:
+          type: "scalar"
+  
+  output_transformer:
+    name: "output_transformer"
+    type: "transformer.SimpleTransformer"
+    pub: "out_transformer"
+    sub: "model"
+    module_args: 
+      unpack_data: True
+    config:
+      symbols:
+        - "output"
+      variables:
+        ML:LOCAL:TEST_S:
+          formula: "output"

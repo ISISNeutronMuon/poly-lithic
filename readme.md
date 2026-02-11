@@ -21,6 +21,9 @@ use old docs in the meantime: [old docs](./readme_old.md) -->
         - [p4p sample configuration](#p4p-sample-configuration)
         - [p4p_server sample configuration](#p4p_server-sample-configuration)
         - [k2eg sample configuration](#k2eg-sample-configuration)
+        - [fastapi_server sample configuration](#fastapi_server-sample-configuration)
+          - [REST API Endpoints](#rest-api-endpoints)
+          - [Job Lifecycle & Tracking](#job-lifecycle--tracking)
     - [Transformer](#transformer)
       - [Transformer Configs](#transformer-configs)
         - [SimpleTransformer sample configuration](#simpletransformer-sample-configuration)
@@ -212,6 +215,7 @@ data = {
 | `p4p` | EPICS data source, must have an external EPICS server running. Note that SoftIOCPVA will not work with this module. | [config](#p4p-sample-configuration) |
 | `p4p_server` | EPICS data source, host EPICS p4p server for specifed PVs | same [config](#p4p-sample-configuration) as `p4p`|
 | `k2eg` | Kafka to EPICS gateway, get data from Kafka and write it to EPICS | [config](#k2eg-sample-configuration) |
+| `fastapi_server` | HTTP/REST interface with job queue for request-response model inference | [config](#fastapi_server-sample-configuration) |
 
 ##### `p4p` sample configuration
 ```yaml
@@ -273,6 +277,175 @@ input_data:
         proto: pva
         name: MY_VAR:TEST_B
 ```
+
+##### `fastapi_server` sample configuration
+
+The `fastapi_server` interface exposes a REST API for submitting inference jobs and retrieving results. It manages an internal job queue and variable store, and embeds a uvicorn server.
+
+###### Config fields
+
+| Field | Type | Default | Description |
+| ----- | ---- | ------- | ----------- |
+| `name` | string | `"fastapi_server"` | Display name |
+| `host` | string | `"127.0.0.1"` | Bind address |
+| `port` | int | `8000` | Bind port |
+| `start_server` | bool | `true` | Whether to launch embedded uvicorn |
+| `wait_for_server_start` | bool | `false` | Block until server is accepting connections |
+| `startup_timeout_s` | float | `2.0` | Max wait for startup |
+| `input_queue_max` | int | `1000` | Max queued jobs before rejecting (HTTP 429) |
+| `output_queue_max` | int | `1000` | Max completed jobs before oldest is evicted |
+| `cors_origins` | list\[string\] | `[]` | CORS allow-origins (empty = no CORS middleware) |
+| `variables` | dict | **required** | Variable definitions (see below) |
+
+###### Variable fields
+
+| Field | Type | Default | Description |
+| ----- | ---- | ------- | ----------- |
+| `mode` | string | `"inout"` | `in`, `out`, or `inout` |
+| `type` | string | `"scalar"` | `scalar`, `waveform`, `array`, or `image` |
+| `default` | any | `0.0` / zeros | Initial value (not supported for `image` type) |
+| `length` | int | `10` | Array/waveform length when no default is provided |
+| `image_size` | dict | — | Required for `image` type: `{"x": int, "y": int}` |
+
+###### Example YAML
+
+```yaml
+modules:
+  my_fastapi:
+    name: "my_fastapi"
+    type: "interface.fastapi_server"
+    pub: "in_interface"
+    sub:
+      - "get_all"
+      - "out_transformer"
+    config:
+      name: "my_fastapi_interface"
+      host: "127.0.0.1"
+      port: 8000
+      start_server: true
+      input_queue_max: 1000
+      output_queue_max: 1000
+      cors_origins:
+        - "http://localhost:3000"
+      variables:
+        MY_INPUT_A:
+          mode: in
+          type: scalar
+          default: 0.0
+        MY_INPUT_B:
+          mode: in
+          type: array
+          default: [1, 2, 3, 4, 5]
+        MY_IMAGE_IN:
+          mode: in
+          type: image
+          image_size:
+            x: 128
+            y: 64
+        MY_OUTPUT:
+          mode: out
+          type: scalar
+          default: 0.0
+
+###### Runnable config (array/waveform)
+
+For a full runnable config that includes `array` and `waveform` variables, see
+[examples/base/local/deployment_config_fastapi_array_waveform.yaml](examples/base/local/deployment_config_fastapi_array_waveform.yaml).
+
+Run it with:
+
+```bash
+pl run --publish -c examples/base/local/deployment_config_fastapi_array_waveform.yaml
+```
+
+Sample curl commands for the runnable config:
+
+```bash
+curl http://127.0.0.1:8000/health
+
+curl -X POST http://127.0.0.1:8000/submit \
+  -H 'Content-Type: application/json' \
+  -d '{"job_id":"job-001","variables":{"ML:LOCAL:WAVEFORM_IN":{"value":[1,2,3,4,5,6,7,8]},"ML:LOCAL:ARRAY_IN":{"value":[10,11,12,13]},"ML:LOCAL:TEST_A":{"value":1.23},"ML:LOCAL:TEST_B":{"value":4.56}}}'
+
+curl -X POST http://127.0.0.1:8000/get \
+  -H 'Content-Type: application/json' \
+  -d '{"variables":["ML:LOCAL:WAVEFORM_IN","ML:LOCAL:ARRAY_IN","ML:LOCAL:TEST_S","ML:LOCAL:WAVEFORM_OUT"]}'
+
+curl http://127.0.0.1:8000/jobs/next
+
+curl http://127.0.0.1:8000/jobs/job-001
+```
+```
+
+###### REST API Endpoints
+
+| Method | Path | Description |
+| ------ | ---- | ----------- |
+| `GET` | `/health` | Health check — returns `{"status": "ok", "type": "interface.fastapi_server"}` |
+| `GET` | `/settings` | Variable metadata, queue limits, and route table |
+| `POST` | `/submit` | Submit a single inference job |
+| `POST` | `/get` | Read current variable values |
+| `POST` | `/jobs` | Submit a batch of jobs |
+| `GET` | `/jobs/next` | Dequeue the next completed job |
+| `GET` | `/jobs/{job_id}` | Get the status of a specific job |
+
+**Submit request body:**
+```json
+{
+  "job_id": "optional-custom-id",
+  "variables": {
+    "MY_INPUT_A": {"value": 3.14},
+    "MY_INPUT_B": {"value": [10, 20, 30, 40, 50]}
+  }
+}
+```
+
+**Job snapshot response (from `/jobs/next` or `/jobs/{job_id}`):**
+```json
+{
+  "job_id": "uuid",
+  "status": "completed",
+  "submitted_at": 1707600000.0,
+  "started_at": 1707600001.0,
+  "completed_at": 1707600002.0,
+  "error": null,
+  "inputs": {"MY_INPUT_A": {"value": 3.14}},
+  "outputs": {"MY_OUTPUT": {"value": 42.0}}
+}
+```
+
+**Error codes:**
+
+| Code | Condition |
+| ---- | --------- |
+| 403 | Write to a read-only variable (`mode: out`) |
+| 404 | Unknown variable name, unknown job ID, or no completed jobs for `/jobs/next` |
+| 409 | Duplicate job ID |
+| 422 | Type validation failure (e.g. wrong shape, non-numeric value) |
+| 429 | Input queue full |
+
+###### Job Lifecycle & Tracking
+
+Jobs submitted via `/submit` or `/jobs` follow this lifecycle:
+
+```
+submit → queued → running → completed
+```
+
+1. **Queued** — the job is validated and placed in the input queue.
+2. **Running** — on each clock tick, **one** queued job is transitioned to running and its input values are loaded into the variable store for the pipeline to process.
+3. **Completed** — when the pipeline writes results back via `put_many`, the oldest running job is marked as completed and its outputs are recorded.
+
+Completed jobs can be retrieved via `GET /jobs/next` (FIFO dequeue) or `GET /jobs/{job_id}` (by ID).
+
+> [!NOTE]
+> **Current tracking limitation (Stage 1 / v1.7.3+):**
+> Job tracking is currently **approximated using FIFO ordering**. The pipeline's transformers strip message metadata, so the `job_id` is typically not propagated through to `put_many`. Instead, the system uses a FIFO fallback: when results arrive, the **oldest running job** is assumed to be the one that completed. To enforce this assumption, the clock-driven path transitions only **one queued job per tick** to running state.
+>
+> This approach is reliable for single-job-at-a-time workloads but does not support true concurrent job tracking.
+>
+> **Planned improvement (Stage 2 / v1.8+):**
+> Proper job tracking will be integrated via trace propagation across the message broker. Each job's `job_id` will be carried through the full pipeline in struct metadata, enabling accurate matching of results to jobs even under concurrent load.
 
 ### Transformer
 
@@ -523,6 +696,8 @@ See the [MLFlow example notebook](./examples/base/simple_model_mlflow.ipynb) for
 | 🔌 🧩 **Plugin System for Modules**                      | 1–3 Months   | 🥇       | Complete! |
 | 🧠 🔧 **Lume-Model Integration**               | 1–3 Months   | 🥇       | 🚧 In Progress |
 | ⚡ 🔄 **Event driven mode**                    | 1-3 Months   | 🥈       | 🚧 In Progress     |
+| 🌐 🔌 **FastAPI REST Interface**                | 1–3 Months   | 🥇       | ✅ Complete |
+| 🔗 📡 **Job trace propagation across broker**   | 1–1 Months   | 🥈       | ⏳ Planned     |
 | 📦 🤖 **MLflow 3.x Support**                   | 6–12 Months   | 🥇       | ⏳ Planned     |
 | 🌐 🚀 **Move to `gh-pages`**                   | 1–3 Months   | 🥈       | 🚧 In Progress |
 | 🔗 🧪 **p4p4isis Interface**                   | 6–12 Months  | 🥉       | ⏳ Planned     |

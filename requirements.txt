@@ -1,6 +1,6 @@
 colorlog==6.8.2
 h5py==3.12.1
-k2eg==0.2.20
+k2eg==0.3.0
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch
 lume-model==2.0.0
@@ -10,11 +10,13 @@ networkx==3.4.2
 numpy>=1.26.4
 p4p==4.2.1
 pydantic==2.10.6
-pytest==8.3.4
+pytest==9.0.2
 PyYAML==6.0.2
 Requests==2.32.3
 sympy==1.13.1
 networkx
+fastapi>=0.116.0
+uvicorn>=0.35.0
 # tensorflow
 # torch
 # botorch

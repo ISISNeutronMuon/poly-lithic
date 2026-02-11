@@ -20,7 +20,7 @@ dependencies = [
     "mlflow==2.22.2",
     "boto3>=1.34.65",
     "psycopg2-binary",
-    "k2eg>=0.2.16",
+    "k2eg>=0.3.0",
     "psutil>=6.0.0",
     "colorlog>=6.8.2",
     "p4p>=4.2.0",
@@ -34,6 +34,8 @@ dependencies = [
     "sympy>=1.13.1",
     "jinja2>=3.1.6",
     "yaspin>=3.2.0",
+    "fastapi>=0.128.7",
+    "uvicorn>=0.40.0",
 ]
 [project.optional-dependencies]
 dev = [

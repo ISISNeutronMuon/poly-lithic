@@ -1,0 +1,104 @@
+deployment:
+  type: "continuous"
+  rate: 1
+
+modules:
+  fastapi_server:
+    name: "fastapi_server"
+    type: "interface.fastapi_server"
+    pub:
+      - "in_interface"
+    sub:
+      - "get_all"
+      - "out_transformer"
+    module_args: None
+    config:
+      name: "fastapi_server"
+      host: "127.0.0.1"
+      port: 8000
+      start_server: true
+      wait_for_server_start: true
+      startup_timeout_s: 5.0
+      input_queue_max: 1000
+      output_queue_max: 1000
+      variables:
+        ML:LOCAL:TEST_A:
+          mode: in
+          type: scalar
+          default: 0.0
+        ML:LOCAL:TEST_B:
+          mode: in
+          type: scalar
+          default: 0.0
+        ML:LOCAL:WAVEFORM_IN:
+          mode: in
+          type: waveform
+          length: 8
+        ML:LOCAL:ARRAY_IN:
+          mode: in
+          type: array
+          default: [0.0, 1.0, 2.0, 3.0]
+        ML:LOCAL:TEST_S:
+          mode: out
+          type: scalar
+          default: 0.0
+        ML:LOCAL:WAVEFORM_OUT:
+          mode: out
+          type: waveform
+          length: 8
+
+  input_transformer:
+    name: "input_transformer"
+    type: "transformer.SimpleTransformer"
+    pub: "in_transformer"
+    sub: "in_interface"
+    module_args: None
+    config:
+      symbols:
+        - "ML:LOCAL:TEST_B"
+        - "ML:LOCAL:TEST_A"
+        - "ML:LOCAL:WAVEFORM_IN"
+        - "ML:LOCAL:ARRAY_IN"
+      variables:
+        x:
+          formula: "ML:LOCAL:TEST_A * 2 + 10"
+        y:
+          formula: "ML:LOCAL:TEST_B + 120"
+        waveform_in:
+          formula: "ML:LOCAL:WAVEFORM_IN"
+        array_in:
+          formula: "ML:LOCAL:ARRAY_IN"
+
+  model:
+    name: "model"
+    type: "model.SimpleModel"
+    pub: "model"
+    sub: "in_transformer"
+    module_args: None
+    config:
+      type: "LocalModelGetter"
+      args:
+        model_path: "examples/base/local/model_definition_waveform_array.py"
+        model_factory_class: "ModelFactory"
+      variables:
+        waveform_out:
+          type: "waveform"
+        output:
+          type: "scalar"
+
+  output_transformer:
+    name: "output_transformer"
+    type: "transformer.SimpleTransformer"
+    pub: "out_transformer"
+    sub: "model"
+    module_args:
+      unpack_data: True
+    config:
+      symbols:
+        - "output"
+        - "waveform_out"
+      variables:
+        ML:LOCAL:TEST_S:
+          formula: "output"
+        ML:LOCAL:WAVEFORM_OUT:
+          formula: "waveform_out"
