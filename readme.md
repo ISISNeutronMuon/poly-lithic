@@ -348,7 +348,7 @@ modules:
           mode: out
           type: scalar
           default: 0.0
-
+```
 ###### Runnable config (array/waveform)
 
 For a full runnable config that includes `array` and `waveform` variables, see
@@ -376,7 +376,6 @@ curl -X POST http://127.0.0.1:8000/get \
 curl http://127.0.0.1:8000/jobs/next
 
 curl http://127.0.0.1:8000/jobs/job-001
-```
 ```
 
 ###### REST API Endpoints
