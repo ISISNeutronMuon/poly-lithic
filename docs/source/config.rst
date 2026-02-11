@@ -68,6 +68,7 @@ Each interface type has its own ``config`` block. Refer to the
   ``input_queue_max``, ``output_queue_max``, ``cors_origins``, and typed
   ``variables`` (with ``mode``, ``type``, ``default``, ``length``,
   ``image_size`` fields)
+  (experimental)
 
 Transformer modules
 ~~~~~~~~~~~~~~~~~~~

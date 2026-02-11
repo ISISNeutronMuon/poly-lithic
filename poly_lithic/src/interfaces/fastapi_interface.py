@@ -119,6 +119,10 @@ class SimpleFastAPIInterfaceServer(BaseInterface):
         self._output_queue_max = int(config.get('output_queue_max', 1000))
         self._cors_origins: list[str] = config.get('cors_origins', [])
 
+        logger.warning(
+            'fastapi_server is experimental and may change or be removed without notice.'
+        )
+
         # -- variable state ---------------------------------------------
         self._lock = threading.RLock()
         self._var_store: dict[str, Any] = {}

@@ -282,6 +282,8 @@ input_data:
 
 The `fastapi_server` interface exposes a REST API for submitting inference jobs and retrieving results. It manages an internal job queue and variable store, and embeds a uvicorn server.
 
+> Warning: `fastapi_server` is experimental and may change or be removed without notice.
+
 ###### Config fields
 
 | Field | Type | Default | Description |

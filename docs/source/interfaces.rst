@@ -33,6 +33,11 @@ The ``fastapi_server`` interface exposes a REST API for submitting inference
 jobs and retrieving results. It manages an internal job queue and variable
 store, and embeds a uvicorn server.
 
+.. warning::
+
+  ``fastapi_server`` is experimental and may change or be removed without
+  notice.
+
 Register it in your YAML config with ``type: "interface.fastapi_server"``.
 
 Configuration Fields
