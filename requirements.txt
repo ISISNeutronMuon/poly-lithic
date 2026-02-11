@@ -17,6 +17,7 @@ sympy==1.13.1
 networkx
 fastapi>=0.116.0
 uvicorn>=0.35.0
+pytest-asyncio
 # tensorflow
 # torch
 # botorch
