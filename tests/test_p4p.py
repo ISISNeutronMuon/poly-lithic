@@ -105,3 +105,157 @@ def test_SimplePVAInterface_put_and_get_array():
     np.testing.assert_array_equal(array_get['value'], arry)
 
     p4p.close()
+
+
+def test_SimplePVAInterface_reject_compute_alarm_on_non_scalar():
+    config = {
+        'variables': {
+            'test:array:AA': {
+                'name': 'test:array:AA',
+                'proto': 'pva',
+                'type': 'array',
+                'compute_alarm': True,
+                'valueAlarm': {
+                    'active': True,
+                    'lowAlarmLimit': -5.0,
+                    'lowWarningLimit': -2.0,
+                    'highWarningLimit': 2.0,
+                    'highAlarmLimit': 5.0,
+                    'lowAlarmSeverity': 2,
+                    'lowWarningSeverity': 1,
+                    'highWarningSeverity': 1,
+                    'highAlarmSeverity': 2,
+                },
+            }
+        }
+    }
+    with pytest.raises(ValueError, match='compute_alarm is only valid for scalar PVs'):
+        SimplePVAInterface(config)
+
+
+def test_SimplePVAInterface_alarm_put_fallback(monkeypatch):
+    config = {
+        'variables': {
+            'test:float:AA': {
+                'name': 'test:float:AA',
+                'proto': 'pva',
+                'type': 'scalar',
+                'compute_alarm': True,
+                'valueAlarm': {
+                    'active': True,
+                    'lowAlarmLimit': -5.0,
+                    'lowWarningLimit': -2.0,
+                    'highWarningLimit': 2.0,
+                    'highAlarmLimit': 5.0,
+                    'lowAlarmSeverity': 2,
+                    'lowWarningSeverity': 1,
+                    'highWarningSeverity': 1,
+                    'highAlarmSeverity': 2,
+                },
+            }
+        }
+    }
+    p4p = SimplePVAInterface(config)
+
+    calls = []
+
+    def fake_put(name, payload):
+        calls.append((name, payload))
+        if isinstance(payload, dict) and 'alarm' in payload:
+            raise RuntimeError('structured put not supported')
+        return None
+
+    monkeypatch.setattr(p4p.ctxt, 'put', fake_put)
+
+    p4p.put(
+        'test:float:AA',
+        {'value': 3.0, 'alarm': {'severity': 1, 'status': 4, 'message': 'HIGH'}},
+    )
+
+    assert len(calls) == 2
+    assert isinstance(calls[0][1], dict)
+    assert 'alarm' in calls[0][1]
+    assert calls[1][1] == 3.0
+    p4p.close()
+
+
+def test_SimplePVAInterface_non_scalar_explicit_alarm_passthrough(monkeypatch):
+    config = {
+        'variables': {
+            'test:array:AA': {
+                'name': 'test:array:AA',
+                'proto': 'pva',
+                'type': 'array',
+                'valueAlarm': {
+                    'active': True,
+                    'lowAlarmLimit': -5.0,
+                    'lowWarningLimit': -2.0,
+                    'highWarningLimit': 2.0,
+                    'highAlarmLimit': 5.0,
+                    'lowAlarmSeverity': 2,
+                    'lowWarningSeverity': 1,
+                    'highWarningSeverity': 1,
+                    'highAlarmSeverity': 2,
+                },
+            }
+        }
+    }
+    p4p = SimplePVAInterface(config)
+
+    sent = []
+
+    def fake_put(name, payload):
+        sent.append(payload)
+        return None
+
+    monkeypatch.setattr(p4p.ctxt, 'put', fake_put)
+
+    p4p.put(
+        'test:array:AA',
+        {
+            'value': [1.0, 2.0, 3.0],
+            'alarm': {'severity': 1, 'status': 4, 'message': 'HIGH'},
+        },
+    )
+    p4p.put('test:array:AA', {'value': [4.0, 5.0, 6.0]})
+
+    assert sent[0]['alarm']['status'] == 4
+    assert 'alarm' not in sent[1]
+    p4p.close()
+
+
+def test_SimplePVAInterface_compute_alarm_defaults_missing_severities(monkeypatch):
+    config = {
+        'variables': {
+            'test:float:AA': {
+                'name': 'test:float:AA',
+                'proto': 'pva',
+                'type': 'scalar',
+                'compute_alarm': True,
+                'valueAlarm': {
+                    'active': True,
+                    'lowAlarmLimit': -5.0,
+                    'lowWarningLimit': -2.0,
+                    'highWarningLimit': 2.0,
+                    'highAlarmLimit': 5.0,
+                },
+            }
+        }
+    }
+    p4p = SimplePVAInterface(config)
+    sent = []
+
+    def fake_put(name, payload):
+        sent.append(payload)
+        return None
+
+    monkeypatch.setattr(p4p.ctxt, 'put', fake_put)
+
+    p4p.put('test:float:AA', {'value': 3.0})
+    p4p.put('test:float:AA', {'value': 6.0})
+
+    assert sent[0]['alarm']['severity'] == 1
+    assert sent[0]['alarm']['status'] == 4
+    assert sent[1]['alarm']['severity'] == 2
+    assert sent[1]['alarm']['status'] == 3
+    p4p.close()

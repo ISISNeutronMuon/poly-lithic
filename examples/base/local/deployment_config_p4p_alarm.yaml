@@ -1,0 +1,127 @@
+deployment:
+  type: "continuous"
+  rate: .1 #seconds
+
+modules:
+  p4p_server:
+    name: "p4p_server"
+    type: "interface.p4p_server"
+    pub:
+      - "in_interface"
+    sub:
+      - "get_all"
+      - "model_out"
+    module_args: None
+    config:
+      EPICS_PVA_NAME_SERVERS: "localhost:5075"
+      variables:
+        # scalar inputs
+        ML:LOCAL:TEST_B:
+          proto: pva
+          name: ML:LOCAL:TEST_B
+          type: scalar
+          default: 0.0
+          compute_alarm: true
+          display:
+            description: "Model input B"
+            units: "arb"
+            format: "%.3f"
+            limitLow: -20.0
+            limitHigh: 20.0
+          control:
+            limitLow: -10.0
+            limitHigh: 10.0
+            minStep: 0.1
+          valueAlarm:
+            active: true
+            lowAlarmLimit: -8.0
+            lowWarningLimit: -5.0
+            highWarningLimit: 5.0
+            highAlarmLimit: 8.0
+
+        ML:LOCAL:TEST_A:
+          proto: pva
+          name: ML:LOCAL:TEST_A
+          type: scalar
+          default: 0.0
+          compute_alarm: true
+          display:
+            description: "Model input A"
+            units: "arb"
+            format: "%.3f"
+            limitLow: -20.0
+            limitHigh: 20.0
+          control:
+            limitLow: -10.0
+            limitHigh: 10.0
+            minStep: 0.1
+          valueAlarm:
+            active: true
+            lowAlarmLimit: -8.0
+            lowWarningLimit: -5.0
+            highWarningLimit: 5.0
+            highAlarmLimit: 8.0
+
+        # scalar output with computed alarm
+        ML:LOCAL:TEST_S:
+          proto: pva
+          name: ML:LOCAL:TEST_S
+          type: scalar
+          default: 0.0
+          compute_alarm: true
+          display:
+            description: "Model output S"
+            units: "arb"
+            format: "%.3f"
+            limitLow: -200.0
+            limitHigh: 200.0
+          control:
+            limitLow: -120.0
+            limitHigh: 120.0
+            minStep: 0.1
+          valueAlarm:
+            active: true
+            lowAlarmLimit: -100.0
+            lowWarningLimit: -60.0
+            highWarningLimit: 60.0
+            highAlarmLimit: 100.0
+
+        # non-scalar PV: no computed alarms, but explicit alarm payloads are forwarded
+        ML:LOCAL:TEST_WF:
+          proto: pva
+          name: ML:LOCAL:TEST_WF
+          type: waveform
+          length: 8
+          default: [0, 1, 2, 3, 4, 5, 6, 7]
+
+  input_transformer:
+    name: "input_transformer"
+    type: "transformer.SimpleTransformer"
+    pub: "in_transformer"
+    sub: "in_interface"
+    module_args: None
+    config:
+      symbols:
+        - "ML:LOCAL:TEST_B"
+        - "ML:LOCAL:TEST_A"
+      variables:
+        x:
+          formula: "ML:LOCAL:TEST_A"
+        y:
+          formula: "ML:LOCAL:TEST_B"
+
+  model:
+    name: "model"
+    type: "model.SimpleModel"
+    pub: "model_out"
+    sub: "in_transformer"
+    module_args: None
+    config:
+      type: "LocalModelGetter"
+      args:
+        # This model emits an explicit alarm payload for ML:LOCAL:TEST_S.
+        model_path: "examples/base/local/model_definition_alarm_override.py"
+        model_factory_class: "ModelFactory"
+      variables:
+        max:
+          type: "scalar"

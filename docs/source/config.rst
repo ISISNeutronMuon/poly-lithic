@@ -62,7 +62,8 @@ Each interface type has its own ``config`` block. Refer to the
 :doc:`interfaces` guide for details on:
 
 - ``p4p`` / ``p4p_server`` — EPICS PVA variables with ``proto``, ``name``,
-  ``type``, ``default`` fields
+  ``type``, ``default`` fields, plus optional alarm metadata
+  (``compute_alarm``, ``display``, ``control``, ``valueAlarm``)
 - ``k2eg`` — Kafka-to-EPICS gateway variables
 - ``fastapi_server`` — REST API with ``host``, ``port``, ``start_server``,
   ``input_queue_max``, ``output_queue_max``, ``cors_origins``, and typed

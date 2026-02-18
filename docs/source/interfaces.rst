@@ -21,6 +21,89 @@ The ``p4p`` interface connects to an external EPICS server. The ``p4p_server``
 interface hosts its own p4p server for the specified PVs. Both share the same
 YAML configuration format. See the README for sample YAML.
 
+EPICS Variable Fields
+~~~~~~~~~~~~~~~~~~~~~
+
+.. list-table::
+   :header-rows: 1
+   :widths: 18 10 15 57
+
+   * - Field
+     - Type
+     - Default
+     - Description
+   * - ``proto``
+     - string
+     - **required**
+     - Protocol (currently ``pva``)
+   * - ``name``
+     - string
+     - **required**
+     - PV name
+   * - ``mode``
+     - string
+     - ``"inout"``
+     - ``in``, ``out``, or ``inout``
+   * - ``type``
+     - string
+     - ``"scalar"``
+     - ``scalar``, ``waveform``, ``array``, ``image``
+   * - ``default``
+     - any
+     - ``0.0`` / zeros
+     - Initial value (not supported for ``image`` type)
+   * - ``length``
+     - int
+     - ``10``
+     - Array/waveform length when no default is provided
+   * - ``image_size``
+     - dict
+     - —
+     - Required for ``image`` type: ``{"x": int, "y": int}``
+   * - ``compute_alarm``
+     - bool
+     - ``false``
+     - Enable scalar alarm computation from ``valueAlarm`` limits
+   * - ``display``
+     - dict
+     - —
+     - Optional NTScalar display metadata
+   * - ``control``
+     - dict
+     - —
+     - Optional NTScalar control metadata
+   * - ``valueAlarm``
+     - dict
+     - —
+     - Optional NTScalar alarm limit metadata
+
+Alarm Behavior
+~~~~~~~~~~~~~~
+
+- Computation is scalar-only and active when ``compute_alarm: true``.
+- ``compute_alarm: true`` requires:
+  ``valueAlarm.active: true`` and limits
+  ``lowAlarmLimit``, ``lowWarningLimit``, ``highWarningLimit``, ``highAlarmLimit``.
+- Missing severities use defaults:
+  ``lowAlarmSeverity=2``, ``lowWarningSeverity=1``,
+  ``highWarningSeverity=1``, ``highAlarmSeverity=2``.
+- Status mapping follows EPICS ``menuAlarmStat``:
+  ``NO_ALARM=0``, ``HIHI=3``, ``HIGH=4``, ``LOLO=5``, ``LOW=6``.
+- Explicit ``alarm`` payload overrides computed alarm.
+- Non-scalars do not compute alarms, but explicit ``alarm`` payloads are accepted.
+
+Model Alarm Override
+~~~~~~~~~~~~~~~~~~~~
+
+Models can publish structured output with explicit alarm fields (for example
+``{"PV": {"value": 1.0, "alarm": {...}}}``), and ``ModelObserver`` preserves
+that structure when publishing downstream.
+
+See example:
+
+- ``examples/base/local/deployment_config_p4p_alarm.yaml``
+- ``examples/base/local/model_definition_alarm_override.py``
+
 k2eg Interface
 --------------
 Built on SLAC's `k2eg <https://github.com/slaclab/k2eg>`_, this interface gets

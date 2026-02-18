@@ -7,6 +7,7 @@ from poly_lithic.src.utils.messaging import (
     Message,
     MessageBroker,
     Observer,
+    ModelObserver,
     TransformerObserver,
 )
 from poly_lithic.src.transformers.BaseTransformers import SimpleTransformer
@@ -90,3 +91,24 @@ def test_TransformerObserver(message_broker, test_observer):
     assert st.updated is False
     assert st.latest_transformed['x2'] == 2 * 2
     assert st.latest_transformed['x1'] == 2
+
+
+def test_ModelObserver_preserves_structured_value_payload():
+    class StructuredModel:
+        def evaluate(self, value):
+            return {
+                'PV:TEST': {
+                    'value': 7.0,
+                    'alarm': {'severity': 2, 'status': 3, 'message': 'HIHI'},
+                }
+            }
+
+    observer = ModelObserver(model=StructuredModel(), topic='model_out')
+    message = Message(topic='in_transformer', source='test', value={'x': {'value': 1.0}})
+    out_messages = observer.update(message)
+    assert len(out_messages) == 1
+    output = out_messages[0].value['PV:TEST']
+    assert output['value'] == 7.0
+    assert output['alarm']['severity'] == 2
+    assert output['alarm']['status'] == 3
+    assert output['alarm']['message'] == 'HIHI'

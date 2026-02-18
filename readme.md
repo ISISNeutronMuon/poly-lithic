@@ -239,6 +239,8 @@ modules:
           name: MY_VAR:TEST_S
           # default: 0 | [0.0, ... ,0.0] | no defaults for images   optional
           # type: scalar | waverform | image (default scalar)       optional
+          # compute_alarm: true|false (default false)                optional
+          # display/control/valueAlarm: native NTScalar metadata     optional
 ```
 
 ##### `p4p_server` sample configuration
@@ -258,8 +260,77 @@ modules:
           name: MY_VAR:TEST_S
           # default: 0 | [0.0, ... ,0.0] | no defaults for images   optional
           # type: scalar | waverform | image (default scalar)       optional
+          # compute_alarm: true|false (default false)                optional
+          # display/control/valueAlarm: native NTScalar metadata     optional
 ```
 Yes, it is identical to p4p, the only difference is that the p4p server will host the PVs for the specified variables.
+
+###### Alarm config for `p4p` / `p4p_server`
+
+Scalar PVs can compute EPICS alarm fields from ``valueAlarm`` limits:
+
+- ``compute_alarm`` (bool, default ``false``)
+- ``display`` (optional): ``limitLow``, ``limitHigh``, ``description``, ``format``, ``units``
+- ``control`` (optional): ``limitLow``, ``limitHigh``, ``minStep``
+- ``valueAlarm`` (optional native NT block)
+
+When ``compute_alarm: true``:
+
+- ``valueAlarm.active`` must be ``true``
+- required limits: ``lowAlarmLimit``, ``lowWarningLimit``, ``highWarningLimit``, ``highAlarmLimit``
+- optional severities default to:
+  ``lowAlarmSeverity=2``, ``lowWarningSeverity=1``, ``highWarningSeverity=1``, ``highAlarmSeverity=2``
+
+Status mapping follows EPICS ``menuAlarmStat``:
+``NO_ALARM=0``, ``HIHI=3``, ``HIGH=4``, ``LOLO=5``, ``LOW=6``.
+
+Notes:
+
+- Non-scalar PVs do not compute alarms.
+- Non-scalar and scalar PVs may still pass explicit ``alarm`` payloads manually.
+- Explicit ``alarm`` payload always overrides computed alarm.
+- ``p4p`` client attempts structured put first; if the server rejects it, it retries with value-only put.
+
+###### Alarm evaluation flow
+
+```mermaid
+flowchart TD
+    A[Incoming put payload] --> B{Explicit alarm in payload?}
+    B -- Yes --> C[Forward payload as-is]
+    B -- No --> D{Scalar PV?}
+    D -- No --> E[No computation<br/>Write value only]
+    D -- Yes --> F{compute_alarm true?}
+    F -- No --> E
+    F -- Yes --> G{valueAlarm.active true<br/>and limits valid?}
+    G -- No --> H[Config validation error at startup]
+    G -- Yes --> I[Evaluate thresholds]
+    I --> J[Set alarm severity/status/message]
+    J --> K[Write structured payload]
+    C --> L{Client put accepted?}
+    K --> L
+    L -- Yes --> M[Done]
+    L -- No --> N[Client fallback:<br/>retry value-only put]
+    N --> M
+```
+
+###### Model-side alarm override
+
+The model may override alarm fields by returning structured output:
+
+```python
+return {
+    "ML:LOCAL:TEST_S": {
+        "value": output_value,
+        "alarm": {"severity": 2, "status": 3, "message": "HIHI (model override)"},
+    }
+}
+```
+
+This is supported by ``ModelObserver`` and passed through to interfaces.
+See runnable example:
+
+- config: ``examples/base/local/deployment_config_p4p_alarm.yaml``
+- model: ``examples/base/local/model_definition_alarm_override.py``
 
 #### `k2eg` Sample configuration
 
@@ -705,4 +776,3 @@ See the [MLFlow example notebook](./examples/base/simple_model_mlflow.ipynb) for
 | 📊 🧭 **Time Series Aggregation**              | 3–6 Months   | 🥉       | ⏳ Planned     |
 | 📈 🔍 **Model Evaluator Module**               | 3–6 Months   | 🥉       | ⏳ Planned     |
 | 🔁 🔧 **Model Retrainer Module**               | 6–12 Months  | 🥈       | ⏳ Planned     |
-

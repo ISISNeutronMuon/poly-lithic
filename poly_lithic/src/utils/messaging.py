@@ -463,7 +463,11 @@ class ModelObserver(Observer):
         if self.pack_output:
             # logger.debug(f"packing output: {pred}")
             for key, value in pred.items():
-                output[key] = {'value': value}
+                # If model already returns a full value struct, preserve it.
+                if isinstance(value, dict) and 'value' in value:
+                    output[key] = value
+                else:
+                    output[key] = {'value': value}
         else:
             # logger.debug(f"not packing output passign raw: {pred}")
             output = pred

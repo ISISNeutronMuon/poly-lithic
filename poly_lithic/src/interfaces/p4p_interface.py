@@ -1,5 +1,6 @@
 import os
 import time
+from typing import Any
 
 # anyScalar
 import numpy as np
@@ -12,6 +13,7 @@ from p4p.server.thread import SharedPV
 from poly_lithic.src.logging_utils import get_logger
 
 from .BaseInterface import BaseInterface
+from .p4p_alarm_helpers import compute_alarm, normalise_variable_settings
 
 # multi pool
 
@@ -42,22 +44,29 @@ class SimplePVAInterface(BaseInterface):
         pv_dict = config['variables']
         self.in_list = []
         self.out_list = []
-        for pv in pv_dict:
+        self.variable_configs = {}
+        self.variable_settings = {}
+        for pv, pv_cfg in pv_dict.items():
             try:
-                assert pv_dict[pv]['proto'] == 'pva'
+                assert pv_cfg['proto'] == 'pva'
             except Exception:
                 logger.error(f'Protocol for {pv} is not pva')
                 raise AssertionError
 
-            mode = pv_dict[pv]['mode'] if 'mode' in pv_dict[pv] else 'inout'
+            pv_name = pv_cfg['name']
+            mode = pv_cfg['mode'] if 'mode' in pv_cfg else 'inout'
             if mode not in ['in', 'out', 'inout']:
                 logger.error(f'Mode must be "in", "out" or "inout"')
                 raise Exception(f'Mode must be "in", "out" or "inout"')
 
             if mode == 'inout' or mode == 'out':
-                self.out_list.append(pv_dict[pv]['name'])
+                self.out_list.append(pv_name)
             if mode == 'inout' or mode == 'in':
-                self.in_list.append(pv_dict[pv]['name'])
+                self.in_list.append(pv_name)
+
+            settings = normalise_variable_settings(pv_name, pv_cfg)
+            self.variable_settings[pv_name] = settings
+            self.variable_configs[pv_name] = pv_cfg
 
         logger.debug(f'SimplePVAInterface initialized with out_list: {self.out_list} in_list: {self.in_list}')
 
@@ -98,12 +107,99 @@ class SimplePVAInterface(BaseInterface):
         value = {'value': value}
         return name, value
 
-    def put(self, name, value, **kwargs):
+    @staticmethod
+    def _payload_has_explicit_alarm(payload: Any) -> bool:
+        if isinstance(payload, Value):
+            try:
+                return bool(payload.changed('alarm'))
+            except Exception:
+                return 'alarm' in payload
+        if isinstance(payload, dict):
+            return 'alarm' in payload
+        return False
+
+    @staticmethod
+    def _payload_extract_value(payload: Any) -> tuple[Any, bool]:
+        if isinstance(payload, Value):
+            try:
+                return payload['value'], True
+            except Exception:
+                return None, False
+        if isinstance(payload, dict):
+            if 'value' in payload:
+                return payload['value'], True
+            return None, False
+        return payload, True
+
+    @staticmethod
+    def _payload_set_alarm(payload: Any, alarm: dict[str, Any]) -> Any:
+        if isinstance(payload, Value):
+            payload['alarm'] = alarm
+            return payload
+        if isinstance(payload, dict):
+            payload_with_alarm = dict(payload)
+            payload_with_alarm['alarm'] = alarm
+            return payload_with_alarm
+        return {'value': payload, 'alarm': alarm}
+
+    @staticmethod
+    def _payload_apply_metadata(payload: dict[str, Any], settings: dict[str, Any]) -> dict[str, Any]:
+        payload = dict(payload)
+        if settings['display'] is not None:
+            payload['display'] = settings['display']
+        if settings['control'] is not None:
+            payload['control'] = settings['control']
+        if settings['valueAlarm'] is not None:
+            payload['valueAlarm'] = settings['valueAlarm']
+        return payload
+
+    @staticmethod
+    def _coerce_client_value(value: Any) -> Any:
         if isinstance(value, np.ndarray):
-            value = NTNDArray().wrap(value)
-        else:
-            value = value
-        return self.ctxt.put(name, value)
+            return NTNDArray().wrap(value)
+        return value
+
+    def _extract_fallback_value(self, payload: Any) -> Any:
+        value, has_value = self._payload_extract_value(payload)
+        if not has_value:
+            raise ValueError('Cannot retry put without a value field')
+        return value
+
+    def _prepare_write_payload(self, name: str, payload: Any) -> tuple[Any, bool]:
+        settings = self.variable_settings.get(name)
+        if settings is None:
+            return payload, False
+
+        has_explicit_alarm = self._payload_has_explicit_alarm(payload)
+        if has_explicit_alarm:
+            return payload, True
+
+        if not settings['compute_alarm']:
+            return payload, False
+
+        value, has_value = self._payload_extract_value(payload)
+        if not has_value:
+            raise ValueError(f'{name}: compute_alarm requires payload with value')
+
+        alarm = compute_alarm(value, settings['alarm_policy'])
+        payload_with_alarm = self._payload_set_alarm(payload, alarm)
+        return payload_with_alarm, True
+
+    def put(self, name, value, **kwargs):
+        payload, has_alarm_payload = self._prepare_write_payload(name, value)
+        payload = self._coerce_client_value(payload)
+        try:
+            return self.ctxt.put(name, payload)
+        except Exception as exc:
+            if has_alarm_payload:
+                fallback_value = self._coerce_client_value(
+                    self._extract_fallback_value(payload)
+                )
+                logger.warning(
+                    f'Put with alarm payload failed for {name}, retrying with value-only put: {exc}'
+                )
+                return self.ctxt.put(name, fallback_value)
+            raise
 
     def put_many(self, data, **kwargs):
         for key, value in data.items():
@@ -147,8 +243,6 @@ class SimplePVAInterfaceServer(SimplePVAInterface):
     def __init__(self, config):
         super().__init__(config)
         self.shared_pvs = {}
-        pv_type_init = None
-        pv_type_nt = None
         self.kv_store = {}
 
         if 'port' in config:
@@ -169,73 +263,83 @@ class SimplePVAInterfaceServer(SimplePVAInterface):
         # print(f"self.init_pvs: {self.init_pvs}")
 
         for pv in set(self.in_list + self.out_list):
-            if 'type' in config['variables'][pv]:
-                pv_type = config['variables'][pv]['type']
-                if pv_type == 'image':
-                    # note the y and x are flipped when reshaping (rows, columns) -> (y, x)
-                    y_size = config['variables'][pv]['image_size']['y']
-                    x_size = config['variables'][pv]['image_size']['x']
-                    intial_value = np.zeros((y_size, x_size))
-                    pv_type_nt = NTNDArray()
-                    pv_type_init = intial_value
-                    self.value_build_fn = None
-                    if 'default' in config['variables'][pv]:
-                        raise NotImplementedError(
-                            'Default values for images not implemented'
-                        )
+            pv_cfg = self.variable_configs[pv]
+            settings = self.variable_settings[pv]
+            pv_type = settings['type']
+            pv_type_nt = None
+            pv_type_init = None
 
-                # waveform or array
-                elif pv_type == 'waveform' or pv_type == 'array':
-                    # print(f'pv: {pv}')
-                    if 'length' in config['variables'][pv]:
-                        length = config['variables'][pv]['length']
-                    else:
-                        length = 10
-                    if 'default' in config['variables'][pv]:
-                        intial_value = np.array(config['variables'][pv]['default'])
-                    else:
-                        intial_value = np.zeros(length, dtype=np.float64)
-
-                    pv_type_nt = NTScalar('ad')
-                    pv_type_nt_bd = NTScalar.buildType('ad')
-                    self.value_build_fn = Value(pv_type_nt_bd, {'value': intial_value})
-                    pv_type_init = intial_value
-
-                elif pv_type == 'scalar':
-                    pv_type_nt = NTScalar('d')
-                    if 'default' in config['variables'][pv]:
-                        pv_type_init = float(config['variables'][pv]['default'])
-                    else:
-                        pv_type_init = 0.0
-
+            if pv_type == 'image':
+                y_size = pv_cfg['image_size']['y']
+                x_size = pv_cfg['image_size']['x']
+                intial_value = np.zeros((y_size, x_size))
+                if 'default' in pv_cfg:
+                    raise NotImplementedError('Default values for images not implemented')
+                pv_type_nt = NTNDArray()
+                pv_type_init = intial_value
+            elif pv_type == 'waveform' or pv_type == 'array':
+                length = pv_cfg['length'] if 'length' in pv_cfg else 10
+                if 'default' in pv_cfg:
+                    intial_value = np.array(pv_cfg['default'])
                 else:
-                    raise TypeError(f'Unknown PV type for {pv}: {pv_type}')
+                    intial_value = np.zeros(length, dtype=np.float64)
+
+                nt_kwargs = {
+                    'display': settings['display'] is not None,
+                    'control': settings['control'] is not None,
+                    'valueAlarm': settings['valueAlarm'] is not None,
+                }
+                pv_type_nt = NTScalar('ad', **nt_kwargs)
+                payload = {'value': intial_value}
+                payload = self._payload_apply_metadata(payload, settings)
+                pv_type_init = payload if len(payload) > 1 else intial_value
             else:
-                pv_type_nt = NTScalar('d')
-                if 'default' in config['variables'][pv]:
-                    pv_type_init = float(config['variables'][pv]['default'])
-                else:
-                    pv_type_init = 0.0
-                self.value_build_fn = None
+                nt_kwargs = {
+                    'display': settings['display'] is not None,
+                    'control': settings['control'] is not None,
+                    'valueAlarm': settings['valueAlarm'] is not None,
+                }
+                pv_type_nt = NTScalar('d', **nt_kwargs)
+                intial_value = float(pv_cfg['default']) if 'default' in pv_cfg else 0.0
+                payload = {'value': intial_value}
+                payload = self._payload_apply_metadata(payload, settings)
+                payload, _ = self._prepare_write_payload(pv, payload)
+                pv_type_init = payload
 
-            class Handler():
+            class Handler:
                 """Simple handler to reject writes to read-only outputs"""
-                def __init__(self, read_only: bool = False):
+
+                def __init__(self, owner, pv_name: str, read_only: bool = False):
+                    self.owner = owner
+                    self.pv_name = pv_name
                     self.read_only = read_only
 
                 def put(self, pv: SharedPV, op: ServOpWrap):
                     if self.read_only:
                         op.done(error='Model outputs are read-only')
                         return
-                    pv.post(op.value(), timestamp=time.time())
+                    try:
+                        payload, _ = self.owner._prepare_write_payload(
+                            self.pv_name, op.value()
+                        )
+                    except Exception as exc:
+                        op.done(error=str(exc))
+                        return
+                    pv.post(payload, timestamp=time.time())
                     op.done()
 
             # PVs that are exclusively outputs are considered read-only
             read_only = False
-            if 'mode' in config['variables'][pv]:
-                read_only = config['variables'][pv]['mode'] == 'out'
+            if 'mode' in pv_cfg:
+                read_only = pv_cfg['mode'] == 'out'
 
-            pv_item = {pv: SharedPV(initial=pv_type_init, nt=pv_type_nt, handler=Handler(read_only))}
+            pv_item = {
+                pv: SharedPV(
+                    initial=pv_type_init,
+                    nt=pv_type_nt,
+                    handler=Handler(self, pv, read_only),
+                )
+            }
             # print(f"pv_item: {pv_item}")
             # print(f"pv_type_init: {pv_type_init}")
             # print(f"pv_type_nt: {pv_type_nt}")
@@ -262,11 +366,12 @@ class SimplePVAInterfaceServer(SimplePVAInterface):
         super().close()
 
     def put(self, name, value, **kwargs):
+        payload, _ = self._prepare_write_payload(name, value)
         # if not open then open
         if not self.shared_pvs[name].isOpen():
-            self.shared_pvs[name].open(value)
+            self.shared_pvs[name].open(payload)
         else:
-            self.shared_pvs[name].post(value, timestamp=time.time())
+            self.shared_pvs[name].post(payload, timestamp=time.time())
 
     def get(self, name, **kwargs):
         value_raw = self.shared_pvs[name].current().raw
@@ -296,7 +401,8 @@ class SimplePVAInterfaceServer(SimplePVAInterface):
         #     self.put(key, value)
         for key, value in data.items():
             # result = self.ctxt.put(key, value)
-            self.shared_pvs[key].post(value, timestamp=time.time())
+            payload, _ = self._prepare_write_payload(key, value)
+            self.shared_pvs[key].post(payload, timestamp=time.time())
         # result = self.ctxt.put(channel_names,values, throw=False)
         # with ThreadPool(processes=24) as pool:
         # for key, value in data.items():

@@ -4,6 +4,8 @@
 
 # from poly_lithic.src.interfaces import SimplePVAInterfaceServer
 # from poly_lithic.src.transformers import PassThroughTransformer, CompoundTransformer
+import socket
+
 import numpy as np
 import pytest
 from poly_lithic.src.interfaces import registered_interfaces
@@ -11,9 +13,16 @@ from poly_lithic.src.logging_utils.make_logger import make_logger
 from poly_lithic.src.transformers import registered_transformers
 
 SimplePVAInterfaceServer = registered_interfaces['p4p_server']
+SimplePVAInterface = registered_interfaces['p4p']
 CompoundTransformer = registered_transformers['CompoundTransformer']
 
 logger = make_logger('model_manager')
+
+
+def _get_free_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(('127.0.0.1', 0))
+        return sock.getsockname()[1]
 
 
 def test_SimplePVAInterfaceServer_init():
@@ -189,3 +198,217 @@ def test_initialise_with_defaults():
     assert p4p.shared_pvs['test_array'].current().raw.value[2] == 3
     assert isinstance(p4p.shared_pvs['test_array'].current().raw.value, np.ndarray)
     p4p.close()
+
+
+def test_scalar_compute_alarm_on_server():
+    config = {
+        'variables': {
+            'test': {
+                'name': 'test',
+                'proto': 'pva',
+                'type': 'scalar',
+                'compute_alarm': True,
+                'valueAlarm': {
+                    'active': True,
+                    'lowAlarmLimit': -5.0,
+                    'lowWarningLimit': -2.0,
+                    'highWarningLimit': 2.0,
+                    'highAlarmLimit': 5.0,
+                    'lowAlarmSeverity': 2,
+                    'lowWarningSeverity': 1,
+                    'highWarningSeverity': 1,
+                    'highAlarmSeverity': 2,
+                },
+            }
+        }
+    }
+    p4p = SimplePVAInterfaceServer(config)
+
+    p4p.put('test', 6.0)
+    alarm = p4p.shared_pvs['test'].current().raw.alarm
+    assert alarm.severity == 2
+    assert alarm.status == 3
+    assert alarm.message == 'HIHI'
+
+    p4p.put('test', -3.0)
+    alarm = p4p.shared_pvs['test'].current().raw.alarm
+    assert alarm.severity == 1
+    assert alarm.status == 6
+    assert alarm.message == 'LOW'
+
+    p4p.put('test', 0.0)
+    alarm = p4p.shared_pvs['test'].current().raw.alarm
+    assert alarm.severity == 0
+    assert alarm.status == 0
+    assert alarm.message == ''
+    p4p.close()
+
+
+def test_non_scalar_manual_alarm_passthrough_on_server():
+    config = {
+        'variables': {
+            'test_array': {
+                'name': 'test_array',
+                'proto': 'pva',
+                'type': 'waveform',
+                'default': [0.0, 0.0, 0.0],
+            }
+        }
+    }
+    p4p = SimplePVAInterfaceServer(config)
+    payload = {
+        'value': [1.0, 2.0, 3.0],
+        'alarm': {'severity': 1, 'status': 4, 'message': 'HIGH'},
+    }
+    p4p.put('test_array', payload)
+
+    current = p4p.shared_pvs['test_array'].current().raw
+    np.testing.assert_array_equal(current.value, np.array([1.0, 2.0, 3.0]))
+    assert current.alarm.severity == 1
+    assert current.alarm.status == 4
+    assert current.alarm.message == 'HIGH'
+    p4p.close()
+
+
+def test_non_scalar_without_explicit_alarm_does_not_compute():
+    config = {
+        'variables': {
+            'test_array': {
+                'name': 'test_array',
+                'proto': 'pva',
+                'type': 'waveform',
+                'default': [0.0, 0.0, 0.0],
+                'valueAlarm': {
+                    'active': True,
+                    'lowAlarmLimit': -5.0,
+                    'lowWarningLimit': -2.0,
+                    'highWarningLimit': 2.0,
+                    'highAlarmLimit': 5.0,
+                    'lowAlarmSeverity': 2,
+                    'lowWarningSeverity': 1,
+                    'highWarningSeverity': 1,
+                    'highAlarmSeverity': 2,
+                },
+            }
+        }
+    }
+    p4p = SimplePVAInterfaceServer(config)
+    p4p.put('test_array', [10.0, 11.0, 12.0])
+    alarm = p4p.shared_pvs['test_array'].current().raw.alarm
+    assert alarm.severity == 0
+    assert alarm.status == 0
+    assert alarm.message == ''
+    p4p.close()
+
+
+def test_reject_compute_alarm_on_non_scalar_server():
+    config = {
+        'variables': {
+            'test_array': {
+                'name': 'test_array',
+                'proto': 'pva',
+                'type': 'waveform',
+                'compute_alarm': True,
+                'valueAlarm': {
+                    'active': True,
+                    'lowAlarmLimit': -5.0,
+                    'lowWarningLimit': -2.0,
+                    'highWarningLimit': 2.0,
+                    'highAlarmLimit': 5.0,
+                    'lowAlarmSeverity': 2,
+                    'lowWarningSeverity': 1,
+                    'highWarningSeverity': 1,
+                    'highAlarmSeverity': 2,
+                },
+            }
+        }
+    }
+    with pytest.raises(ValueError, match='compute_alarm is only valid for scalar PVs'):
+        SimplePVAInterfaceServer(config)
+
+
+def test_client_scalar_compute_alarm_to_server(monkeypatch):
+    port = _get_free_port()
+    server_config = {
+        'port': port,
+        'variables': {
+            'test': {
+                'name': 'test',
+                'proto': 'pva',
+                'type': 'scalar',
+            }
+        },
+    }
+    client_config = {
+        'EPICS_PVA_NAME_SERVERS': f'127.0.0.1:{port}',
+        'variables': {
+            'test': {
+                'name': 'test',
+                'proto': 'pva',
+                'type': 'scalar',
+                'compute_alarm': True,
+                'valueAlarm': {
+                    'active': True,
+                    'lowAlarmLimit': -5.0,
+                    'lowWarningLimit': -2.0,
+                    'highWarningLimit': 2.0,
+                    'highAlarmLimit': 5.0,
+                    'lowAlarmSeverity': 2,
+                    'lowWarningSeverity': 1,
+                    'highWarningSeverity': 1,
+                    'highAlarmSeverity': 2,
+                },
+            }
+        },
+    }
+
+    monkeypatch.setenv('EPICS_PVA_NAME_SERVERS', f'127.0.0.1:{port}')
+
+    server = SimplePVAInterfaceServer(server_config)
+    client = SimplePVAInterface(client_config)
+    try:
+        client.put('test', {'value': 6.0})
+        alarm = server.shared_pvs['test'].current().raw.alarm
+        assert alarm.severity == 2
+        assert alarm.status == 3
+        assert alarm.message == 'HIHI'
+    finally:
+        client.close()
+        server.close()
+
+
+def test_scalar_compute_alarm_defaults_missing_severities():
+    config = {
+        'variables': {
+            'test': {
+                'name': 'test',
+                'proto': 'pva',
+                'type': 'scalar',
+                'compute_alarm': True,
+                'valueAlarm': {
+                    'active': True,
+                    'lowAlarmLimit': -5.0,
+                    'lowWarningLimit': -2.0,
+                    'highWarningLimit': 2.0,
+                    'highAlarmLimit': 5.0,
+                },
+            }
+        }
+    }
+    p4p = SimplePVAInterfaceServer(config)
+    try:
+        # HIGH band defaults to MINOR(1)
+        p4p.put('test', 3.0)
+        alarm = p4p.shared_pvs['test'].current().raw.alarm
+        assert alarm.severity == 1
+        assert alarm.status == 4
+        assert alarm.message == 'HIGH'
+
+        # HIHI band defaults to MAJOR(2)
+        p4p.put('test', 6.0)
+        alarm = p4p.shared_pvs['test'].current().raw.alarm
+        assert alarm.severity == 2
+        assert alarm.status == 3
+        assert alarm.message == 'HIHI'
+    finally:
+        p4p.close()
