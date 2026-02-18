@@ -31,13 +31,21 @@ class SimpleTransformer(BaseTransformer):
         for key, value in self.pv_mapping.items():
             self.__validate_formulas(value['formula'])
         self.latest_input = {symbol: None for symbol in self.input_list}
+        self.latest_input_struct = {symbol: None for symbol in self.input_list}
         self.latest_transformed = {key: 0 for key in self.pv_mapping.keys()}
         self.updated = False
         self.handler_time = None
         self.formulas = {}
         self.lambdified_formulas = {}
+        self.direct_formula_inputs = {}
+        self.renamed_symbol_lookup = {
+            symbol.replace(':', '_'): symbol for symbol in self.input_list
+        }
         for key, value in self.pv_mapping.items():
             self.formulas[key] = sp.sympify(value['formula'].replace(':', '_'))
+            self.direct_formula_inputs[key] = self.__get_direct_input_symbol(
+                self.formulas[key]
+            )
             input_list_renamed = [
                 symbol.replace(':', '_') for symbol in self.input_list
             ]
@@ -53,11 +61,17 @@ class SimpleTransformer(BaseTransformer):
         except Exception as e:
             raise Exception(f'Invalid formula: {formula}: {e}')
 
+    def __get_direct_input_symbol(self, formula_expr):
+        if isinstance(formula_expr, sp.Symbol):
+            return self.renamed_symbol_lookup.get(str(formula_expr))
+        return None
+
     def handler(self, pv_name, value):
         # logger.debug(f"SimpleTransformer handler for {pv_name} with value {value}")
 
         # chek if pv_name is in sel.input_list
         if pv_name in self.input_list:
+            self.latest_input_struct[pv_name] = dict(value)
             # assert value is float
             try:
                 if isinstance(value['value'], (float, int, np.float32)):
@@ -161,6 +175,24 @@ class SimpleTransformer(BaseTransformer):
                 raise e
 
         for key, value in transformed.items():
+            direct_input = self.direct_formula_inputs.get(key)
+            input_struct = (
+                self.latest_input_struct.get(direct_input)
+                if direct_input is not None
+                else None
+            )
+            if isinstance(input_struct, dict):
+                passthrough_fields = {
+                    field_name: field_value
+                    for field_name, field_value in input_struct.items()
+                    if field_name != 'value'
+                }
+                if passthrough_fields:
+                    self.latest_transformed[key] = {
+                        'value': value,
+                        **passthrough_fields,
+                    }
+                    continue
             self.latest_transformed[key] = value
         self.updated = True
 
@@ -239,12 +271,14 @@ class PassThroughTransformer(BaseTransformer):
         # config is a dictionary of output:intput pairs
         pv_mapping = config['variables']
         self.latest_input = {}
+        self.latest_input_struct = {}
         self.latest_transformed = {}
         self.updated = False
         self.input_list = list(pv_mapping.values())
 
         for key, value in pv_mapping.items():
             self.latest_input[value] = None
+            self.latest_input_struct[value] = None
             self.latest_transformed[key] = None
         self.pv_mapping = pv_mapping
 
@@ -253,6 +287,7 @@ class PassThroughTransformer(BaseTransformer):
     def handler(self, pv_name, value):
         time_start = time.time()
         logger.debug(f'PassThroughTransformer handler for {pv_name}')
+        self.latest_input_struct[pv_name] = dict(value)
         self.latest_input[pv_name] = value['value']
         if all([value is not None for value in self.latest_input.values()]):
             self.transform()
@@ -263,10 +298,31 @@ class PassThroughTransformer(BaseTransformer):
     def transform(self):
         logger.debug('Transforming')
         for key, value in self.pv_mapping.items():
-            self.latest_transformed[key] = self.latest_input[value]
+            input_value = self.latest_input[value]
+            input_struct = self.latest_input_struct.get(value)
+            if isinstance(input_struct, dict):
+                passthrough_fields = {
+                    field_name: field_value
+                    for field_name, field_value in input_struct.items()
+                    if field_name != 'value'
+                }
+                if passthrough_fields:
+                    self.latest_transformed[key] = {
+                        'value': input_value,
+                        **passthrough_fields,
+                    }
+                else:
+                    self.latest_transformed[key] = input_value
+            else:
+                self.latest_transformed[key] = input_value
 
-            if isinstance(self.latest_input[value], np.ndarray):
-                if self.latest_input[value].shape != self.latest_transformed[key].shape:
+            transformed_value = (
+                self.latest_transformed[key]['value']
+                if isinstance(self.latest_transformed[key], dict)
+                else self.latest_transformed[key]
+            )
+            if isinstance(input_value, np.ndarray):
+                if input_value.shape != transformed_value.shape:
                     logger.error(f'Shape mismatch between input and output for {key}')
         self.updated = True
 

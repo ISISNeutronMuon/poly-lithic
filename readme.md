@@ -327,6 +327,9 @@ return {
 ```
 
 This is supported by ``ModelObserver`` and passed through to interfaces.
+In ``examples/base/local/deployment_config_p4p_alarm.yaml`` this now goes through an
+``output_transformer`` direct-symbol mapping (``ML:LOCAL:TEST_S -> ML:LOCAL:TEST_S``),
+which preserves ``alarm`` and other non-``value`` fields.
 See runnable example:
 
 - config: ``examples/base/local/deployment_config_p4p_alarm.yaml``

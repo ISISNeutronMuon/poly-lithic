@@ -91,6 +91,8 @@ Alarm Behavior
   ``NO_ALARM=0``, ``HIHI=3``, ``HIGH=4``, ``LOLO=5``, ``LOW=6``.
 - Explicit ``alarm`` payload overrides computed alarm.
 - Non-scalars do not compute alarms, but explicit ``alarm`` payloads are accepted.
+- ``p4p`` client attempts a structured put first; if the target rejects it, it
+  retries with a value-only put.
 
 Model Alarm Override
 ~~~~~~~~~~~~~~~~~~~~
@@ -98,6 +100,11 @@ Model Alarm Override
 Models can publish structured output with explicit alarm fields (for example
 ``{"PV": {"value": 1.0, "alarm": {...}}}``), and ``ModelObserver`` preserves
 that structure when publishing downstream.
+
+In ``examples/base/local/deployment_config_p4p_alarm.yaml`` this passes through
+an ``output_transformer`` direct-symbol mapping
+(``ML:LOCAL:TEST_S -> ML:LOCAL:TEST_S``), which preserves ``alarm`` and other
+non-``value`` fields.
 
 See example:
 

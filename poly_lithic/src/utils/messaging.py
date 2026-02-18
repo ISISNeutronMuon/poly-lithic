@@ -261,7 +261,10 @@ class TransformerObserver(Observer):
             values = self.transformer.latest_transformed
             message_dict = {}
             for key, value in values.items():
-                message_dict[key] = {'value': value}
+                if isinstance(value, dict) and 'value' in value:
+                    message_dict[key] = value
+                else:
+                    message_dict[key] = {'value': value}
 
             self.transformer.updated = False
             return Message(topic=self.topic, source=str(self), value=message_dict)

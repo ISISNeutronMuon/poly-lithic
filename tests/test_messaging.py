@@ -93,6 +93,31 @@ def test_TransformerObserver(message_broker, test_observer):
     assert st.latest_transformed['x1'] == 2
 
 
+def test_TransformerObserver_preserves_structured_transformer_output():
+    class StructuredTransformer:
+        def __init__(self):
+            self.updated = True
+            self.latest_transformed = {
+                'PV:STRUCT': {
+                    'value': 5.0,
+                    'alarm': {'severity': 2, 'status': 3, 'message': 'HIHI'},
+                },
+                'PV:PLAIN': 7.0,
+            }
+
+        def handler(self, pv_name, value):
+            return None
+
+    observer = TransformerObserver(StructuredTransformer(), 'test_topic')
+    message = Message(topic='test_topic', source='source', value={'x': {'value': 1}})
+    out_message = observer.update(message)
+
+    assert out_message.value['PV:STRUCT']['value'] == 5.0
+    assert out_message.value['PV:STRUCT']['alarm']['severity'] == 2
+    assert out_message.value['PV:STRUCT']['alarm']['status'] == 3
+    assert out_message.value['PV:PLAIN']['value'] == 7.0
+
+
 def test_ModelObserver_preserves_structured_value_payload():
     class StructuredModel:
         def evaluate(self, value):

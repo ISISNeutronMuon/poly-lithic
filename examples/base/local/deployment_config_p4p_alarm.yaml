@@ -1,6 +1,6 @@
 deployment:
   type: "continuous"
-  rate: .1 #seconds
+  rate: .001 #seconds
 
 modules:
   p4p_server:
@@ -10,7 +10,7 @@ modules:
       - "in_interface"
     sub:
       - "get_all"
-      - "model_out"
+      - "out_transformer"
     module_args: None
     config:
       EPICS_PVA_NAME_SERVERS: "localhost:5075"
@@ -125,3 +125,18 @@ modules:
       variables:
         max:
           type: "scalar"
+
+  output_transformer:
+    name: "output_transformer"
+    type: "transformer.SimpleTransformer"
+    pub: "out_transformer"
+    sub: "model_out"
+    module_args: None
+    config:
+      symbols:
+        - "ML:LOCAL:TEST_S"
+      variables:
+        # Direct-symbol mapping intentionally preserves non-value fields
+        # (e.g. alarm/timestamp/metadata) from model_out.
+        ML:LOCAL:TEST_S:
+          formula: "ML:LOCAL:TEST_S"

@@ -225,3 +225,55 @@ def test_pass_through_transformer():
     assert pt.latest_transformed['IMG1'].shape == (3, 3)
     assert pt.latest_transformed['var1'] == 1
     print(pt.latest_transformed)
+
+
+def test_pass_through_transformer_preserves_structured_metadata():
+    pt = PassThroughTransformer(config5)
+    alarm = {'severity': 2, 'status': 3, 'message': 'HIHI'}
+    img_value = np.array([[1, 2], [3, 4]])
+
+    pt.handler(
+        'input_image',
+        {
+            'value': img_value,
+            'alarm': alarm,
+            'timestamp': 123.456,
+            'metadata': {'source': 'camera'},
+        },
+    )
+    pt.handler('input_var1', {'value': 1})
+
+    out_img = pt.latest_transformed['IMG1']
+    assert isinstance(out_img, dict)
+    np.testing.assert_array_equal(out_img['value'], img_value)
+    assert out_img['alarm'] == alarm
+    assert out_img['timestamp'] == 123.456
+    assert out_img['metadata'] == {'source': 'camera'}
+    assert pt.latest_transformed['var1'] == 1
+
+
+def test_simple_transformer_direct_formula_preserves_structured_metadata():
+    st = SimpleTransformer(config1)
+    alarm = {'severity': 1, 'status': 4, 'message': 'HIGH'}
+
+    st.handler(
+        'A1',
+        {
+            'value': 4.5,
+            'alarm': alarm,
+            'timestamp': 88.0,
+            'metadata': {'origin': 'sim'},
+        },
+    )
+    st.handler('B1', {'value': 1.5})
+
+    x1 = st.latest_transformed['x1']
+    x2 = st.latest_transformed['x2']
+
+    assert isinstance(x1, dict)
+    assert x1['value'] == 4.5
+    assert x1['alarm'] == alarm
+    assert x1['timestamp'] == 88.0
+    assert x1['metadata'] == {'origin': 'sim'}
+    assert x2 == 6.0
+    assert not isinstance(x2, dict)
