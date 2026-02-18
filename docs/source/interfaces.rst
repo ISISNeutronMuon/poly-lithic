@@ -82,8 +82,10 @@ Alarm Behavior
 
 - Computation is scalar-only and active when ``compute_alarm: true``.
 - ``compute_alarm: true`` requires:
-  ``valueAlarm.active: true`` and limits
+  ``valueAlarm`` plus limits
   ``lowAlarmLimit``, ``lowWarningLimit``, ``highWarningLimit``, ``highAlarmLimit``.
+- ``valueAlarm.active`` defaults to ``true`` when omitted for computed alarms.
+- ``valueAlarm.active: false`` is rejected when ``compute_alarm: true``.
 - Missing severities use defaults:
   ``lowAlarmSeverity=2``, ``lowWarningSeverity=1``,
   ``highWarningSeverity=1``, ``highAlarmSeverity=2``.

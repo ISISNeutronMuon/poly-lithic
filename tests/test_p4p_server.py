@@ -386,7 +386,6 @@ def test_scalar_compute_alarm_defaults_missing_severities():
                 'type': 'scalar',
                 'compute_alarm': True,
                 'valueAlarm': {
-                    'active': True,
                     'lowAlarmLimit': -5.0,
                     'lowWarningLimit': -2.0,
                     'highWarningLimit': 2.0,
@@ -412,3 +411,27 @@ def test_scalar_compute_alarm_defaults_missing_severities():
         assert alarm.message == 'HIHI'
     finally:
         p4p.close()
+
+
+def test_reject_server_compute_alarm_with_active_false():
+    config = {
+        'variables': {
+            'test': {
+                'name': 'test',
+                'proto': 'pva',
+                'type': 'scalar',
+                'compute_alarm': True,
+                'valueAlarm': {
+                    'active': False,
+                    'lowAlarmLimit': -5.0,
+                    'lowWarningLimit': -2.0,
+                    'highWarningLimit': 2.0,
+                    'highAlarmLimit': 5.0,
+                },
+            }
+        }
+    }
+    with pytest.raises(
+        ValueError, match='compute_alarm=true does not allow valueAlarm.active=false'
+    ):
+        SimplePVAInterfaceServer(config)

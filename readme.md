@@ -276,7 +276,8 @@ Scalar PVs can compute EPICS alarm fields from ``valueAlarm`` limits:
 
 When ``compute_alarm: true``:
 
-- ``valueAlarm.active`` must be ``true``
+- ``valueAlarm.active`` defaults to ``true`` if omitted
+- ``valueAlarm.active: false`` is rejected
 - required limits: ``lowAlarmLimit``, ``lowWarningLimit``, ``highWarningLimit``, ``highAlarmLimit``
 - optional severities default to:
   ``lowAlarmSeverity=2``, ``lowWarningSeverity=1``, ``highWarningSeverity=1``, ``highAlarmSeverity=2``
@@ -301,7 +302,7 @@ flowchart TD
     D -- No --> E[No computation<br/>Write value only]
     D -- Yes --> F{compute_alarm true?}
     F -- No --> E
-    F -- Yes --> G{valueAlarm.active true<br/>and limits valid?}
+    F -- Yes --> G{valueAlarm configured<br/>active not false<br/>and limits valid?}
     G -- No --> H[Config validation error at startup]
     G -- Yes --> I[Evaluate thresholds]
     I --> J[Set alarm severity/status/message]

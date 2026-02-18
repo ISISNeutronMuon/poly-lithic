@@ -54,9 +54,11 @@ def normalise_variable_settings(pv_name: str, pv_cfg: dict[str, Any]) -> dict[st
     if compute_alarm:
         if value_alarm_cfg is None:
             raise ValueError(f'{pv_name}: compute_alarm=true requires valueAlarm config')
-        if value_alarm_cfg.get('active') is not True:
+        if 'active' not in value_alarm_cfg:
+            value_alarm_cfg['active'] = True
+        elif value_alarm_cfg.get('active') is not True:
             raise ValueError(
-                f'{pv_name}: compute_alarm=true requires valueAlarm.active=true'
+                f'{pv_name}: compute_alarm=true does not allow valueAlarm.active=false'
             )
 
         missing = [field for field in ALARM_LIMIT_FIELDS if field not in value_alarm_cfg]

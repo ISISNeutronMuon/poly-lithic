@@ -233,7 +233,6 @@ def test_SimplePVAInterface_compute_alarm_defaults_missing_severities(monkeypatc
                 'type': 'scalar',
                 'compute_alarm': True,
                 'valueAlarm': {
-                    'active': True,
                     'lowAlarmLimit': -5.0,
                     'lowWarningLimit': -2.0,
                     'highWarningLimit': 2.0,
@@ -259,3 +258,27 @@ def test_SimplePVAInterface_compute_alarm_defaults_missing_severities(monkeypatc
     assert sent[1]['alarm']['severity'] == 2
     assert sent[1]['alarm']['status'] == 3
     p4p.close()
+
+
+def test_SimplePVAInterface_reject_compute_alarm_with_active_false():
+    config = {
+        'variables': {
+            'test:float:AA': {
+                'name': 'test:float:AA',
+                'proto': 'pva',
+                'type': 'scalar',
+                'compute_alarm': True,
+                'valueAlarm': {
+                    'active': False,
+                    'lowAlarmLimit': -5.0,
+                    'lowWarningLimit': -2.0,
+                    'highWarningLimit': 2.0,
+                    'highAlarmLimit': 5.0,
+                },
+            }
+        }
+    }
+    with pytest.raises(
+        ValueError, match='compute_alarm=true does not allow valueAlarm.active=false'
+    ):
+        SimplePVAInterface(config)
