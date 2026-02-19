@@ -2,7 +2,7 @@
 import importlib.util
 
 from poly_lithic.src.logging_utils import get_logger
-from poly_lithic.src.model_utils import ModelGetterBase
+from poly_lithic.src.model_utils.ModelGetterBase import ModelGetterBase
 
 logger = get_logger()
 

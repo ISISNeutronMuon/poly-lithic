@@ -8,6 +8,8 @@ import pytest
 import os
 import json
 import logging
+import subprocess
+import sys
 import requests  # to check if we can rech the mlflow server
 
 
@@ -38,6 +40,25 @@ def env_config(env_config):
         logging.error(f'Error setting environment variables: {e}')
 
 ENV_LOADED = env_config('./tests/env.json')
+
+
+def test_builder_import_does_not_eager_import_mlflow():
+    result = subprocess.run(
+        [
+            sys.executable,
+            '-c',
+            (
+                'import sys; '
+                'import poly_lithic.src.utils.builder; '
+                "print('mlflow' in sys.modules)"
+            ),
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert result.stdout.strip().splitlines()[-1] == 'False'
+
 
 def test_build(caplog, make_builder):
     # caplog.set_level(logging.DEBUG)

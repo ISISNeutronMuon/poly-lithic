@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, Union
+from importlib import import_module
 from pydantic import (
     BaseModel,
     Field,
@@ -10,7 +11,7 @@ import time
 from poly_lithic.src.logging_utils import get_logger
 from poly_lithic.src.transformers import BaseTransformer
 from poly_lithic.src.interfaces import BaseInterface
-from poly_lithic.src.model_utils import registered_model_getters
+from poly_lithic.src.utils.plugin_registry import model_getter_plugin_registry
 import os
 
 # from deepdiff import DeepDiff
@@ -417,38 +418,53 @@ class ModelObserver(Observer):
 
     def __get_model(self):
         """load the model from the config"""
-        if self.config['type'] == 'mock':
+        model_type = self.config['type']
+        if model_type == 'mock':
             return MockModel()
-        if self.config['type'] == 'MlflowModelGetterLegacy':
-            model_getter = registered_model_getters['mlflow_legacy'](
-                self.config['args']
-            )  # legacy name well make it consistent across the board in the future
-            model = model_getter.get_model()
-            # check model is not None
-            if model is None:
-                raise ValueError('model is None')
-            return model
-        elif self.config['type'] == 'MlflowModelGetter':
-            model_getter = registered_model_getters['mlflow'](self.config['args'])
-            model = model_getter.get_model()
-            return model
-        elif self.config['type'] == 'LocalModelGetter':
-            model_getter = registered_model_getters['local'](self.config['args'])
-            model = model_getter.get_model()
-            return model
+        model_getter_class = self.__resolve_model_getter_class(model_type)
+        model_getter = model_getter_class(self.config['args'])
+        model = model_getter.get_model()
+        if model_type == 'MlflowModelGetterLegacy' and model is None:
+            raise ValueError('model is None')
+        return model
 
-        else:
-            # try the plugin then fail
-            try: 
-                model_getter = registered_model_getters[self.config['type']](
-                    self.config['args']
-                )
-                model = model_getter.get_model()
-                return model
-            except KeyError:
-                raise ValueError(f'model type not recognised: {self.config["type"]}')
-            
-            # raise ValueError(f'model type not recognised: {self.config["type"]}')
+    @staticmethod
+    def __resolve_model_getter_class(model_type: str):
+        builtins = {
+            'MlflowModelGetterLegacy': (
+                'poly_lithic.src.model_utils.MlflowModelGetter',
+                'MLflowModelGetterLegacy',
+            ),
+            'mlflow_legacy': (
+                'poly_lithic.src.model_utils.MlflowModelGetter',
+                'MLflowModelGetterLegacy',
+            ),
+            'MlflowModelGetter': (
+                'poly_lithic.src.model_utils.MlflowModelGetter',
+                'MLflowModelGetter',
+            ),
+            'mlflow': (
+                'poly_lithic.src.model_utils.MlflowModelGetter',
+                'MLflowModelGetter',
+            ),
+            'LocalModelGetter': (
+                'poly_lithic.src.model_utils.LocalModelGetter',
+                'LocalModelGetter',
+            ),
+            'local': (
+                'poly_lithic.src.model_utils.LocalModelGetter',
+                'LocalModelGetter',
+            ),
+        }
+        if model_type in builtins:
+            module_name, class_name = builtins[model_type]
+            return getattr(import_module(module_name), class_name)
+
+        # External model getter plugins are discovered via entry points and loaded on demand.
+        if model_getter_plugin_registry.has_plugin(model_type):
+            return model_getter_plugin_registry.get(model_type)
+
+        raise ValueError(f'model type not recognised: {model_type}')
 
     def update(self, message: Message) -> list[Message]:
         messages = []
