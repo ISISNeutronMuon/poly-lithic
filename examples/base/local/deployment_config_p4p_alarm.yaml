@@ -1,6 +1,6 @@
 deployment:
   type: "continuous"
-  rate: .001 #seconds
+  rate: .1 #seconds
 
 modules:
   p4p_server:
@@ -45,6 +45,7 @@ modules:
           type: scalar
           default: 0.0
           compute_alarm: true
+          enforce_control_limits: true # clamp values to control limits before alarm computation
           display:
             description: "Model input A"
             units: "arb"
@@ -54,7 +55,7 @@ modules:
           control:
             limitLow: -10.0
             limitHigh: 10.0
-            minStep: 0.1
+            minStep: 1
           valueAlarm:
             active: true
             lowAlarmLimit: -8.0

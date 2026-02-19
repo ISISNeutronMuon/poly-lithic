@@ -13,7 +13,7 @@ from p4p.server.thread import SharedPV
 from poly_lithic.src.logging_utils import get_logger
 
 from .BaseInterface import BaseInterface
-from .p4p_alarm_helpers import compute_alarm, normalise_variable_settings
+from .p4p_alarm_helpers import compute_alarm, normalise_variable_settings, enforce_control_limits
 
 # multi pool
 
@@ -130,6 +130,17 @@ class SimplePVAInterface(BaseInterface):
                 return payload['value'], True
             return None, False
         return payload, True
+    
+    @staticmethod
+    def _payload_set_value(payload: Any, value: Any) -> Any:
+        if isinstance(payload, Value):
+            payload['value'] = value
+            return payload
+        if isinstance(payload, dict):
+            payload_with_value = dict(payload)
+            payload_with_value['value'] = value
+            return payload_with_value
+        return value
 
     @staticmethod
     def _payload_set_alarm(payload: Any, alarm: dict[str, Any]) -> Any:
@@ -178,6 +189,19 @@ class SimplePVAInterface(BaseInterface):
             return payload, False
 
         value, has_value = self._payload_extract_value(payload)
+        
+        # enforce control limits if configured
+        if settings['enforce_control_limits'] and settings['control'] is not None:
+            
+            value = enforce_control_limits(value, settings['control'])
+            coerced = self._coerce_client_value(value)
+            if isinstance(payload, dict):
+                payload['value'] = coerced
+            elif hasattr(payload, 'value'):
+                payload.value = coerced   # NT wrapper objects
+            else:
+                payload = coerced
+        
         if not has_value:
             raise ValueError(f'{name}: compute_alarm requires payload with value')
 

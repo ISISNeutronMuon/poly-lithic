@@ -30,11 +30,13 @@ def _copy_optional_dict(
 
 
 def normalise_variable_settings(pv_name: str, pv_cfg: dict[str, Any]) -> dict[str, Any]:
+    """Normalise and validate the PV configuration for alarm computation.  """
     pv_type = pv_cfg.get('type', 'scalar')
     if pv_type not in SUPPORTED_PV_TYPES:
         raise TypeError(f'Unknown PV type for {pv_name}: {pv_type}')
 
     compute_alarm = bool(pv_cfg.get('compute_alarm', False))
+    enforce_control_limits = bool(pv_cfg.get('enforce_control_limits', False))
 
     display_cfg = _copy_optional_dict(pv_name, 'display', pv_cfg.get('display'), DISPLAY_FIELDS)
     control_cfg = _copy_optional_dict(pv_name, 'control', pv_cfg.get('control'), CONTROL_FIELDS)
@@ -102,6 +104,7 @@ def normalise_variable_settings(pv_name: str, pv_cfg: dict[str, Any]) -> dict[st
         'control': control_cfg,
         'valueAlarm': value_alarm_cfg,
         'alarm_policy': alarm_policy,
+        'enforce_control_limits': enforce_control_limits,
     }
 
 
@@ -133,3 +136,20 @@ def compute_alarm(value: Any, policy: dict[str, Any]) -> dict[str, Any]:
         return {'severity': 0, 'status': ALARM_STATUSES['normal'], 'message': ''}
 
     return {'severity': int(severity), 'status': int(status), 'message': message}
+
+
+def enforce_control_limits(value: Any, control_cfg: dict[str, Any]) -> Any:
+    # print(f'Enforcing control limits: value={value}, control_cfg={control_cfg}')
+    
+    if 'limitLow' in control_cfg and value < control_cfg['limitLow']:
+        return control_cfg['limitLow']
+    if 'limitHigh' in control_cfg and value > control_cfg['limitHigh']:
+        return control_cfg['limitHigh']
+    
+    # round minStep if specified
+    if 'minStep' in control_cfg:
+        min_step = control_cfg['minStep']
+        if min_step > 0:
+            value = round(value / min_step) * min_step
+    
+    return value
