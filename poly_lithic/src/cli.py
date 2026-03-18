@@ -457,24 +457,133 @@ def info(plugin_name, plugin_type):
         sys.exit(1)
 
 # ============================================================================
-# Project Generator/Template Commandsd
+# Project Generator Commands
 # ============================================================================
 
-@click.command()
-@click.argument('project_name', required=False)
-# @click.argument('location', required=False)
-# @click.argument('type', required=False)
-@click.option('model', required=False, help='Model type to include in the template to help kickstart deployment, model must be supported by poly-lithic')
+@cli.command(name='generate')
+@click.option('--name', '-n', default=None,
+              help='Name of the deployment project')
+@click.option('--interface', '-i', 'interface_type', default=None,
+              type=click.Choice(['p4p_server', 'fastapi', 'k2eg'], case_sensitive=False),
+              help='Interface type for the deployment')
+@click.option('--model-source', '-m', default=None,
+              type=click.Choice(['local', 'mlflow'], case_sensitive=False),
+              help='Model source type')
+@click.option('--author', '-a', default=None,
+              help='Author name')
+@click.option('--description', '-d', default=None,
+              help='Project description')
+@click.option('--output-dir', '--dir', '-o', type=click.Path(), default='.',
+              help='Output directory for the project (default: current directory)')
+@click.option('--docker', is_flag=True,
+              help='Include Docker files (Dockerfile + docker-compose)')
+@click.option('--kubernetes', '--k8s', is_flag=True,
+              help='Include Kubernetes manifests (deployment + service)')
+@click.option('--no-prompt', is_flag=True,
+              help='Skip interactive prompts (use defaults or provided values)')
+def generate(name, interface_type, model_source, author, description,
+             output_dir, docker, kubernetes, no_prompt):
+    """
+    Generate a new deployment project from template.
 
-def generate():
+    Creates a project with deployment configuration, model stubs,
+    and optional Docker/Kubernetes files.
+
+    Examples:
+
+        poly-lithic generate --name my-model --interface p4p_server --model-source local
+
+        poly-lithic generate -n my-model -i fastapi -m mlflow --docker --kubernetes
+
+        poly-lithic generate --name my-model --no-prompt
     """
-    Generate a new project from template.
-    
-    This command is a placeholder for future project generation features.
-    For plugin generation, use 'poly-lithic plugin init'.
-    """
-    click.echo(click.style('Project generation coming soon! Use "poly-lithic plugin init" to create plugins.', fg='yellow'))
-    
+    try:
+        from poly_lithic.src.utils.project_generator import DeploymentProjectGenerator
+        from pathlib import Path
+
+        click.echo(click.style('\n🚀 Creating Deployment Project\n', fg='cyan', bold=True))
+
+        if no_prompt:
+            name = name or 'my_deployment'
+            interface_type = interface_type or 'p4p_server'
+            model_source = model_source or 'local'
+            author = author or ''
+            description = description or 'A poly-lithic deployment project'
+        else:
+            name = name or click.prompt('Project name')
+            interface_type = interface_type or click.prompt(
+                'Interface type',
+                type=click.Choice(['p4p_server', 'fastapi', 'k2eg'], case_sensitive=False),
+                default='p4p_server',
+            )
+            model_source = model_source or click.prompt(
+                'Model source',
+                type=click.Choice(['local', 'mlflow'], case_sensitive=False),
+                default='local',
+            )
+            author = author or click.prompt('Author name', default='')
+            description = description or click.prompt('Short description', default='')
+
+        output_path = Path(output_dir).expanduser().resolve()
+
+        if not output_path.exists():
+            if no_prompt or click.confirm(
+                f"Directory '{output_path}' doesn't exist. Create it?", default=True
+            ):
+                output_path.mkdir(parents=True, exist_ok=True)
+            else:
+                click.echo("Aborted.")
+                sys.exit(1)
+
+        generator = DeploymentProjectGenerator()
+
+        project_path = generator.generate(
+            name=name,
+            interface_type=interface_type,
+            model_source=model_source,
+            author=author,
+            description=description,
+            output_dir=str(output_path),
+            include_docker=docker,
+            include_kubernetes=kubernetes,
+        )
+
+        click.echo(click.style(
+            f"✓ Deployment project created: {project_path.name}", fg='green', bold=True
+        ))
+
+        click.echo(click.style("\n📝 Next steps:", fg='yellow', bold=True))
+        click.echo(f"  1. cd {project_path.name}")
+        if model_source == 'local':
+            click.echo("  2. Edit model_definition.py with your model logic")
+            click.echo("  3. Update deployment_config.yaml with your variable names")
+            click.echo("  4. pl run --config deployment_config.yaml --debug --one-shot")
+        else:
+            click.echo("  2. Update env.json with your MLflow credentials")
+            click.echo("  3. Update deployment_config.yaml with your model name/version")
+            click.echo("  4. pl run --config deployment_config.yaml -r -e env.json")
+
+        if docker:
+            click.echo(click.style("\n🐳 Docker:", fg='cyan'))
+            click.echo(f"  cd {project_path.name}/docker && docker compose up --build")
+
+        if kubernetes:
+            click.echo(click.style("\n☸ Kubernetes:", fg='cyan'))
+            click.echo(f"  kubectl apply -f {project_path.name}/k8s/")
+
+        click.echo()
+
+    except FileExistsError as e:
+        click.echo(click.style(f'✗ {e}', fg='red'), err=True)
+        click.echo(click.style(
+            '  Tip: Choose a different name or remove the existing directory', fg='yellow'
+        ))
+        sys.exit(1)
+    except Exception as e:
+        click.echo(click.style(f'✗ Error creating project: {e}', fg='red'), err=True)
+        if os.environ.get('DEBUG') == 'True':
+            traceback.print_exc()
+        sys.exit(1)
 
 
 # ============================================================================
