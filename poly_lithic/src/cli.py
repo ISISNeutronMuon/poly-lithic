@@ -456,6 +456,26 @@ def info(plugin_name, plugin_type):
         click.echo(click.style("\nTip: Run 'poly-lithic plugin list' to see available plugins", fg='yellow'))
         sys.exit(1)
 
+# ============================================================================
+# Project Generator/Template Commandsd
+# ============================================================================
+
+@click.command()
+@click.argument('project_name', required=False)
+# @click.argument('location', required=False)
+# @click.argument('type', required=False)
+@click.option('model', required=False, help='Model type to include in the template to help kickstart deployment, model must be supported by poly-lithic')
+
+def generate():
+    """
+    Generate a new project from template.
+    
+    This command is a placeholder for future project generation features.
+    For plugin generation, use 'poly-lithic plugin init'.
+    """
+    click.echo(click.style('Project generation coming soon! Use "poly-lithic plugin init" to create plugins.', fg='yellow'))
+    
+
 
 # ============================================================================
 # Utility Commands
