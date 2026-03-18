@@ -123,6 +123,116 @@ providing <code class="docutils literal notranslate"><span class="pre">get</span
 <p>The <code class="docutils literal notranslate"><span class="pre">p4p</span></code> interface connects to an external EPICS server. The <code class="docutils literal notranslate"><span class="pre">p4p_server</span></code>
 interface hosts its own p4p server for the specified PVs. Both share the same
 YAML configuration format. See the README for sample YAML.</p>
+<section id="epics-variable-fields">
+<h3>EPICS Variable Fields<a class="headerlink" href="#epics-variable-fields" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#epics-variable-fields'"><span>🔗</span></a></h3>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 18.0%"/>
+<col style="width: 10.0%"/>
+<col style="width: 15.0%"/>
+<col style="width: 57.0%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Field</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">proto</span></code></p></td>
+<td><p>string</p></td>
+<td><p><strong>required</strong></p></td>
+<td><p>Protocol (currently <code class="docutils literal notranslate"><span class="pre">pva</span></code>)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">name</span></code></p></td>
+<td><p>string</p></td>
+<td><p><strong>required</strong></p></td>
+<td><p>PV name</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">mode</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">"inout"</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">in</span></code>, <code class="docutils literal notranslate"><span class="pre">out</span></code>, or <code class="docutils literal notranslate"><span class="pre">inout</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">type</span></code></p></td>
+<td><p>string</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">"scalar"</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">scalar</span></code>, <code class="docutils literal notranslate"><span class="pre">waveform</span></code>, <code class="docutils literal notranslate"><span class="pre">array</span></code>, <code class="docutils literal notranslate"><span class="pre">image</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">default</span></code></p></td>
+<td><p>any</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.0</span></code> / zeros</p></td>
+<td><p>Initial value (not supported for <code class="docutils literal notranslate"><span class="pre">image</span></code> type)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">length</span></code></p></td>
+<td><p>int</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">10</span></code></p></td>
+<td><p>Array/waveform length when no default is provided</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">image_size</span></code></p></td>
+<td><p>dict</p></td>
+<td><p>—</p></td>
+<td><p>Required for <code class="docutils literal notranslate"><span class="pre">image</span></code> type: <code class="docutils literal notranslate"><span class="pre">{"x":</span> <span class="pre">int,</span> <span class="pre">"y":</span> <span class="pre">int}</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">compute_alarm</span></code></p></td>
+<td><p>bool</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">false</span></code></p></td>
+<td><p>Enable scalar alarm computation from <code class="docutils literal notranslate"><span class="pre">valueAlarm</span></code> limits</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">display</span></code></p></td>
+<td><p>dict</p></td>
+<td><p>—</p></td>
+<td><p>Optional NTScalar display metadata</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">control</span></code></p></td>
+<td><p>dict</p></td>
+<td><p>—</p></td>
+<td><p>Optional NTScalar control metadata</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">valueAlarm</span></code></p></td>
+<td><p>dict</p></td>
+<td><p>—</p></td>
+<td><p>Optional NTScalar alarm limit metadata</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="alarm-behavior">
+<h3>Alarm Behavior<a class="headerlink" href="#alarm-behavior" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#alarm-behavior'"><span>🔗</span></a></h3>
+<ul class="simple">
+<li><p>Computation is scalar-only and active when <code class="docutils literal notranslate"><span class="pre">compute_alarm:</span> <span class="pre">true</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">compute_alarm:</span> <span class="pre">true</span></code> requires:
+<code class="docutils literal notranslate"><span class="pre">valueAlarm</span></code> plus limits
+<code class="docutils literal notranslate"><span class="pre">lowAlarmLimit</span></code>, <code class="docutils literal notranslate"><span class="pre">lowWarningLimit</span></code>, <code class="docutils literal notranslate"><span class="pre">highWarningLimit</span></code>, <code class="docutils literal notranslate"><span class="pre">highAlarmLimit</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">valueAlarm.active</span></code> defaults to <code class="docutils literal notranslate"><span class="pre">true</span></code> when omitted for computed alarms.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">valueAlarm.active:</span> <span class="pre">false</span></code> is rejected when <code class="docutils literal notranslate"><span class="pre">compute_alarm:</span> <span class="pre">true</span></code>.</p></li>
+<li><p>Missing severities use defaults:
+<code class="docutils literal notranslate"><span class="pre">lowAlarmSeverity=2</span></code>, <code class="docutils literal notranslate"><span class="pre">lowWarningSeverity=1</span></code>,
+<code class="docutils literal notranslate"><span class="pre">highWarningSeverity=1</span></code>, <code class="docutils literal notranslate"><span class="pre">highAlarmSeverity=2</span></code>.</p></li>
+<li><p>Status mapping follows EPICS <code class="docutils literal notranslate"><span class="pre">menuAlarmStat</span></code>:
+<code class="docutils literal notranslate"><span class="pre">NO_ALARM=0</span></code>, <code class="docutils literal notranslate"><span class="pre">HIHI=3</span></code>, <code class="docutils literal notranslate"><span class="pre">HIGH=4</span></code>, <code class="docutils literal notranslate"><span class="pre">LOLO=5</span></code>, <code class="docutils literal notranslate"><span class="pre">LOW=6</span></code>.</p></li>
+<li><p>Explicit <code class="docutils literal notranslate"><span class="pre">alarm</span></code> payload overrides computed alarm.</p></li>
+<li><p>Non-scalars do not compute alarms, but explicit <code class="docutils literal notranslate"><span class="pre">alarm</span></code> payloads are accepted.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">p4p</span></code> client attempts a structured put first; if the target rejects it, it
+retries with a value-only put.</p></li>
+</ul>
+</section>
+<section id="model-alarm-override">
+<h3>Model Alarm Override<a class="headerlink" href="#model-alarm-override" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#model-alarm-override'"><span>🔗</span></a></h3>
+<p>Models can publish structured output with explicit alarm fields (for example
+<code class="docutils literal notranslate"><span class="pre">{"PV":</span> <span class="pre">{"value":</span> <span class="pre">1.0,</span> <span class="pre">"alarm":</span> <span class="pre">{...}}}</span></code>), and <code class="docutils literal notranslate"><span class="pre">ModelObserver</span></code> preserves
+that structure when publishing downstream.</p>
+<p>In <code class="docutils literal notranslate"><span class="pre">examples/base/local/deployment_config_p4p_alarm.yaml</span></code> this passes through
+an <code class="docutils literal notranslate"><span class="pre">output_transformer</span></code> direct-symbol mapping
+(<code class="docutils literal notranslate"><span class="pre">ML:LOCAL:TEST_S</span> <span class="pre">-&gt;</span> <span class="pre">ML:LOCAL:TEST_S</span></code>), which preserves <code class="docutils literal notranslate"><span class="pre">alarm</span></code> and other
+non-<code class="docutils literal notranslate"><span class="pre">value</span></code> fields.</p>
+<p>See example:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">examples/base/local/deployment_config_p4p_alarm.yaml</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">examples/base/local/model_definition_alarm_override.py</span></code></p></li>
+</ul>
+</section>
 </section>
 <section id="k2eg-interface">
 <h2>k2eg Interface<a class="headerlink" href="#k2eg-interface" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#k2eg-interface'"><span>🔗</span></a></h2>
@@ -135,6 +245,11 @@ YAML.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">fastapi_server</span></code> interface exposes a REST API for submitting inference
 jobs and retrieving results. It manages an internal job queue and variable
 store, and embeds a uvicorn server.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code class="docutils literal notranslate"><span class="pre">fastapi_server</span></code> is experimental and may change or be removed without
+notice.</p>
+</div>
 <p>Register it in your YAML config with <code class="docutils literal notranslate"><span class="pre">type:</span> <span class="pre">"interface.fastapi_server"</span></code>.</p>
 <section id="configuration-fields">
 <h3>Configuration Fields<a class="headerlink" href="#configuration-fields" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#configuration-fields'"><span>🔗</span></a></h3>
@@ -332,30 +447,6 @@ store, and embeds a uvicorn server.</p>
 </tbody>
 </table>
 </section>
-<section id="sample-curl-commands">
-<h3>Sample curl commands<a class="headerlink" href="#sample-curl-commands" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#sample-curl-commands'"><span>🔗</span></a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><code><span id="line-1">curl<span class="w"> </span>http://127.0.0.1:8000/health
-</span><span id="line-2">
-</span><span id="line-3">curl<span class="w"> </span>http://127.0.0.1:8000/settings
-</span><span id="line-4">
-</span><span id="line-5">curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/submit<span class="w"> </span><span class="se">\</span>
-</span><span id="line-6"><span class="w">  </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
-</span><span id="line-7"><span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"job_id":"job-001","variables":{"MY_INPUT_A":{"value":3.14},"MY_INPUT_B":{"value":[10,20,30,40,50]}}}'</span>
-</span><span id="line-8">
-</span><span id="line-9">curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/get<span class="w"> </span><span class="se">\</span>
-</span><span id="line-10"><span class="w">  </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
-</span><span id="line-11"><span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"variables":["MY_INPUT_A","MY_OUTPUT"]}'</span>
-</span><span id="line-12">
-</span><span id="line-13">curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/jobs<span class="w"> </span><span class="se">\</span>
-</span><span id="line-14"><span class="w">  </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
-</span><span id="line-15"><span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"jobs":[{"job_id":"job-002","variables":{"MY_INPUT_A":{"value":1.23}}},{"job_id":"job-003","variables":{"MY_INPUT_A":{"value":4.56}}}]}'</span>
-</span><span id="line-16">
-</span><span id="line-17">curl<span class="w"> </span>http://127.0.0.1:8000/jobs/next
-</span><span id="line-18">
-</span><span id="line-19">curl<span class="w"> </span>http://127.0.0.1:8000/jobs/job-001
-</span></code></pre></div>
-</div>
-</section>
 <section id="error-codes">
 <h3>Error Codes<a class="headerlink" href="#error-codes" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#error-codes'"><span>🔗</span></a></h3>
 <table class="docutils align-default">
@@ -428,14 +519,18 @@ even under concurrent load.</p>
 <ul>
 <li><a :data-current="activeSection === '#overview'" class="reference internal" href="#overview">Overview</a></li>
 <li><a :data-current="activeSection === '#available-interfaces'" class="reference internal" href="#available-interfaces">Available Interfaces</a></li>
-<li><a :data-current="activeSection === '#epics-interfaces-p4p-p4p-server'" class="reference internal" href="#epics-interfaces-p4p-p4p-server">EPICS Interfaces (p4p / p4p_server)</a></li>
+<li><a :data-current="activeSection === '#epics-interfaces-p4p-p4p-server'" class="reference internal" href="#epics-interfaces-p4p-p4p-server">EPICS Interfaces (p4p / p4p_server)</a><ul>
+<li><a :data-current="activeSection === '#epics-variable-fields'" class="reference internal" href="#epics-variable-fields">EPICS Variable Fields</a></li>
+<li><a :data-current="activeSection === '#alarm-behavior'" class="reference internal" href="#alarm-behavior">Alarm Behavior</a></li>
+<li><a :data-current="activeSection === '#model-alarm-override'" class="reference internal" href="#model-alarm-override">Model Alarm Override</a></li>
+</ul>
+</li>
 <li><a :data-current="activeSection === '#k2eg-interface'" class="reference internal" href="#k2eg-interface">k2eg Interface</a></li>
 <li><a :data-current="activeSection === '#fastapi-interface-fastapi-server'" class="reference internal" href="#fastapi-interface-fastapi-server">FastAPI Interface (fastapi_server)</a><ul>
 <li><a :data-current="activeSection === '#configuration-fields'" class="reference internal" href="#configuration-fields">Configuration Fields</a></li>
 <li><a :data-current="activeSection === '#variable-fields'" class="reference internal" href="#variable-fields">Variable Fields</a></li>
 <li><a :data-current="activeSection === '#example-yaml'" class="reference internal" href="#example-yaml">Example YAML</a></li>
 <li><a :data-current="activeSection === '#rest-api-endpoints'" class="reference internal" href="#rest-api-endpoints">REST API Endpoints</a></li>
-<li><a :data-current="activeSection === '#sample-curl-commands'" class="reference internal" href="#sample-curl-commands">Sample curl commands</a></li>
 <li><a :data-current="activeSection === '#error-codes'" class="reference internal" href="#error-codes">Error Codes</a></li>
 <li><a :data-current="activeSection === '#job-lifecycle-tracking'" class="reference internal" href="#job-lifecycle-tracking">Job Lifecycle &amp; Tracking</a></li>
 </ul>
@@ -448,7 +543,7 @@ even under concurrent load.</p>
 </div><footer class="py-6 border-t border-border md:py-0">
 <div class="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
 <div class="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
-<p class="text-sm leading-loose text-center text-muted-foreground md:text-left">© 2025, Matuesz Leputa - ISIS Neutron and Muon Source at RAL - Science and Technology Facilities Council Built with <a class="font-medium underline underline-offset-4" href="https://www.sphinx-doc.org" rel="noreferrer">Sphinx 9.0.4</a></p>
+<p class="text-sm leading-loose text-center text-muted-foreground md:text-left">© 2025, Matuesz Leputa - ISIS Neutron and Muon Source at RAL - Science and Technology Facilities Council Built with <a class="font-medium underline underline-offset-4" href="https://www.sphinx-doc.org" rel="noreferrer">Sphinx 9.1.0</a></p>
 </div>
 </div>
 </footer>

@@ -8,10 +8,13 @@ Submodules
    :maxdepth: 4
 
    poly_lithic.src.utils.builder
+   poly_lithic.src.utils.config_updater
    poly_lithic.src.utils.lazyInterfaceLoader
    poly_lithic.src.utils.messaging
+   poly_lithic.src.utils.model_introspector
    poly_lithic.src.utils.plugin_generator
    poly_lithic.src.utils.plugin_registry
+   poly_lithic.src.utils.project_generator
 
 Module contents
 ---------------

@@ -460,7 +460,23 @@ def info(plugin_name, plugin_type):
 # Project Generator Commands
 # ============================================================================
 
-@cli.command(name='generate')
+@cli.group()
+def generate():
+    """
+    Generate or update deployment projects.
+
+    Commands for creating new projects and updating existing configurations.
+
+    Examples:
+
+        poly-lithic generate project --name my-model --interface p4p_server
+
+        poly-lithic generate update config.yaml --model-file model_definition.py
+    """
+    pass
+
+
+@generate.command(name='project')
 @click.option('--name', '-n', default=None,
               help='Name of the deployment project')
 @click.option('--interface', '-i', 'interface_type', default=None,
@@ -468,7 +484,11 @@ def info(plugin_name, plugin_type):
               help='Interface type for the deployment')
 @click.option('--model-source', '-m', default=None,
               type=click.Choice(['local', 'mlflow'], case_sensitive=False),
-              help='Model source type')
+              help='Model source type (ignored when --model-file is given)')
+@click.option('--model-file', '-f', type=click.Path(exists=True), default=None,
+              help='Path to an existing model_definition.py (enables ready-model mode)')
+@click.option('--factory-class', default='ModelFactory',
+              help='Factory class name inside the model file (default: ModelFactory)')
 @click.option('--author', '-a', default=None,
               help='Author name')
 @click.option('--description', '-d', default=None,
@@ -481,24 +501,21 @@ def info(plugin_name, plugin_type):
               help='Include Kubernetes manifests (deployment + service)')
 @click.option('--no-prompt', is_flag=True,
               help='Skip interactive prompts (use defaults or provided values)')
-def generate(name, interface_type, model_source, author, description,
-             output_dir, docker, kubernetes, no_prompt):
+def generate_project(name, interface_type, model_source, model_file, factory_class,
+                     author, description, output_dir, docker, kubernetes, no_prompt):
     """
     Generate a new deployment project from template.
 
-    Creates a project with deployment configuration, model stubs,
-    and optional Docker/Kubernetes files.
+    When --model-file is provided, the model is introspected and variable
+    mappings are pre-populated automatically (requires a lume-compatible model).
 
     Examples:
 
-        poly-lithic generate --name my-model --interface p4p_server --model-source local
+        pl generate project --name my-model --interface p4p_server --model-source local
 
-        poly-lithic generate -n my-model -i fastapi -m mlflow --docker --kubernetes
-
-        poly-lithic generate --name my-model --no-prompt
+        pl generate project -n my-model -f model_definition.py -i fastapi --no-prompt
     """
     try:
-        from poly_lithic.src.utils.project_generator import DeploymentProjectGenerator
         from pathlib import Path
 
         click.echo(click.style('\n🚀 Creating Deployment Project\n', fg='cyan', bold=True))
@@ -516,11 +533,14 @@ def generate(name, interface_type, model_source, author, description,
                 type=click.Choice(['p4p_server', 'fastapi', 'k2eg'], case_sensitive=False),
                 default='p4p_server',
             )
-            model_source = model_source or click.prompt(
-                'Model source',
-                type=click.Choice(['local', 'mlflow'], case_sensitive=False),
-                default='local',
-            )
+            if not model_file:
+                model_source = model_source or click.prompt(
+                    'Model source',
+                    type=click.Choice(['local', 'mlflow'], case_sensitive=False),
+                    default='local',
+                )
+            else:
+                model_source = 'local'
             author = author or click.prompt('Author name', default='')
             description = description or click.prompt('Short description', default='')
 
@@ -535,18 +555,36 @@ def generate(name, interface_type, model_source, author, description,
                 click.echo("Aborted.")
                 sys.exit(1)
 
-        generator = DeploymentProjectGenerator()
+        if model_file:
+            from poly_lithic.src.utils.project_generator import ReadyModelProjectGenerator
 
-        project_path = generator.generate(
-            name=name,
-            interface_type=interface_type,
-            model_source=model_source,
-            author=author,
-            description=description,
-            output_dir=str(output_path),
-            include_docker=docker,
-            include_kubernetes=kubernetes,
-        )
+            model_source = 'local'
+            generator = ReadyModelProjectGenerator()
+            project_path = generator.generate(
+                name=name,
+                model_file=model_file,
+                interface_type=interface_type,
+                author=author,
+                description=description,
+                output_dir=str(output_path),
+                include_docker=docker,
+                include_kubernetes=kubernetes,
+                factory_class=factory_class,
+            )
+        else:
+            from poly_lithic.src.utils.project_generator import DeploymentProjectGenerator
+
+            generator = DeploymentProjectGenerator()
+            project_path = generator.generate(
+                name=name,
+                interface_type=interface_type,
+                model_source=model_source,
+                author=author,
+                description=description,
+                output_dir=str(output_path),
+                include_docker=docker,
+                include_kubernetes=kubernetes,
+            )
 
         click.echo(click.style(
             f"✓ Deployment project created: {project_path.name}", fg='green', bold=True
@@ -554,7 +592,10 @@ def generate(name, interface_type, model_source, author, description,
 
         click.echo(click.style("\n📝 Next steps:", fg='yellow', bold=True))
         click.echo(f"  1. cd {project_path.name}")
-        if model_source == 'local':
+        if model_file:
+            click.echo("  2. Review the pre-populated deployment_config.yaml")
+            click.echo("  3. pl run --config deployment_config.yaml --debug --one-shot")
+        elif model_source == 'local':
             click.echo("  2. Edit model_definition.py with your model logic")
             click.echo("  3. Update deployment_config.yaml with your variable names")
             click.echo("  4. pl run --config deployment_config.yaml --debug --one-shot")
@@ -581,6 +622,59 @@ def generate(name, interface_type, model_source, author, description,
         sys.exit(1)
     except Exception as e:
         click.echo(click.style(f'✗ Error creating project: {e}', fg='red'), err=True)
+        if os.environ.get('DEBUG') == 'True':
+            traceback.print_exc()
+        sys.exit(1)
+
+
+@generate.command(name='update')
+@click.argument('config_file', type=click.Path(exists=True))
+@click.option('--model-file', '-f', type=click.Path(exists=True), required=True,
+              help='Path to the model_definition.py to introspect')
+@click.option('--factory-class', default='ModelFactory',
+              help='Factory class name inside the model file (default: ModelFactory)')
+def generate_update(config_file, model_file, factory_class):
+    """
+    Update an existing deployment config with variables from a model file.
+
+    Introspects the model to discover input/output variables and patches
+    the configuration file in-place.
+
+    Examples:
+
+        pl generate update deployment_config.yaml -f model_definition.py
+
+        pl generate update config.yaml -f model_def.py --factory-class MyFactory
+    """
+    try:
+        from poly_lithic.src.utils.config_updater import ConfigUpdater
+        from poly_lithic.src.utils.model_introspector import ModelIntrospector
+
+        click.echo(click.style('\n🔄 Updating Deployment Config\n', fg='cyan', bold=True))
+
+        # Show what we discovered
+        introspector = ModelIntrospector(model_file, factory_class)
+        metadata = introspector.introspect()
+
+        input_names = [v['name'] for v in metadata.input_variables]
+        output_names = [v['name'] for v in metadata.output_variables]
+
+        click.echo(f"  Model file: {model_file}")
+        click.echo(f"  Factory class: {factory_class}")
+        click.echo(f"  Inputs:  {', '.join(input_names)}")
+        click.echo(f"  Outputs: {', '.join(output_names)}")
+        click.echo()
+
+        updater = ConfigUpdater(config_file)
+        updated_path = updater.update_from_model(model_file, factory_class)
+
+        click.echo(click.style(
+            f"✓ Config updated: {updated_path}", fg='green', bold=True
+        ))
+        click.echo()
+
+    except Exception as e:
+        click.echo(click.style(f'✗ Error updating config: {e}', fg='red'), err=True)
         if os.environ.get('DEBUG') == 'True':
             traceback.print_exc()
         sys.exit(1)

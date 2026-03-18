@@ -11,6 +11,8 @@ Submodules
    poly_lithic.src.interfaces.fastapi_interface
    poly_lithic.src.interfaces.file_interface
    poly_lithic.src.interfaces.k2eg_interface
+   poly_lithic.src.interfaces.p4p_alarm_constants
+   poly_lithic.src.interfaces.p4p_alarm_helpers
    poly_lithic.src.interfaces.p4p_interface
 
 Module contents

@@ -13,6 +13,10 @@ use old docs in the meantime: [old docs](./readme_old.md) -->
 # Table of Contents
   - [Installation](#installation)
   - [Usage](#usage)
+  - [Project Generator](#project-generator)
+    - [Generate a new project](#generate-a-new-project)
+    - [Generate from an existing model](#generate-from-an-existing-model)
+    - [Update an existing config](#update-an-existing-config)
   - [Configuration file](#configuration-file-formerly-pv_mappings-files)
   - [Plugin API](#plugin-api)
   - [Modules](#modules)
@@ -99,6 +103,109 @@ Reqired variables are:
 - `PUBLISH` - set to `true` for the deployment to publish data to the interface. This flag serves as a safety measure to prevent accidental publishing of data to live system. 
 
 See [this](https://mlflow.org/docs/latest/api_reference/python_api/mlflow.environment_variables.html) for explantions of the MLFlow environment variables.
+
+## Project Generator
+
+The `generate` command group scaffolds new deployment projects and updates existing configurations. It has two subcommands: `project` and `update`.
+
+```
+pl generate --help
+pl generate project --help
+pl generate update --help
+```
+
+### Generate a new project
+
+Create a blank deployment project with placeholder variables:
+
+```bash
+pl generate project --name my-model --interface p4p_server --model-source local
+```
+
+Use `--docker` and `--kubernetes` to include Docker and K8s manifests:
+
+```bash
+pl generate project -n my-model -i fastapi -m mlflow --docker --kubernetes
+```
+
+For non-interactive usage (CI, scripting), pass `--no-prompt`:
+
+```bash
+pl generate project --name my-model --no-prompt
+```
+
+### Generate from an existing model
+
+When you already have a `model_definition.py` with a [lume-base](https://github.com/slaclab/lume-base) compatible model, pass `--model-file` to introspect it at generation time. The generator extracts input/output variable names, defaults, and ranges, and pre-populates the deployment config:
+
+```bash
+pl generate project --name lume-demo -f model_definition.py -i p4p_server --no-prompt
+```
+
+The model must follow the lume convention — a factory class (default `ModelFactory`) that produces a model with `input_variables` and `output_variables` attributes. You can override the factory class name:
+
+```bash
+pl generate project --name my-proj -f model_def.py --factory-class MyFactory --no-prompt
+```
+
+#### lume-base compatibility requirements
+
+The model introspection relies on **lume-model ≥ 2.0.0** (which depends on **lume-base ≥ 0.3**). Your model definition file must satisfy the following contract:
+
+| Requirement | Detail |
+|---|---|
+| **Factory class** | A class (default name `ModelFactory`) with a `get_model()` method that returns the model instance. |
+| **`input_variables`** | The model must expose an `input_variables` attribute — a list of lume-base variable objects (e.g. `ScalarVariable`) with at least a `.name` attribute. |
+| **`output_variables`** | Same as above for outputs. |
+| **Optional attributes** | `.default_value` and `.value_range` on each variable are extracted when present but not required. |
+
+A minimal conforming example:
+
+```python
+from lume_model.base import LUMEBaseModel
+from lume_model.variables import ScalarVariable
+
+class MyModel(LUMEBaseModel):
+    def _evaluate(self, input_dict):
+        return {"y": input_dict["x1"] + input_dict["x2"]}
+
+class ModelFactory:
+    def __init__(self):
+        self.model = MyModel(
+            input_variables=[
+                ScalarVariable(name="x1", default_value=0, value_range=[-1, 1]),
+                ScalarVariable(name="x2", default_value=0),
+            ],
+            output_variables=[ScalarVariable(name="y")],
+        )
+
+    def get_model(self):
+        return self.model
+```
+
+Install the lume extras to pull in the required dependencies:
+
+```bash
+pip install poly-lithic[lume]        # lume-model ≥ 2.0.0
+# or with torch support:
+pip install poly-lithic[torch]       # lume-model ≥ 2.0.0 + torch ≥ 2.6.0
+```
+
+### Update an existing config
+
+If you already have a generated project with placeholder variable names, you can patch the `deployment_config.yaml` in-place using a model file:
+
+```bash
+pl generate update deployment_config.yaml -f model_definition.py
+```
+
+This introspects the model and replaces:
+- Interface variable entries (PV names / FastAPI variable definitions)
+- Input transformer symbols and variable mappings
+- Model output variables
+- Output transformer symbols and variable mappings
+
+An optional `--factory-class` flag is available if your factory is not named `ModelFactory`.
 
 ## Configuration file (formerly pv_mappings files)
 
@@ -770,7 +877,7 @@ See the [MLFlow example notebook](./examples/base/simple_model_mlflow.ipynb) for
 |-----------------------------------------------|--------------|----------|---------------|
 | 🖌️ 🎨 **Make logo**                            | 1–3 Months   | 🥇       | Compelte! |
 | 🔌 🧩 **Plugin System for Modules**                      | 1–3 Months   | 🥇       | Complete! |
-| 🧠 🔧 **Lume-Model Integration**               | 1–3 Months   | 🥇       | 🚧 In Progress |
+| 🧠 🔧 **Lume-Model Integration**               | 1–3 Months   | 🥇       | ✅ Complete |
 | ⚡ 🔄 **Event driven mode**                    | 1-3 Months   | 🥈       | 🚧 In Progress     |
 | 🌐 🔌 **FastAPI REST Interface**                | 1–3 Months   | 🥇       | ✅ Complete |
 | 🔗 📡 **Job trace propagation across broker**   | 1–1 Months   | 🥈       | ⏳ Planned     |

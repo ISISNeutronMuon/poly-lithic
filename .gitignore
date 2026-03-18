@@ -155,3 +155,4 @@ slack.py
 _version.py
 notify.profile
 !image.png
+docs/build/
