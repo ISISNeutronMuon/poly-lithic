@@ -1,0 +1,239 @@
+deployment:
+  type: "continuous"
+  rate: 1  # seconds
+
+modules:
+{% if interface_type == "p4p_server" %}
+  {{ interface_type }}:
+    name: "{{ interface_type }}"
+    type: "interface.p4p_server"
+    pub:
+      - "in_interface"
+    sub:
+      - "get_all"
+      - "out_transformer"
+    module_args: None
+    config:
+      EPICS_PVA_NAME_SERVERS: "localhost:5075"
+      variables:
+{% if input_variables is defined and input_variables %}
+{% for var in input_variables %}
+        {{ project_name | upper }}:{{ var.name }}:
+          proto: pva
+          name: {{ project_name | upper }}:{{ var.name }}
+{% endfor %}
+{% else %}
+        {{ project_name | upper }}:INPUT_A:
+          proto: pva
+          name: {{ project_name | upper }}:INPUT_A
+        {{ project_name | upper }}:INPUT_B:
+          proto: pva
+          name: {{ project_name | upper }}:INPUT_B
+{% endif %}
+{% if output_variables is defined and output_variables %}
+{% for var in output_variables %}
+        {{ project_name | upper }}:{{ var.name }}:
+          proto: pva
+          name: {{ project_name | upper }}:{{ var.name }}
+{% endfor %}
+{% else %}
+        {{ project_name | upper }}:OUTPUT:
+          proto: pva
+          name: {{ project_name | upper }}:OUTPUT
+{% endif %}
+{% elif interface_type == "fastapi" %}
+  fastapi_server:
+    name: "fastapi_server"
+    type: "interface.fastapi_server"
+    pub:
+      - "in_interface"
+    sub:
+      - "get_all"
+      - "out_transformer"
+    module_args: None
+    config:
+      name: "fastapi_server"
+      host: "127.0.0.1"
+      port: 8000
+      start_server: true
+      wait_for_server_start: true
+      startup_timeout_s: 5.0
+      input_queue_max: 1000
+      output_queue_max: 1000
+      variables:
+{% if input_variables is defined and input_variables %}
+{% for var in input_variables %}
+        {{ project_name | upper }}:{{ var.name }}:
+          mode: in
+          type: {{ var.type | default("scalar") }}
+          default: {{ var.default_value | default(0.0) }}
+{% if var.type | default("scalar") in ["waveform", "array"] and var.length is defined %}
+          length: {{ var.length }}
+{% elif var.type | default("scalar") == "image" and var.image_size is defined %}
+          image_size:
+            x: {{ var.image_size.x }}
+            y: {{ var.image_size.y }}
+{% endif %}
+{% endfor %}
+{% else %}
+        {{ project_name | upper }}:INPUT_A:
+          mode: in
+          type: scalar
+          default: 0.0
+        {{ project_name | upper }}:INPUT_B:
+          mode: in
+          type: scalar
+          default: 0.0
+{% endif %}
+{% if output_variables is defined and output_variables %}
+{% for var in output_variables %}
+        {{ project_name | upper }}:{{ var.name }}:
+          mode: out
+          type: {{ var.type | default("scalar") }}
+          default: {{ var.default_value | default(0.0) }}
+{% if var.type | default("scalar") in ["waveform", "array"] and var.length is defined %}
+          length: {{ var.length }}
+{% elif var.type | default("scalar") == "image" and var.image_size is defined %}
+          image_size:
+            x: {{ var.image_size.x }}
+            y: {{ var.image_size.y }}
+{% endif %}
+{% endfor %}
+{% else %}
+        {{ project_name | upper }}:OUTPUT:
+          mode: out
+          type: scalar
+          default: 0.0
+{% endif %}
+{% elif interface_type == "k2eg" %}
+  k2eg_interface:
+    name: "k2eg_interface"
+    type: "interface.k2eg"
+    pub:
+      - "in_interface"
+    sub:
+      - "get_all"
+      - "out_transformer"
+    module_args: None
+    config:
+      variables:
+{% if input_variables is defined and input_variables %}
+{% for var in input_variables %}
+        {{ project_name | upper }}:{{ var.name }}:
+          proto: pva
+          name: {{ project_name | upper }}:{{ var.name }}
+{% endfor %}
+{% else %}
+        {{ project_name | upper }}:INPUT_A:
+          proto: pva
+          name: {{ project_name | upper }}:INPUT_A
+        {{ project_name | upper }}:INPUT_B:
+          proto: pva
+          name: {{ project_name | upper }}:INPUT_B
+{% endif %}
+{% if output_variables is defined and output_variables %}
+{% for var in output_variables %}
+        {{ project_name | upper }}:{{ var.name }}:
+          proto: pva
+          name: {{ project_name | upper }}:{{ var.name }}
+{% endfor %}
+{% else %}
+        {{ project_name | upper }}:OUTPUT:
+          proto: pva
+          name: {{ project_name | upper }}:OUTPUT
+{% endif %}
+{% endif %}
+
+  input_transformer:
+    name: "input_transformer"
+    type: "transformer.SimpleTransformer"
+    pub: "in_transformer"
+    sub: "in_interface"
+    module_args: None
+    config:
+      symbols:
+{% if input_variables is defined and input_variables %}
+{% for var in input_variables %}
+        - "{{ project_name | upper }}:{{ var.name }}"
+{% endfor %}
+{% else %}
+        - "{{ project_name | upper }}:INPUT_A"
+        - "{{ project_name | upper }}:INPUT_B"
+{% endif %}
+      variables:
+{% if input_variables is defined and input_variables %}
+{% for var in input_variables %}
+        {{ var.name }}:
+          formula: "{{ project_name | upper }}:{{ var.name }}"
+{% endfor %}
+{% else %}
+        x:
+          formula: "{{ project_name | upper }}:INPUT_A"
+        y:
+          formula: "{{ project_name | upper }}:INPUT_B"
+{% endif %}
+
+  model:
+    name: "model"
+    type: "model.SimpleModel"
+    pub: "model"
+    sub: "in_transformer"
+    module_args: None
+    config:
+{% if model_source == "local" %}
+      type: "LocalModelGetter"
+      args:
+        model_path: "model_definition.py"
+        model_factory_class: "{{ factory_class | default('ModelFactory') }}"
+{% elif model_source == "mlflow" %}
+      type: "MlflowModelGetter"
+      args:
+        model_name: "{{ project_name }}"
+        model_version: 1
+        # or use model_uri:
+        # model_uri: "models:/{{ project_name }}/1"
+{% endif %}
+      variables:
+{% if output_variables is defined and output_variables %}
+{% for var in output_variables %}
+        {{ var.name }}:
+          type: "{{ var.type | default("scalar") }}"
+{% if var.type | default("scalar") in ["waveform", "array"] and var.length is defined %}
+          length: {{ var.length }}
+{% elif var.type | default("scalar") == "image" and var.image_size is defined %}
+          image_size:
+            x: {{ var.image_size.x }}
+            y: {{ var.image_size.y }}
+{% endif %}
+{% endfor %}
+{% else %}
+        max:
+          type: "scalar"
+{% endif %}
+
+  output_transformer:
+    name: "output_transformer"
+    type: "transformer.SimpleTransformer"
+    pub: "out_transformer"
+    sub: "model"
+    module_args:
+      unpack_data: True
+    config:
+      symbols:
+{% if output_variables is defined and output_variables %}
+{% for var in output_variables %}
+        - "{{ var.name }}"
+{% endfor %}
+{% else %}
+        - "output"
+{% endif %}
+      variables:
+{% if output_variables is defined and output_variables %}
+{% for var in output_variables %}
+        {{ project_name | upper }}:{{ var.name }}:
+          formula: "{{ var.name }}"
+{% endfor %}
+{% else %}
+        {{ project_name | upper }}:OUTPUT:
+          formula: "output"
+{% endif %}
