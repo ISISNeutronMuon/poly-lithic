@@ -18,7 +18,7 @@ logger = get_logger()
 class CompoundTransformer(BaseTransformer):
     def __init__(self, config):
         from poly_lithic.src.transformers import registered_transformers
-        
+
         logger.debug('Initializing CompoundTransformer')
         self.transformers = []
         self.latest_input = {}

@@ -19,12 +19,11 @@ extensions = [
     'sphinx_autodoc_typehints',
     'sphinxemoji.sphinxemoji',
     'sphinx.ext.viewcode',
-    'sphinx.ext.todo'
+    'sphinx.ext.todo',
 ]
 
 templates_path = ['_templates']
 exclude_patterns = []
-
 
 
 # -- Options for HTML output -------------------------------------------------

@@ -126,7 +126,9 @@ class SimpleFastAPIInterfaceServer(BaseInterface):
         # -- variable state ---------------------------------------------
         self._lock = threading.RLock()
         self._var_store: dict[str, Any] = {}
-        self._var_meta: dict[str, dict] = {}  # {name: {mode, type, length?, image_size?}}
+        self._var_meta: dict[
+            str, dict
+        ] = {}  # {name: {mode, type, length?, image_size?}}
         self._in_list: list[str] = []
         self._out_list: list[str] = []
 
@@ -279,7 +281,9 @@ class SimpleFastAPIInterfaceServer(BaseInterface):
             for ji in jobs_input:
                 jid = ji.job_id or str(uuid.uuid4())
                 if jid in self._jobs or jid in seen_ids:
-                    raise HTTPException(status_code=409, detail=f'Duplicate job_id: {jid}')
+                    raise HTTPException(
+                        status_code=409, detail=f'Duplicate job_id: {jid}'
+                    )
                 seen_ids.add(jid)
 
                 for vname, struct in ji.variables.items():
@@ -318,7 +322,11 @@ class SimpleFastAPIInterfaceServer(BaseInterface):
                     self._var_store[vname] = coerced
 
                     input_snapshot[vname] = {
-                        'value': copy.deepcopy(coerced if not isinstance(coerced, np.ndarray) else coerced.copy()),
+                        'value': copy.deepcopy(
+                            coerced
+                            if not isinstance(coerced, np.ndarray)
+                            else coerced.copy()
+                        ),
                         'timestamp': struct.timestamp or now,
                         'metadata': dict(struct.metadata) if struct.metadata else {},
                     }
@@ -336,7 +344,11 @@ class SimpleFastAPIInterfaceServer(BaseInterface):
                 }
                 self._jobs[jid] = job_record
                 self._queued.append(jid)
-                accepted.append({'job_id': jid, 'status': 'queued', 'updated': updated_vars})
+                accepted.append({
+                    'job_id': jid,
+                    'status': 'queued',
+                    'updated': updated_vars,
+                })
 
             # -- Phase 4: fire monitor callback -------------------------
             if self._monitor_callback is not None:
@@ -402,7 +414,8 @@ class SimpleFastAPIInterfaceServer(BaseInterface):
                 # so the pipeline reads the correct inputs for this job.
                 for vname, snap in job['inputs'].items():
                     self._var_store[vname] = copy.deepcopy(
-                        snap['value'] if not isinstance(snap['value'], np.ndarray)
+                        snap['value']
+                        if not isinstance(snap['value'], np.ndarray)
                         else snap['value'].copy()
                     )
 
@@ -473,7 +486,11 @@ class SimpleFastAPIInterfaceServer(BaseInterface):
                         val = self._var_store.get(vname)
                         if val is not None:
                             job['outputs'][vname] = {
-                                'value': copy.deepcopy(val if not isinstance(val, np.ndarray) else val.copy()),
+                                'value': copy.deepcopy(
+                                    val
+                                    if not isinstance(val, np.ndarray)
+                                    else val.copy()
+                                ),
                                 'timestamp': now,
                             }
 
@@ -484,7 +501,9 @@ class SimpleFastAPIInterfaceServer(BaseInterface):
                         evicted_id = self._completed.popleft()
                         if evicted_id in self._jobs:
                             self._jobs[evicted_id]['status'] = 'failed'
-                            self._jobs[evicted_id]['error'] = 'Evicted: output queue overflow'
+                            self._jobs[evicted_id]['error'] = (
+                                'Evicted: output queue overflow'
+                            )
 
     def get_inputs(self) -> list[str]:
         return list(self._in_list)
@@ -576,9 +595,7 @@ class SimpleFastAPIInterfaceServer(BaseInterface):
                         raise HTTPException(
                             status_code=404, detail=f'Unknown variable: {vname}'
                         )
-                    values[vname] = {
-                        'value': _numpy_to_native(self._var_store[vname])
-                    }
+                    values[vname] = {'value': _numpy_to_native(self._var_store[vname])}
                 return _numpy_to_native({
                     'job_id': req.job_id or str(uuid.uuid4()),
                     'values': values,
@@ -587,7 +604,11 @@ class SimpleFastAPIInterfaceServer(BaseInterface):
         @app.post('/jobs')
         def submit_batch(req: JobsRequest):
             accepted = self._enqueue_jobs(req.jobs)
-            return {'accepted': [{'job_id': a['job_id'], 'status': a['status']} for a in accepted]}
+            return {
+                'accepted': [
+                    {'job_id': a['job_id'], 'status': a['status']} for a in accepted
+                ]
+            }
 
         @app.get('/jobs/next')
         def next_completed_job():
@@ -601,7 +622,9 @@ class SimpleFastAPIInterfaceServer(BaseInterface):
         def get_job(job_id: str):
             with self._lock:
                 if job_id not in self._jobs:
-                    raise HTTPException(status_code=404, detail=f'Unknown job_id: {job_id}')
+                    raise HTTPException(
+                        status_code=404, detail=f'Unknown job_id: {job_id}'
+                    )
                 return _numpy_to_native(self._jobs[job_id])
 
         return app

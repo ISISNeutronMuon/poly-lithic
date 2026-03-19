@@ -11,6 +11,7 @@ import traceback
 from poly_lithic._version import __version__
 from poly_lithic.src.logging_utils import get_logger, make_logger
 
+
 def import_poly_lithic_deps():
     from poly_lithic.src.config import ConfigParser
     from poly_lithic.src.utils.builder import Builder
@@ -19,6 +20,7 @@ def import_poly_lithic_deps():
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
 
 def load_build_info():
     """Load build info from build-info.json if it exists."""
@@ -33,10 +35,12 @@ def print_banner():
     """Print the startup banner."""
     width = 80
     border = click.style('=' * width, fg='green')
-    version = click.style(f"🚀 Poly-Lithic Version: {__version__} 🚀", fg='yellow', bold=True)
+    version = click.style(
+        f'🚀 Poly-Lithic Version: {__version__} 🚀', fg='yellow', bold=True
+    )
     click.echo(border)
     click.echo(version.center(width))
-    click.echo(border + "\n")
+    click.echo(border + '\n')
 
 
 def setup_logging(debug):
@@ -70,7 +74,7 @@ def load_env_config(env_path):
 async def model_main(args, config, broker):
     """
     Main async function for running the model manager.
-    
+
     Args:
         args: Parsed arguments namespace
         config: Configuration object
@@ -78,13 +82,13 @@ async def model_main(args, config, broker):
     """
     logger = get_logger()
     logger.info('Starting model manager')
-    
+
     os.environ['PUBLISH'] = str(args.publish)
-    
+
     try:
         if config.deployment.type == 'continuous':
             time_start = time.time()
-            
+
             while True:
                 if time.time() - time_start > config.deployment.rate:
                     time_start = time.time()
@@ -92,19 +96,19 @@ async def model_main(args, config, broker):
                 else:
                     if len(broker.queue) > 0:
                         broker.parse_queue()
-                
+
                 if len(broker.queue) > 0:
                     broker.parse_queue()
-                    
+
                     if args.one_shot:
                         logger.info('One shot mode, exiting')
                         break
-                
+
                 await asyncio.sleep(0.01)
-        
+
         else:
             raise Exception(f'Deployment type "{config.deployment.type}" not supported')
-            
+
     except Exception as e:
         logger.error(f'Error in model main loop: {traceback.format_exc()}')
         raise e
@@ -116,16 +120,17 @@ async def model_main(args, config, broker):
 # CLI Commands
 # ============================================================================
 
+
 @click.group(invoke_without_command=True)
 @click.pass_context
 @click.version_option(version=__version__, prog_name='poly-lithic')
 def cli(ctx):
     """
     Poly-Lithic - A modular ML model deployment framework with plugin support.
-    
+
     Run without subcommands to start the model manager (default behavior).
     Use subcommands for additional functionality.
-    
+
     Examples:
 
         poly-lithic --config config.yaml
@@ -134,36 +139,53 @@ def cli(ctx):
     """
     load_build_info()
     print_banner()
-    
+
     if ctx.invoked_subcommand is None:
         ctx.invoke(run_model, **ctx.params)
 
 
 @cli.command(name='run')
-@click.option('--config', '-c', type=click.Path(exists=True),
-              help='Path to the configuration file')
-@click.option('--model-getter', '-g',
-              type=click.Choice(['mlflow', 'local'], case_sensitive=False),
-              default='mlflow',
-              help='Method to obtain the model')
-@click.option('--debug', '-d', is_flag=True,
-              help='Enable debug mode')
-@click.option('--env', '-e', type=click.Path(exists=True),
-              help='Path to environment configuration file (JSON format)')
-@click.option('--one-shot', '-o', is_flag=True,
-              help='One shot mode - run once and exit (helpful for debugging)')
-@click.option('--publish', '-p', is_flag=True,
-              help='Publish data to system')
-@click.option('--requirements', '-r', is_flag=True,
-              help='Requirements install only - install requirements.txt from model and exit')
+@click.option(
+    '--config',
+    '-c',
+    type=click.Path(exists=True),
+    help='Path to the configuration file',
+)
+@click.option(
+    '--model-getter',
+    '-g',
+    type=click.Choice(['mlflow', 'local'], case_sensitive=False),
+    default='mlflow',
+    help='Method to obtain the model',
+)
+@click.option('--debug', '-d', is_flag=True, help='Enable debug mode')
+@click.option(
+    '--env',
+    '-e',
+    type=click.Path(exists=True),
+    help='Path to environment configuration file (JSON format)',
+)
+@click.option(
+    '--one-shot',
+    '-o',
+    is_flag=True,
+    help='One shot mode - run once and exit (helpful for debugging)',
+)
+@click.option('--publish', '-p', is_flag=True, help='Publish data to system')
+@click.option(
+    '--requirements',
+    '-r',
+    is_flag=True,
+    help='Requirements install only - install requirements.txt from model and exit',
+)
 def run_model(config, model_getter, debug, env, one_shot, publish, requirements):
     """
     Run the model manager with the specified configuration.
-    
+
     This is the default command when no subcommand is specified.
-    
+
     Examples:
-    
+
         poly-lithic run --config config.yaml
         poly-lithic run --config config.yaml --debug --publish
         poly-lithic run --config config.yaml --one-shot
@@ -171,19 +193,21 @@ def run_model(config, model_getter, debug, env, one_shot, publish, requirements)
     try:
         logger = setup_logging(debug)
         logger.info('Model Manager CLI')
-        
+
         if publish:
             logger.warning('Publishing data to system')
             os.environ['PUBLISH'] = 'True'
         else:
             logger.warning('Not publishing data to system. To publish, use --publish')
             os.environ['PUBLISH'] = 'False'
-        
+
         if env:
             load_env_config(env)
-        
+
         if not config:
-            logger.info('No configuration file provided, getting config from model artifacts')
+            logger.info(
+                'No configuration file provided, getting config from model artifacts'
+            )
             if 'MODEL_CONFIG_FILE' not in os.environ:
                 raise click.ClickException(
                     'No configuration file provided. Use --config or set MODEL_CONFIG_FILE environment variable'
@@ -191,19 +215,20 @@ def run_model(config, model_getter, debug, env, one_shot, publish, requirements)
             config = os.environ['MODEL_CONFIG_FILE']
         else:
             logger.info(f'Configuration file provided: {config}')
-        
+
         # Import heavy dependencies only when needed
         from poly_lithic.src.utils.builder import Builder
-        
+
         click.echo('Building model manager...')
         builder = Builder(config)
         broker = builder.build()
-        
+
         if requirements:
             click.echo('Requirements-only mode - exiting after installation')
             sys.exit(0)
         # ugly but we needed to do some legacy support, this will eventially all be click handled
         import argparse
+
         args = argparse.Namespace(
             config=config,
             model_getter=model_getter,
@@ -213,10 +238,10 @@ def run_model(config, model_getter, debug, env, one_shot, publish, requirements)
             publish=publish,
             requirements=requirements,
         )
-        
+
         logger.info('Starting model manager main loop')
         asyncio.run(model_main(args, builder.config, broker))
-        
+
     except KeyboardInterrupt:
         click.echo('\n\nInterrupted by user')
         sys.exit(0)
@@ -231,36 +256,42 @@ def run_model(config, model_getter, debug, env, one_shot, publish, requirements)
 # Plugin Commands
 # ============================================================================
 
+
 @cli.group()
 def plugin():
     """
     Manage poly_lithic plugins.
-    
+
     Commands for creating, listing, and managing plugins.
     """
     pass
 
 
 @plugin.command()
-@click.option('--name', '-n', default=None,
-              help='Name of the plugin package')
-@click.option('--author', '-a', default=None,
-              help='Author name')
-@click.option('--email', default=None,
-              help='Author email')
-@click.option('--description', '-d', default=None,
-              help='Plugin description')
-@click.option('--output-dir', '--dir', '-o', type=click.Path(), default='.',
-              help='Output directory for the plugin project (default: current directory)')
-@click.option('--no-prompt', is_flag=True,
-              help='Skip interactive prompts (use defaults or provided values)')
+@click.option('--name', '-n', default=None, help='Name of the plugin package')
+@click.option('--author', '-a', default=None, help='Author name')
+@click.option('--email', default=None, help='Author email')
+@click.option('--description', '-d', default=None, help='Plugin description')
+@click.option(
+    '--output-dir',
+    '--dir',
+    '-o',
+    type=click.Path(),
+    default='.',
+    help='Output directory for the plugin project (default: current directory)',
+)
+@click.option(
+    '--no-prompt',
+    is_flag=True,
+    help='Skip interactive prompts (use defaults or provided values)',
+)
 def init(name, author, email, description, output_dir, no_prompt):
     """
     Initialize a new plugin project from template.
-    
+
     Creates a simple plugin project with examples of all plugin types.
     Comment out the types you don't need.
-    
+
     Examples:
         poly-lithic plugin init --name my-plugin
         poly-lithic plugin init -n my-plugin --dir ./plugins
@@ -269,9 +300,9 @@ def init(name, author, email, description, output_dir, no_prompt):
     try:
         from poly_lithic.src.utils.plugin_generator import PluginGenerator
         from pathlib import Path
-        
+
         click.echo(click.style('\n🚀 Creating Plugin Project\n', fg='cyan', bold=True))
-        
+
         # Handle prompts manually based on no_prompt flag
         if no_prompt:
             name = name or 'my_plugin'
@@ -283,19 +314,21 @@ def init(name, author, email, description, output_dir, no_prompt):
             author = author or click.prompt('Author name', default='')
             email = email or click.prompt('Author email', default='example@email.com')
             description = description or click.prompt('Short description', default='')
-        
+
         output_path = Path(output_dir).expanduser().resolve()
         plugin_dir_name = PluginGenerator._normalize_package_name(name)
-        
+
         if not output_path.exists():
-            if no_prompt or click.confirm(f"Directory '{output_path}' doesn't exist. Create it?", default=True):
+            if no_prompt or click.confirm(
+                f"Directory '{output_path}' doesn't exist. Create it?", default=True
+            ):
                 output_path.mkdir(parents=True, exist_ok=True)
             else:
-                click.echo("Aborted.")
+                click.echo('Aborted.')
                 sys.exit(1)
-        
+
         generator = PluginGenerator()
-        
+
         project_path = generator.generate(
             name=name,
             author=author,
@@ -303,27 +336,38 @@ def init(name, author, email, description, output_dir, no_prompt):
             description=description,
             output_dir=str(output_path),
         )
-        
-        click.echo(click.style(f"✓ Plugin project created: {project_path.name}", fg='green', bold=True))
-        
-        click.echo(click.style("\n📝 Next steps:", fg='yellow', bold=True))
-        click.echo(f"  1. cd {project_path.name}")
+
+        click.echo(
+            click.style(
+                f'✓ Plugin project created: {project_path.name}', fg='green', bold=True
+            )
+        )
+
+        click.echo(click.style('\n📝 Next steps:', fg='yellow', bold=True))
+        click.echo(f'  1. cd {project_path.name}')
         click.echo("  2. Edit the plugin files and comment out types you don't need")
-        click.echo("  3. pip install -e .")
-        click.echo("  4. Test the plugin: pl run --config test_deployment.yaml --debug --one-shot")
-        click.echo("  5. Run tests: pytest")
-        
-        click.echo(click.style("\n💡 Tips:", fg='cyan'))
-        click.echo("  • The template includes examples of all three plugin types")
+        click.echo('  3. pip install -e .')
+        click.echo(
+            '  4. Test the plugin: pl run --config test_deployment.yaml --debug --one-shot'
+        )
+        click.echo('  5. Run tests: pytest')
+
+        click.echo(click.style('\n💡 Tips:', fg='cyan'))
+        click.echo('  • The template includes examples of all three plugin types')
         click.echo("  • Comment out types you don't need in:")
-        click.echo(f"    - {plugin_dir_name}/__init__.py")
-        click.echo(f"    - pyproject.toml (entry points section)")
-        click.echo(f"    - test_deployment.yaml (module configurations)")
+        click.echo(f'    - {plugin_dir_name}/__init__.py')
+        click.echo(f'    - pyproject.toml (entry points section)')
+        click.echo(f'    - test_deployment.yaml (module configurations)')
         click.echo()
-        
+
     except FileExistsError as e:
         click.echo(click.style(f'✗ {e}', fg='red'), err=True)
-        click.echo(click.style('  Tip: Choose a different name or remove the existing directory', fg='yellow'))
+        click.echo(
+            click.style(
+                '  Tip: Choose a different name or remove the existing directory',
+                fg='yellow',
+            )
+        )
         sys.exit(1)
     except Exception as e:
         click.echo(click.style(f'✗ Error creating plugin: {e}', fg='red'), err=True)
@@ -333,15 +377,21 @@ def init(name, author, email, description, output_dir, no_prompt):
 
 
 @plugin.command()
-@click.option('--type', '-t', 'plugin_type',
-              type=click.Choice(['interface', 'transformer', 'model_getter', 'all'], case_sensitive=False),
-              help='Filter by plugin type')
+@click.option(
+    '--type',
+    '-t',
+    'plugin_type',
+    type=click.Choice(
+        ['interface', 'transformer', 'model_getter', 'all'], case_sensitive=False
+    ),
+    help='Filter by plugin type',
+)
 def list(plugin_type):
     """
     List all available plugins.
-    
+
     Shows all plugins discovered via entry points in the current environment.
-    
+
     Examples:
         poly-lithic plugin list
         poly-lithic plugin list --type interface
@@ -351,14 +401,15 @@ def list(plugin_type):
         transformer_plugin_registry,
         model_getter_plugin_registry,
     )
-    
+
     try:
         from yaspin import yaspin
         from yaspin.spinners import Spinners
+
         use_spinner = True
     except ImportError:
         use_spinner = False
-    
+
     registries = []
     if not plugin_type or plugin_type in ['interface', 'all']:
         registries.append(('Interfaces', interface_plugin_registry))
@@ -366,48 +417,60 @@ def list(plugin_type):
         registries.append(('Transformers', transformer_plugin_registry))
     if not plugin_type or plugin_type in ['model_getter', 'all']:
         registries.append(('Model Getters', model_getter_plugin_registry))
-    
+
     if use_spinner:
-        with yaspin(Spinners.dots12, text="Discovering plugins...", color="green") as spinner:
+        with yaspin(
+            Spinners.dots12, text='Discovering plugins...', color='green'
+        ) as spinner:
             for name, registry in registries:
-                spinner.text = f"Scanning {name.lower()}..."
+                spinner.text = f'Scanning {name.lower()}...'
                 registry.discover_plugins()
-            spinner.text = "Scanning complete!"
-            spinner.ok("✓")
+            spinner.text = 'Scanning complete!'
+            spinner.ok('✓')
     else:
-        with click.progressbar(registries, label='Scanning for plugins',
-                              bar_template='%(label)s  [%(bar)s]  %(info)s',
-                              show_percent=False, show_pos=True) as bar:
+        with click.progressbar(
+            registries,
+            label='Scanning for plugins',
+            bar_template='%(label)s  [%(bar)s]  %(info)s',
+            show_percent=False,
+            show_pos=True,
+        ) as bar:
             for name, registry in bar:
                 registry.discover_plugins()
-    
-    click.echo(click.style("\n📦 Available Plugins\n", fg='cyan', bold=True))
-    
+
+    click.echo(click.style('\n📦 Available Plugins\n', fg='cyan', bold=True))
+
     for name, registry in registries:
         plugins = registry.list_plugins()
-        
+
         if plugins:
-            click.echo(click.style(f"{name}:", fg='yellow', bold=True))
+            click.echo(click.style(f'{name}:', fg='yellow', bold=True))
             for plugin_name in sorted(plugins):
-                click.echo(f"  • {plugin_name}")
+                click.echo(f'  • {plugin_name}')
             click.echo()
         else:
-            click.echo(click.style(f"{name}: None found", fg='yellow'))
+            click.echo(click.style(f'{name}: None found', fg='yellow'))
             click.echo()
-    
+
     if not any(reg[1].list_plugins() for reg in registries):
-        click.echo(click.style("No plugins found", fg='yellow'))
+        click.echo(click.style('No plugins found', fg='yellow'))
 
 
 @plugin.command()
 @click.argument('plugin_name')
-@click.option('--type', '-t', 'plugin_type',
-              type=click.Choice(['interface', 'transformer', 'model_getter'], case_sensitive=False),
-              help='Plugin type (optional, will search all if not specified)')
+@click.option(
+    '--type',
+    '-t',
+    'plugin_type',
+    type=click.Choice(
+        ['interface', 'transformer', 'model_getter'], case_sensitive=False
+    ),
+    help='Plugin type (optional, will search all if not specified)',
+)
 def info(plugin_name, plugin_type):
     """
     Show detailed information about a specific plugin.
-    
+
     Examples:
         poly-lithic plugin info my_interface
         poly-lithic plugin info my_interface --type interface
@@ -417,7 +480,7 @@ def info(plugin_name, plugin_type):
         transformer_plugin_registry,
         model_getter_plugin_registry,
     )
-    
+
     registries = {}
     if not plugin_type or plugin_type == 'interface':
         registries['interface'] = interface_plugin_registry
@@ -425,100 +488,171 @@ def info(plugin_name, plugin_type):
         registries['transformer'] = transformer_plugin_registry
     if not plugin_type or plugin_type == 'model_getter':
         registries['model_getter'] = model_getter_plugin_registry
-    
+
     found = False
-    
+
     for reg_type, registry in registries.items():
         registry.discover_plugins()
         if registry.has_plugin(plugin_name):
             found = True
             plugin_class = registry.get(plugin_name)
-            
-            click.echo(click.style(f"\n📋 Plugin: {plugin_name}", fg='cyan', bold=True))
-            click.echo(f"Type: {reg_type}")
-            click.echo(f"Class: {plugin_class.__module__}.{plugin_class.__name__}")
-            
+
+            click.echo(click.style(f'\n📋 Plugin: {plugin_name}', fg='cyan', bold=True))
+            click.echo(f'Type: {reg_type}')
+            click.echo(f'Class: {plugin_class.__module__}.{plugin_class.__name__}')
+
             if plugin_class.__doc__:
-                click.echo(f"\nDescription:")
-                click.echo(f"  {plugin_class.__doc__.strip()}")
-            
-            methods = [m for m in dir(plugin_class) 
-                      if not m.startswith('_') and callable(getattr(plugin_class, m))]
+                click.echo(f'\nDescription:')
+                click.echo(f'  {plugin_class.__doc__.strip()}')
+
+            methods = [
+                m
+                for m in dir(plugin_class)
+                if not m.startswith('_') and callable(getattr(plugin_class, m))
+            ]
             if methods:
-                click.echo(f"\nPublic Methods:")
+                click.echo(f'\nPublic Methods:')
                 for method in sorted(methods):
-                    click.echo(f"  • {method}()")
-            
+                    click.echo(f'  • {method}()')
+
             click.echo()
-    
+
     if not found:
-        click.echo(click.style(f"✗ Plugin '{plugin_name}' not found", fg='red'), err=True)
-        click.echo(click.style("\nTip: Run 'poly-lithic plugin list' to see available plugins", fg='yellow'))
+        click.echo(
+            click.style(f"✗ Plugin '{plugin_name}' not found", fg='red'), err=True
+        )
+        click.echo(
+            click.style(
+                "\nTip: Run 'poly-lithic plugin list' to see available plugins",
+                fg='yellow',
+            )
+        )
         sys.exit(1)
 
+
 # ============================================================================
-# Project Generator Commands
+# Project Commands
 # ============================================================================
 
+
 @cli.group()
-def generate():
+def project():
     """
-    Generate or update deployment projects.
+    Manage deployment projects.
 
     Commands for creating new projects and updating existing configurations.
 
     Examples:
 
-        poly-lithic generate project --name my-model --interface p4p_server
+        poly-lithic project init --name my-model --interface p4p_server
 
-        poly-lithic generate update config.yaml --model-file model_definition.py
+        poly-lithic project update config.yaml --model-file model_definition.py
     """
     pass
 
 
-@generate.command(name='project')
-@click.option('--name', '-n', default=None,
-              help='Name of the deployment project')
-@click.option('--interface', '-i', 'interface_type', default=None,
-              type=click.Choice(['p4p_server', 'fastapi', 'k2eg'], case_sensitive=False),
-              help='Interface type for the deployment')
-@click.option('--model-source', '-m', default=None,
-              type=click.Choice(['local', 'mlflow'], case_sensitive=False),
-              help='Model source type (ignored when --model-file is given)')
-@click.option('--model-file', '-f', type=click.Path(exists=True), default=None,
-              help='Path to an existing model_definition.py (enables ready-model mode)')
-@click.option('--factory-class', default='ModelFactory',
-              help='Factory class name inside the model file (default: ModelFactory)')
-@click.option('--author', '-a', default=None,
-              help='Author name')
-@click.option('--description', '-d', default=None,
-              help='Project description')
-@click.option('--output-dir', '--dir', '-o', type=click.Path(), default='.',
-              help='Output directory for the project (default: current directory)')
-@click.option('--docker', is_flag=True,
-              help='Include Docker files (Dockerfile + docker-compose)')
-@click.option('--kubernetes', '--k8s', is_flag=True,
-              help='Include Kubernetes manifests (deployment + service)')
-@click.option('--no-prompt', is_flag=True,
-              help='Skip interactive prompts (use defaults or provided values)')
-def generate_project(name, interface_type, model_source, model_file, factory_class,
-                     author, description, output_dir, docker, kubernetes, no_prompt):
+@project.command(name='init')
+@click.option('--name', '-n', default=None, help='Name of the deployment project')
+@click.option(
+    '--interface',
+    '-i',
+    'interface_type',
+    default=None,
+    type=click.Choice(['p4p_server', 'fastapi', 'k2eg'], case_sensitive=False),
+    help='Interface type for the deployment',
+)
+@click.option(
+    '--model-source',
+    '-m',
+    default=None,
+    type=click.Choice(['local', 'mlflow'], case_sensitive=False),
+    help='Model source type (ignored when --model-file is given)',
+)
+@click.option(
+    '--model-file',
+    '-f',
+    type=click.Path(exists=True),
+    default=None,
+    help='Path to an existing model_definition.py (enables ready-model mode)',
+)
+@click.option(
+    '--sample-file',
+    '-s',
+    type=click.Path(exists=True),
+    default=None,
+    help='Path to a JSON sample file with input/output examples (mutually exclusive with --model-file)',
+)
+@click.option(
+    '--factory-class',
+    default='ModelFactory',
+    help='Factory class name inside the model file (default: ModelFactory)',
+)
+@click.option('--author', '-a', default=None, help='Author name')
+@click.option('--description', '-d', default=None, help='Project description')
+@click.option(
+    '--output-dir',
+    '--dir',
+    '-o',
+    type=click.Path(),
+    default='.',
+    help='Output directory for the project (default: current directory)',
+)
+@click.option(
+    '--docker', is_flag=True, help='Include Docker files (Dockerfile + docker-compose)'
+)
+@click.option(
+    '--kubernetes',
+    '--k8s',
+    is_flag=True,
+    help='Include Kubernetes manifests (deployment + service)',
+)
+@click.option(
+    '--no-prompt',
+    is_flag=True,
+    help='Skip interactive prompts (use defaults or provided values)',
+)
+def init(
+    name,
+    interface_type,
+    model_source,
+    model_file,
+    sample_file,
+    factory_class,
+    author,
+    description,
+    output_dir,
+    docker,
+    kubernetes,
+    no_prompt,
+):
     """
-    Generate a new deployment project from template.
+    Initialize a new deployment project from template.
 
     When --model-file is provided, the model is introspected and variable
     mappings are pre-populated automatically (requires a lume-compatible model).
 
+    When --sample-file is provided, variable names and types are inferred
+    from a JSON file containing example input/output data.
+
     Examples:
 
-        pl generate project --name my-model --interface p4p_server --model-source local
+        pl project init --name my-model --interface p4p_server --model-source local
 
-        pl generate project -n my-model -f model_definition.py -i fastapi --no-prompt
+        pl project init -n my-model -f model_definition.py -i fastapi --no-prompt
+
+        pl project init -n my-model -s sample.json -i fastapi --no-prompt
     """
     try:
         from pathlib import Path
 
-        click.echo(click.style('\n🚀 Creating Deployment Project\n', fg='cyan', bold=True))
+        if model_file and sample_file:
+            raise click.UsageError(
+                '--model-file and --sample-file are mutually exclusive'
+            )
+
+        click.echo(
+            click.style('\n🚀 Creating Deployment Project\n', fg='cyan', bold=True)
+        )
 
         if no_prompt:
             name = name or 'my_deployment'
@@ -530,7 +664,9 @@ def generate_project(name, interface_type, model_source, model_file, factory_cla
             name = name or click.prompt('Project name')
             interface_type = interface_type or click.prompt(
                 'Interface type',
-                type=click.Choice(['p4p_server', 'fastapi', 'k2eg'], case_sensitive=False),
+                type=click.Choice(
+                    ['p4p_server', 'fastapi', 'k2eg'], case_sensitive=False
+                ),
                 default='p4p_server',
             )
             if not model_file:
@@ -552,11 +688,13 @@ def generate_project(name, interface_type, model_source, model_file, factory_cla
             ):
                 output_path.mkdir(parents=True, exist_ok=True)
             else:
-                click.echo("Aborted.")
+                click.echo('Aborted.')
                 sys.exit(1)
 
         if model_file:
-            from poly_lithic.src.utils.project_generator import ReadyModelProjectGenerator
+            from poly_lithic.src.utils.project_generator import (
+                ReadyModelProjectGenerator,
+            )
 
             model_source = 'local'
             generator = ReadyModelProjectGenerator()
@@ -571,8 +709,29 @@ def generate_project(name, interface_type, model_source, model_file, factory_cla
                 include_kubernetes=kubernetes,
                 factory_class=factory_class,
             )
+        elif sample_file:
+            from poly_lithic.src.utils.model_introspector import ModelIntrospector
+            from poly_lithic.src.utils.project_generator import (
+                ReadyModelProjectGenerator,
+            )
+
+            metadata = ModelIntrospector.from_sample_file(sample_file)
+            model_source = 'local'
+            generator = ReadyModelProjectGenerator()
+            project_path = generator.generate(
+                name=name,
+                interface_type=interface_type,
+                author=author,
+                description=description,
+                output_dir=str(output_path),
+                include_docker=docker,
+                include_kubernetes=kubernetes,
+                metadata=metadata,
+            )
         else:
-            from poly_lithic.src.utils.project_generator import DeploymentProjectGenerator
+            from poly_lithic.src.utils.project_generator import (
+                DeploymentProjectGenerator,
+            )
 
             generator = DeploymentProjectGenerator()
             project_path = generator.generate(
@@ -586,39 +745,56 @@ def generate_project(name, interface_type, model_source, model_file, factory_cla
                 include_kubernetes=kubernetes,
             )
 
-        click.echo(click.style(
-            f"✓ Deployment project created: {project_path.name}", fg='green', bold=True
-        ))
+        click.echo(
+            click.style(
+                f'✓ Deployment project created: {project_path.name}',
+                fg='green',
+                bold=True,
+            )
+        )
 
-        click.echo(click.style("\n📝 Next steps:", fg='yellow', bold=True))
-        click.echo(f"  1. cd {project_path.name}")
-        if model_file:
-            click.echo("  2. Review the pre-populated deployment_config.yaml")
-            click.echo("  3. pl run --config deployment_config.yaml --debug --one-shot")
+        click.echo(click.style('\n📝 Next steps:', fg='yellow', bold=True))
+        click.echo(f'  1. cd {project_path.name}')
+        if model_file or sample_file:
+            click.echo('  2. Review the pre-populated deployment_config.yaml')
+            if not model_file:
+                click.echo('  3. Add your model_definition.py')
+                click.echo(
+                    '  4. pl run --config deployment_config.yaml --debug --one-shot'
+                )
+            else:
+                click.echo(
+                    '  3. pl run --config deployment_config.yaml --debug --one-shot'
+                )
         elif model_source == 'local':
-            click.echo("  2. Edit model_definition.py with your model logic")
-            click.echo("  3. Update deployment_config.yaml with your variable names")
-            click.echo("  4. pl run --config deployment_config.yaml --debug --one-shot")
+            click.echo('  2. Edit model_definition.py with your model logic')
+            click.echo('  3. Update deployment_config.yaml with your variable names')
+            click.echo('  4. pl run --config deployment_config.yaml --debug --one-shot')
         else:
-            click.echo("  2. Update env.json with your MLflow credentials")
-            click.echo("  3. Update deployment_config.yaml with your model name/version")
-            click.echo("  4. pl run --config deployment_config.yaml -r -e env.json")
+            click.echo('  2. Update env.json with your MLflow credentials')
+            click.echo(
+                '  3. Update deployment_config.yaml with your model name/version'
+            )
+            click.echo('  4. pl run --config deployment_config.yaml -r -e env.json')
 
         if docker:
-            click.echo(click.style("\n🐳 Docker:", fg='cyan'))
-            click.echo(f"  cd {project_path.name}/docker && docker compose up --build")
+            click.echo(click.style('\n🐳 Docker:', fg='cyan'))
+            click.echo(f'  cd {project_path.name}/docker && docker compose up --build')
 
         if kubernetes:
-            click.echo(click.style("\n☸ Kubernetes:", fg='cyan'))
-            click.echo(f"  kubectl apply -f {project_path.name}/k8s/")
+            click.echo(click.style('\n☸ Kubernetes:', fg='cyan'))
+            click.echo(f'  kubectl apply -f {project_path.name}/k8s/')
 
         click.echo()
 
     except FileExistsError as e:
         click.echo(click.style(f'✗ {e}', fg='red'), err=True)
-        click.echo(click.style(
-            '  Tip: Choose a different name or remove the existing directory', fg='yellow'
-        ))
+        click.echo(
+            click.style(
+                '  Tip: Choose a different name or remove the existing directory',
+                fg='yellow',
+            )
+        )
         sys.exit(1)
     except Exception as e:
         click.echo(click.style(f'✗ Error creating project: {e}', fg='red'), err=True)
@@ -627,50 +803,89 @@ def generate_project(name, interface_type, model_source, model_file, factory_cla
         sys.exit(1)
 
 
-@generate.command(name='update')
+@project.command(name='update')
 @click.argument('config_file', type=click.Path(exists=True))
-@click.option('--model-file', '-f', type=click.Path(exists=True), required=True,
-              help='Path to the model_definition.py to introspect')
-@click.option('--factory-class', default='ModelFactory',
-              help='Factory class name inside the model file (default: ModelFactory)')
-def generate_update(config_file, model_file, factory_class):
+@click.option(
+    '--model-file',
+    '-f',
+    type=click.Path(exists=True),
+    default=None,
+    help='Path to the model_definition.py to introspect',
+)
+@click.option(
+    '--sample-file',
+    '-s',
+    type=click.Path(exists=True),
+    default=None,
+    help='Path to a JSON sample file with input/output examples (mutually exclusive with --model-file)',
+)
+@click.option(
+    '--factory-class',
+    default='ModelFactory',
+    help='Factory class name inside the model file (default: ModelFactory)',
+)
+def update(config_file, model_file, sample_file, factory_class):
     """
-    Update an existing deployment config with variables from a model file.
+    Update an existing deployment config with variables from a model or sample file.
 
-    Introspects the model to discover input/output variables and patches
-    the configuration file in-place.
+    Introspects the model (or infers from sample JSON) to discover input/output
+    variables and patches the configuration file in-place.
 
     Examples:
 
-        pl generate update deployment_config.yaml -f model_definition.py
+        pl project update deployment_config.yaml -f model_definition.py
 
-        pl generate update config.yaml -f model_def.py --factory-class MyFactory
+        pl project update config.yaml -s sample.json
+
+        pl project update config.yaml -f model_def.py --factory-class MyFactory
     """
     try:
         from poly_lithic.src.utils.config_updater import ConfigUpdater
         from poly_lithic.src.utils.model_introspector import ModelIntrospector
 
-        click.echo(click.style('\n🔄 Updating Deployment Config\n', fg='cyan', bold=True))
+        if model_file and sample_file:
+            raise click.UsageError(
+                '--model-file and --sample-file are mutually exclusive'
+            )
+        if not model_file and not sample_file:
+            raise click.UsageError('Either --model-file or --sample-file is required')
 
-        # Show what we discovered
-        introspector = ModelIntrospector(model_file, factory_class)
-        metadata = introspector.introspect()
+        click.echo(
+            click.style('\n🔄 Updating Deployment Config\n', fg='cyan', bold=True)
+        )
 
-        input_names = [v['name'] for v in metadata.input_variables]
-        output_names = [v['name'] for v in metadata.output_variables]
+        if sample_file:
+            metadata = ModelIntrospector.from_sample_file(sample_file)
+            input_names = [v['name'] for v in metadata.input_variables]
+            output_names = [v['name'] for v in metadata.output_variables]
 
-        click.echo(f"  Model file: {model_file}")
-        click.echo(f"  Factory class: {factory_class}")
-        click.echo(f"  Inputs:  {', '.join(input_names)}")
-        click.echo(f"  Outputs: {', '.join(output_names)}")
-        click.echo()
+            click.echo(f'  Sample file: {sample_file}')
+            click.echo(f'  Inputs:  {", ".join(input_names)}')
+            click.echo(f'  Outputs: {", ".join(output_names)}')
+            click.echo()
 
-        updater = ConfigUpdater(config_file)
-        updated_path = updater.update_from_model(model_file, factory_class)
+            updater = ConfigUpdater(config_file)
+            updated_path = updater.update_from_metadata(metadata)
+        else:
+            # Show what we discovered
+            introspector = ModelIntrospector(model_file, factory_class)
+            metadata = introspector.introspect()
 
-        click.echo(click.style(
-            f"✓ Config updated: {updated_path}", fg='green', bold=True
-        ))
+            input_names = [v['name'] for v in metadata.input_variables]
+            output_names = [v['name'] for v in metadata.output_variables]
+
+            click.echo(f'  Model file: {model_file}')
+            click.echo(f'  Factory class: {factory_class}')
+            click.echo(f'  Inputs:  {", ".join(input_names)}')
+            click.echo(f'  Outputs: {", ".join(output_names)}')
+            click.echo()
+
+            updater = ConfigUpdater(config_file)
+            updated_path = updater.update_from_model(model_file, factory_class)
+
+        click.echo(
+            click.style(f'✓ Config updated: {updated_path}', fg='green', bold=True)
+        )
         click.echo()
 
     except Exception as e:
@@ -684,57 +899,69 @@ def generate_update(config_file, model_file, factory_class):
 # Utility Commands
 # ============================================================================
 
+
 @cli.command()
 @click.argument('config_file', type=click.Path(exists=True))
-@click.option('--env', '-e', type=click.Path(exists=True),
-              help='Path to environment configuration file (JSON format)')
+@click.option(
+    '--env',
+    '-e',
+    type=click.Path(exists=True),
+    help='Path to environment configuration file (JSON format)',
+)
 def validate(config_file, env):
     """
     Validate a configuration file without running the model.
-    
+
     Examples:
         poly-lithic validate config.yaml
         poly-lithic validate config.yaml --env env.json
     """
     try:
         from poly_lithic.src.config import ConfigParser
-        
+
         logger = make_logger(level=logging.INFO)
-        
+
         if env:
             load_env_config(env)
-        
+
         click.echo(f'Validating configuration file: {config_file}')
-        
+
         config_parser = ConfigParser(config_file)
         config = config_parser.parse()
-        
+
         click.echo(click.style('✓ Configuration is valid', fg='green', bold=True))
-        
+
         click.echo('\nConfiguration Summary:')
         click.echo(f'  Deployment type: {config.deployment.type}')
         click.echo(f'  Deployment rate: {config.deployment.rate}')
-        
+
         if hasattr(config, 'models'):
-            click.echo(f'  Models: {len(config.models) if hasattr(config.models, "__len__") else "configured"}')
-        
+            click.echo(
+                f'  Models: {len(config.models) if hasattr(config.models, "__len__") else "configured"}'
+            )
+
         if hasattr(config, 'variables'):
             click.echo(f'  Variables: {len(config.variables)}')
-        
+
         if hasattr(config, 'transformers'):
-            click.echo(f'  Transformers: {len(config.transformers) if hasattr(config.transformers, "__len__") else "configured"}')
-        
+            click.echo(
+                f'  Transformers: {len(config.transformers) if hasattr(config.transformers, "__len__") else "configured"}'
+            )
+
         click.echo()
-        
+
     except Exception as e:
         click.echo(click.style(f'✗ Configuration is invalid: {e}', fg='red'), err=True)
         if os.environ.get('DEBUG') == 'True':
             traceback.print_exc()
         sys.exit(1)
 
+
 @cli.command()
 @click.argument('config_file', type=click.Path(exists=True))
-@click.option('--output', '-o', type=click.Path(), required=True, help='Image file output path')
+@click.option(
+    '--output', '-o', type=click.Path(), required=True, help='Image file output path'
+)
 def visualize(config_file, output):
     """
     Visualize the configuration as an image file
@@ -742,6 +969,7 @@ def visualize(config_file, output):
 
     try:
         from poly_lithic.src.config import ConfigParser
+
         parser = ConfigParser(config_file)
         cfg = parser.parse()
         cfg.save_routing_graph(output)
@@ -751,55 +979,61 @@ def visualize(config_file, output):
         click.echo(click.style(f'Configuration error: {e}', fg='red'), err=True)
         sys.exit(1)
 
+
 # ============================================================================
 # Legacy Support Functions
 # ============================================================================
 
+
 def setup():
     """
     Legacy setup function for backward compatibility.
-    
+
     This function is kept for existing code that imports and calls setup().
     New code should use the Click CLI directly.
     """
     import argparse
-    
+
     parser = argparse.ArgumentParser(description='Model Manager CLI')
-    
+
     parser.add_argument('-d', '--debug', action='store_true', help='Debug mode')
     parser.add_argument('-c', '--config', help='Path to the configuration file')
-    parser.add_argument('-g', '--model_getter', choices=['mlflow', 'local'], default='mlflow')
-    parser.add_argument('-v', '--version', action='store_true', help='Print version and exit')
+    parser.add_argument(
+        '-g', '--model_getter', choices=['mlflow', 'local'], default='mlflow'
+    )
+    parser.add_argument(
+        '-v', '--version', action='store_true', help='Print version and exit'
+    )
     parser.add_argument('-r', '--requirements', action='store_true')
     parser.add_argument('-e', '--env', help='Path to environment configuration file')
     parser.add_argument('-o', '--one_shot', action='store_true')
     parser.add_argument('-p', '--publish', action='store_true')
-    
+
     args = parser.parse_args()
-    
+
     if args.version:
         print(f'Poly-Lithic version: {__version__}')
         sys.exit(0)
-    
+
     logger = setup_logging(args.debug)
-    
+
     if args.publish:
         os.environ['PUBLISH'] = 'True'
     else:
         os.environ['PUBLISH'] = 'False'
-    
+
     if args.env:
         load_env_config(args.env)
-    
+
     if not args.config and 'MODEL_CONFIG_FILE' not in os.environ:
         raise Exception('No configuration file provided')
-    
+
     from poly_lithic.src.utils.builder import Builder
-    
+
     config = args.config or os.environ['MODEL_CONFIG_FILE']
     builder = Builder(config)
     broker = builder.build()
-    
+
     return args, builder.config, broker
 
 

@@ -6,6 +6,7 @@ logger = get_logger()
 
 try:
     from lume_model.models import TorchModel, TorchModule
+
     LUME_MODEL_AVAILABLE = True
 except ImportError:
     logger.warning(
@@ -20,12 +21,12 @@ class MLflowModelGetterLegacy(ModelGetterBase):
         import mlflow
         from mlflow.tracking import MlflowClient
         from mlflow.models.model import get_model_info
-        
+
         # Store imports as instance attributes for use in methods
         self.mlflow = mlflow
         self.MlflowClient = MlflowClient
         self.get_model_info = get_model_info
-        
+
         if self.__class__ == MLflowModelGetterLegacy:
             warnings.warn(
                 'MLflowModelGetterLegacy is unmaintained. Use MLflowModelGetter instead.',
@@ -66,7 +67,9 @@ class MLflowModelGetterLegacy(ModelGetterBase):
             raise ValueError(
                 f'Model version {self.model_version} not found for model {self.model_name}.'
             )
-        deps = self.mlflow.artifacts.download_artifacts(f'{version.source}/requirements.txt')
+        deps = self.mlflow.artifacts.download_artifacts(
+            f'{version.source}/requirements.txt'
+        )
         return deps
 
     def get_model(self):
@@ -138,14 +141,12 @@ class MLflowModelGetter(MLflowModelGetterLegacy):
         flavor = self.get_model_info(model_uri=model_uri).flavors
         loader_module = flavor['python_function']['loader_module']
         logger.debug(f'Loader module: {loader_module}')
-        
+
         if loader_module == 'mlflow.pyfunc.model':
             mlflow_model = self.mlflow.pyfunc.load_model(model_uri=model_uri)
             model = mlflow_model.unwrap_python_model()
         else:
-            raise TypeError(
-                f'Expected a pyfunc model, but got {loader_module}.'
-            )
-            
+            raise TypeError(f'Expected a pyfunc model, but got {loader_module}.')
+
         logger.debug(f'Model: {model}, Model type: {type(model)}')
         return model

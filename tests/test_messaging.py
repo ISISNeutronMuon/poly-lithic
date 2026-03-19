@@ -129,7 +129,9 @@ def test_ModelObserver_preserves_structured_value_payload():
             }
 
     observer = ModelObserver(model=StructuredModel(), topic='model_out')
-    message = Message(topic='in_transformer', source='test', value={'x': {'value': 1.0}})
+    message = Message(
+        topic='in_transformer', source='test', value={'x': {'value': 1.0}}
+    )
     out_messages = observer.update(message)
     assert len(out_messages) == 1
     output = out_messages[0].value['PV:TEST']

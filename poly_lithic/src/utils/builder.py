@@ -70,13 +70,13 @@ class Builder:
                     args = self.config.modules[module].module_args
                 else:
                     args = {}
-                
+
                 # Try plugin registry first, fall back to hardcoded registry
                 if interface_plugin_registry.has_plugin(module_subtype):
                     interface_class = interface_plugin_registry.get(module_subtype)
                 else:
                     interface_class = registered_interfaces[module_subtype]
-                
+
                 interface = InterfaceObserver(
                     interface_class(self.config.modules[module].config),
                     self.config.modules[module].pub,
@@ -88,13 +88,13 @@ class Builder:
                     args = self.config.modules[module].module_args
                 else:
                     args = {}
-                
+
                 # Try plugin registry first, fall back to hardcoded registry
                 if transformer_plugin_registry.has_plugin(module_subtype):
                     transformer_class = transformer_plugin_registry.get(module_subtype)
                 else:
                     transformer_class = registered_transformers[module_subtype]
-                
+
                 transformer = TransformerObserver(
                     transformer_class(self.config.modules[module].config),
                     self.config.modules[module].pub,

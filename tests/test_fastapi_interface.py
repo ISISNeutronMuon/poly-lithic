@@ -17,6 +17,7 @@ from poly_lithic.src.interfaces.fastapi_interface import SimpleFastAPIInterfaceS
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_config(**overrides):
     """Return a minimal config dict, merging any *overrides*."""
     cfg = {
@@ -55,46 +56,56 @@ class TestInitialisation:
         iface.close()
 
     def test_array_zeros_default(self):
-        cfg = _make_config(variables={
-            'ARR': {'mode': 'in', 'type': 'waveform', 'length': 5},
-        })
+        cfg = _make_config(
+            variables={
+                'ARR': {'mode': 'in', 'type': 'waveform', 'length': 5},
+            }
+        )
         iface = SimpleFastAPIInterfaceServer(cfg)
         _, val = iface.get('ARR')
         np.testing.assert_array_equal(val['value'], np.zeros(5))
         iface.close()
 
     def test_image_defaults(self):
-        cfg = _make_config(variables={
-            'IMG': {'mode': 'in', 'type': 'image', 'image_size': {'x': 4, 'y': 3}},
-        })
+        cfg = _make_config(
+            variables={
+                'IMG': {'mode': 'in', 'type': 'image', 'image_size': {'x': 4, 'y': 3}},
+            }
+        )
         iface = SimpleFastAPIInterfaceServer(cfg)
         _, val = iface.get('IMG')
         assert val['value'].shape == (3, 4)
         iface.close()
 
     def test_image_custom_default_raises(self):
-        cfg = _make_config(variables={
-            'IMG': {
-                'mode': 'in',
-                'type': 'image',
-                'image_size': {'x': 2, 'y': 2},
-                'default': [[1, 2], [3, 4]],
-            },
-        })
+        cfg = _make_config(
+            variables={
+                'IMG': {
+                    'mode': 'in',
+                    'type': 'image',
+                    'image_size': {'x': 2, 'y': 2},
+                    'default': [[1, 2], [3, 4]],
+                },
+            }
+        )
         with pytest.raises(NotImplementedError):
             SimpleFastAPIInterfaceServer(cfg)
 
     def test_unknown_type_raises(self):
-        cfg = _make_config(variables={
-            'BAD': {'mode': 'in', 'type': 'unknown'},
-        })
+        cfg = _make_config(
+            variables={
+                'BAD': {'mode': 'in', 'type': 'unknown'},
+            }
+        )
         with pytest.raises(TypeError):
             SimpleFastAPIInterfaceServer(cfg)
 
     def test_invalid_mode_raises(self):
-        cfg = _make_config(variables={
-            'BAD': {'mode': 'readwrite', 'type': 'scalar'},
-        })
+        cfg = _make_config(
+            variables={
+                'BAD': {'mode': 'readwrite', 'type': 'scalar'},
+            }
+        )
         with pytest.raises(ValueError):
             SimpleFastAPIInterfaceServer(cfg)
 
@@ -184,9 +195,11 @@ class TestArrayPutGet:
 
 class TestImagePutGet:
     def test_put_and_get_image(self):
-        cfg = _make_config(variables={
-            'IMG': {'mode': 'in', 'type': 'image', 'image_size': {'x': 3, 'y': 2}},
-        })
+        cfg = _make_config(
+            variables={
+                'IMG': {'mode': 'in', 'type': 'image', 'image_size': {'x': 3, 'y': 2}},
+            }
+        )
         iface = SimpleFastAPIInterfaceServer(cfg)
         img = np.ones((2, 3))
         iface.put('IMG', img)
@@ -195,18 +208,22 @@ class TestImagePutGet:
         iface.close()
 
     def test_wrong_shape_raises(self):
-        cfg = _make_config(variables={
-            'IMG': {'mode': 'in', 'type': 'image', 'image_size': {'x': 3, 'y': 2}},
-        })
+        cfg = _make_config(
+            variables={
+                'IMG': {'mode': 'in', 'type': 'image', 'image_size': {'x': 3, 'y': 2}},
+            }
+        )
         iface = SimpleFastAPIInterfaceServer(cfg)
         with pytest.raises(ValueError):
             iface.put('IMG', np.ones((3, 3)))  # wrong shape
         iface.close()
 
     def test_1d_raises(self):
-        cfg = _make_config(variables={
-            'IMG': {'mode': 'in', 'type': 'image', 'image_size': {'x': 3, 'y': 2}},
-        })
+        cfg = _make_config(
+            variables={
+                'IMG': {'mode': 'in', 'type': 'image', 'image_size': {'x': 3, 'y': 2}},
+            }
+        )
         iface = SimpleFastAPIInterfaceServer(cfg)
         with pytest.raises(ValueError):
             iface.put('IMG', [1, 2, 3, 4, 5, 6])
@@ -269,7 +286,10 @@ class TestGetMany:
 
 class TestJobLifecycle:
     def _submit_one(self, iface, value=2.0, job_id=None):
-        from poly_lithic.src.interfaces.fastapi_interface import JobInput, VariableStruct
+        from poly_lithic.src.interfaces.fastapi_interface import (
+            JobInput,
+            VariableStruct,
+        )
 
         ji = JobInput(
             job_id=job_id,
@@ -374,7 +394,10 @@ class TestJobLifecycle:
         iface.close()
 
     def test_batch_multiple_jobs(self):
-        from poly_lithic.src.interfaces.fastapi_interface import JobInput, VariableStruct
+        from poly_lithic.src.interfaces.fastapi_interface import (
+            JobInput,
+            VariableStruct,
+        )
 
         iface = SimpleFastAPIInterfaceServer(_make_config())
         jobs = [
@@ -395,7 +418,10 @@ class TestJobLifecycle:
 class TestQueueCapacity:
     def test_input_queue_full(self):
         from fastapi import HTTPException as FastHTTPException
-        from poly_lithic.src.interfaces.fastapi_interface import JobInput, VariableStruct
+        from poly_lithic.src.interfaces.fastapi_interface import (
+            JobInput,
+            VariableStruct,
+        )
 
         cfg = _make_config(input_queue_max=3)
         iface = SimpleFastAPIInterfaceServer(cfg)
@@ -414,7 +440,10 @@ class TestQueueCapacity:
         iface.close()
 
     def test_output_queue_eviction(self):
-        from poly_lithic.src.interfaces.fastapi_interface import JobInput, VariableStruct
+        from poly_lithic.src.interfaces.fastapi_interface import (
+            JobInput,
+            VariableStruct,
+        )
 
         cfg = _make_config(output_queue_max=2)
         iface = SimpleFastAPIInterfaceServer(cfg)
@@ -456,7 +485,10 @@ class TestMonitor:
         iface.close()
 
     def test_callback_fires_on_submit(self):
-        from poly_lithic.src.interfaces.fastapi_interface import JobInput, VariableStruct
+        from poly_lithic.src.interfaces.fastapi_interface import (
+            JobInput,
+            VariableStruct,
+        )
 
         iface = SimpleFastAPIInterfaceServer(_make_config())
         calls = []
@@ -470,7 +502,10 @@ class TestMonitor:
         iface.close()
 
     def test_callback_exception_does_not_fail(self):
-        from poly_lithic.src.interfaces.fastapi_interface import JobInput, VariableStruct
+        from poly_lithic.src.interfaces.fastapi_interface import (
+            JobInput,
+            VariableStruct,
+        )
 
         iface = SimpleFastAPIInterfaceServer(_make_config())
         iface.monitor(lambda data: 1 / 0)  # will raise ZeroDivisionError

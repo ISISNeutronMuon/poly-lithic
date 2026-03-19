@@ -101,7 +101,9 @@ class ConfigObject(pydantic.BaseModel):
         nx.draw(
             G,
             with_labels=True,
-            node_size=4096, # Arbitrary; looks good enough...
-            pos=nx.multipartite_layout(G, subset_key='layer', align='horizontal', scale=-2)
+            node_size=4096,  # Arbitrary; looks good enough...
+            pos=nx.multipartite_layout(
+                G, subset_key='layer', align='horizontal', scale=-2
+            ),
         )
         plt.savefig(path)
