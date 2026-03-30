@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ project_name }}
+  labels:
+    app: {{ project_name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ project_name }}
+  template:
+    metadata:
+      labels:
+        app: {{ project_name }}
+    spec:
+      containers:
+        - name: {{ project_name }}
+          image: {{ docker_image }}
+          command: ["pl", "run", "--publish", "-c", "config.yaml", "-e", "env.json"]
+          ports:
+{% if interface_type == "fastapi" %}
+            - containerPort: 8000
+              name: http
+{% endif %}
+            - containerPort: 5075
+              name: pva
+          envFrom:
+            - configMapRef:
+                name: {{ project_name }}-env
+                optional: true

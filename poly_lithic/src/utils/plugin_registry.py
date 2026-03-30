@@ -15,6 +15,7 @@ my_transformer = "my_package.transformers:MyTransformer"
 [project.entry-points."poly_lithic.model_getters"]
 my_model_getter = "my_package.models:MyModelGetter"
 """
+
 from typing import Any
 from importlib.metadata import entry_points
 import logging
@@ -41,13 +42,13 @@ class PluginRegistry:
         for ep in discovered:
             self._entry_points[ep.name] = ep
             self._loaded[ep.name] = False
-            logger.debug(f"Discovered plugin: {ep.name}")
-        
+            logger.debug(f'Discovered plugin: {ep.name}')
+
         self._discovered = True
 
     def register(self, name: str, plugin_class):
         self._plugins[name] = plugin_class
-        logger.info(f"Registered plugin: {name}")
+        logger.info(f'Registered plugin: {name}')
 
     def has_plugin(self, name: str) -> bool:
         if not self._discovered:
@@ -69,26 +70,26 @@ class PluginRegistry:
             del self._entry_points[name]
         if name in self._loaded:
             del self._loaded[name]
-        logger.info(f"Unregistered plugin: {name}")
+        logger.info(f'Unregistered plugin: {name}')
 
     def get(self, name: str):
         if name in self._plugins:
             return self._plugins[name]
-        
+
         if not self._discovered:
             self.discover_plugins()
-        
+
         if name in self._entry_points:
             try:
                 plugin_class = self._entry_points[name].load()
                 self._plugins[name] = plugin_class
                 self._loaded[name] = True
-                logger.debug(f"Loaded plugin: {name}")
+                logger.debug(f'Loaded plugin: {name}')
                 return plugin_class
             except Exception as e:
-                logger.error(f"Failed to load plugin {name}: {e}")
+                logger.error(f'Failed to load plugin {name}: {e}')
                 raise
-        
+
         raise KeyError(f"Plugin '{name}' not found")
 
     def __getitem__(self, name: str):
@@ -120,30 +121,30 @@ class PluginRegistry:
                 try:
                     self.get(name)
                 except Exception as e:
-                    logger.warning(f"Could not load plugin {name}: {e}")
+                    logger.warning(f'Could not load plugin {name}: {e}')
         return self._plugins.values()
 
     def items(self):
         if not self._discovered:
             self.discover_plugins()
-        
+
         for name in self:
             try:
                 yield name, self.get(name)
             except Exception as e:
-                logger.warning(f"Could not load plugin {name}: {e}")
+                logger.warning(f'Could not load plugin {name}: {e}')
 
     def get_registered_plugins(self):
         if not self._discovered:
             self.discover_plugins()
-        
+
         for name in list(self._entry_points.keys()):
             if name not in self._plugins:
                 try:
                     self.get(name)
                 except Exception as e:
-                    logger.warning(f"Could not load plugin {name}: {e}")
-        
+                    logger.warning(f'Could not load plugin {name}: {e}')
+
         return dict(self._plugins)
 
     def clear(self):
@@ -153,9 +154,9 @@ class PluginRegistry:
         self._discovered = False
 
 
-interface_plugin_registry = PluginRegistry("poly_lithic.interfaces")
-transformer_plugin_registry = PluginRegistry("poly_lithic.transformers")
-model_getter_plugin_registry = PluginRegistry("poly_lithic.model_getters")
+interface_plugin_registry = PluginRegistry('poly_lithic.interfaces')
+transformer_plugin_registry = PluginRegistry('poly_lithic.transformers')
+model_getter_plugin_registry = PluginRegistry('poly_lithic.model_getters')
 
 
 def register_interface(name: str, interface_class: Any):

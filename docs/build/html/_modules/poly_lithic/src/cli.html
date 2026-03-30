@@ -629,139 +629,362 @@
 </span><span id="line-456">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">click</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Tip: Run &#39;poly-lithic plugin list&#39; to see available plugins&quot;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s1">&#39;yellow&#39;</span><span class="p">))</span>
 </span><span id="line-457">        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 </span><span id="line-458">
-</span><span id="line-459">
-</span><span id="line-460"><span class="c1"># ============================================================================</span>
-</span><span id="line-461"><span class="c1"># Utility Commands</span>
-</span><span id="line-462"><span class="c1"># ============================================================================</span>
-</span><span id="line-463">
-</span><span id="line-464"><span class="nd">@cli</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
-</span><span id="line-465"><span class="nd">@click</span><span class="o">.</span><span class="n">argument</span><span class="p">(</span><span class="s1">&#39;config_file&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">exists</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
-</span><span id="line-466"><span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s1">&#39;--env&#39;</span><span class="p">,</span> <span class="s1">&#39;-e&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">exists</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
-</span><span id="line-467">              <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to environment configuration file (JSON format)&#39;</span><span class="p">)</span>
-</span><span id="line-468"><span class="k">def</span><span class="w"> </span><span class="nf">validate</span><span class="p">(</span><span class="n">config_file</span><span class="p">,</span> <span class="n">env</span><span class="p">):</span>
-</span><span id="line-469"><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="line-470"><span class="sd">    Validate a configuration file without running the model.</span>
-</span><span id="line-471"><span class="sd">    </span>
-</span><span id="line-472"><span class="sd">    Examples:</span>
-</span><span id="line-473"><span class="sd">        poly-lithic validate config.yaml</span>
-</span><span id="line-474"><span class="sd">        poly-lithic validate config.yaml --env env.json</span>
+</span><span id="line-459"><span class="c1"># ============================================================================</span>
+</span><span id="line-460"><span class="c1"># Project Generator Commands</span>
+</span><span id="line-461"><span class="c1"># ============================================================================</span>
+</span><span id="line-462">
+</span><span id="line-463"><span class="nd">@cli</span><span class="o">.</span><span class="n">group</span><span class="p">()</span>
+</span><span id="line-464"><span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">():</span>
+</span><span id="line-465"><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="line-466"><span class="sd">    Generate or update deployment projects.</span>
+</span><span id="line-467">
+</span><span id="line-468"><span class="sd">    Commands for creating new projects and updating existing configurations.</span>
+</span><span id="line-469">
+</span><span id="line-470"><span class="sd">    Examples:</span>
+</span><span id="line-471">
+</span><span id="line-472"><span class="sd">        poly-lithic generate project --name my-model --interface p4p_server</span>
+</span><span id="line-473">
+</span><span id="line-474"><span class="sd">        poly-lithic generate update config.yaml --model-file model_definition.py</span>
 </span><span id="line-475"><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="line-476">    <span class="k">try</span><span class="p">:</span>
-</span><span id="line-477">        <span class="kn">from</span><span class="w"> </span><span class="nn">poly_lithic.src.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigParser</span>
-</span><span id="line-478">        
-</span><span id="line-479">        <span class="n">logger</span> <span class="o">=</span> <span class="n">make_logger</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
-</span><span id="line-480">        
-</span><span id="line-481">        <span class="k">if</span> <span class="n">env</span><span class="p">:</span>
-</span><span id="line-482">            <span class="n">load_env_config</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
-</span><span id="line-483">        
-</span><span id="line-484">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Validating configuration file: </span><span class="si">{</span><span class="n">config_file</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-</span><span id="line-485">        
-</span><span id="line-486">        <span class="n">config_parser</span> <span class="o">=</span> <span class="n">ConfigParser</span><span class="p">(</span><span class="n">config_file</span><span class="p">)</span>
-</span><span id="line-487">        <span class="n">config</span> <span class="o">=</span> <span class="n">config_parser</span><span class="o">.</span><span class="n">parse</span><span class="p">()</span>
-</span><span id="line-488">        
-</span><span id="line-489">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">click</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="s1">&#39;✓ Configuration is valid&#39;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
-</span><span id="line-490">        
-</span><span id="line-491">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Configuration Summary:&#39;</span><span class="p">)</span>
-</span><span id="line-492">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;  Deployment type: </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">deployment</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-</span><span id="line-493">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;  Deployment rate: </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">deployment</span><span class="o">.</span><span class="n">rate</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-</span><span id="line-494">        
-</span><span id="line-495">        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="s1">&#39;models&#39;</span><span class="p">):</span>
-</span><span id="line-496">            <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;  Models: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">models</span><span class="p">)</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nb">hasattr</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">models</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;__len__&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s2">&quot;configured&quot;</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-</span><span id="line-497">        
-</span><span id="line-498">        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="s1">&#39;variables&#39;</span><span class="p">):</span>
-</span><span id="line-499">            <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;  Variables: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">variables</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-</span><span id="line-500">        
-</span><span id="line-501">        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="s1">&#39;transformers&#39;</span><span class="p">):</span>
-</span><span id="line-502">            <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;  Transformers: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">transformers</span><span class="p">)</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nb">hasattr</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">transformers</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;__len__&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s2">&quot;configured&quot;</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-</span><span id="line-503">        
-</span><span id="line-504">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">()</span>
-</span><span id="line-505">        
-</span><span id="line-506">    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-</span><span id="line-507">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">click</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;✗ Configuration is invalid: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">),</span> <span class="n">err</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="line-508">        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;DEBUG&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;True&#39;</span><span class="p">:</span>
-</span><span id="line-509">            <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span>
-</span><span id="line-510">        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="line-476">    <span class="k">pass</span>
+</span><span id="line-477">
+</span><span id="line-478">
+</span><span id="line-479"><span class="nd">@generate</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;project&#39;</span><span class="p">)</span>
+</span><span id="line-480"><span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s1">&#39;--name&#39;</span><span class="p">,</span> <span class="s1">&#39;-n&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+</span><span id="line-481">              <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Name of the deployment project&#39;</span><span class="p">)</span>
+</span><span id="line-482"><span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s1">&#39;--interface&#39;</span><span class="p">,</span> <span class="s1">&#39;-i&#39;</span><span class="p">,</span> <span class="s1">&#39;interface_type&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+</span><span id="line-483">              <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Choice</span><span class="p">([</span><span class="s1">&#39;p4p_server&#39;</span><span class="p">,</span> <span class="s1">&#39;fastapi&#39;</span><span class="p">,</span> <span class="s1">&#39;k2eg&#39;</span><span class="p">],</span> <span class="n">case_sensitive</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+</span><span id="line-484">              <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Interface type for the deployment&#39;</span><span class="p">)</span>
+</span><span id="line-485"><span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s1">&#39;--model-source&#39;</span><span class="p">,</span> <span class="s1">&#39;-m&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+</span><span id="line-486">              <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Choice</span><span class="p">([</span><span class="s1">&#39;local&#39;</span><span class="p">,</span> <span class="s1">&#39;mlflow&#39;</span><span class="p">],</span> <span class="n">case_sensitive</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+</span><span id="line-487">              <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Model source type (ignored when --model-file is given)&#39;</span><span class="p">)</span>
+</span><span id="line-488"><span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s1">&#39;--model-file&#39;</span><span class="p">,</span> <span class="s1">&#39;-f&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">exists</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+</span><span id="line-489">              <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to an existing model_definition.py (enables ready-model mode)&#39;</span><span class="p">)</span>
+</span><span id="line-490"><span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s1">&#39;--factory-class&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;ModelFactory&#39;</span><span class="p">,</span>
+</span><span id="line-491">              <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Factory class name inside the model file (default: ModelFactory)&#39;</span><span class="p">)</span>
+</span><span id="line-492"><span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s1">&#39;--author&#39;</span><span class="p">,</span> <span class="s1">&#39;-a&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+</span><span id="line-493">              <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Author name&#39;</span><span class="p">)</span>
+</span><span id="line-494"><span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s1">&#39;--description&#39;</span><span class="p">,</span> <span class="s1">&#39;-d&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+</span><span id="line-495">              <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Project description&#39;</span><span class="p">)</span>
+</span><span id="line-496"><span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s1">&#39;--output-dir&#39;</span><span class="p">,</span> <span class="s1">&#39;--dir&#39;</span><span class="p">,</span> <span class="s1">&#39;-o&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Path</span><span class="p">(),</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;.&#39;</span><span class="p">,</span>
+</span><span id="line-497">              <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Output directory for the project (default: current directory)&#39;</span><span class="p">)</span>
+</span><span id="line-498"><span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s1">&#39;--docker&#39;</span><span class="p">,</span> <span class="n">is_flag</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="line-499">              <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Include Docker files (Dockerfile + docker-compose)&#39;</span><span class="p">)</span>
+</span><span id="line-500"><span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s1">&#39;--kubernetes&#39;</span><span class="p">,</span> <span class="s1">&#39;--k8s&#39;</span><span class="p">,</span> <span class="n">is_flag</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="line-501">              <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Include Kubernetes manifests (deployment + service)&#39;</span><span class="p">)</span>
+</span><span id="line-502"><span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s1">&#39;--no-prompt&#39;</span><span class="p">,</span> <span class="n">is_flag</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="line-503">              <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Skip interactive prompts (use defaults or provided values)&#39;</span><span class="p">)</span>
+</span><span id="line-504"><span class="k">def</span><span class="w"> </span><span class="nf">generate_project</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">interface_type</span><span class="p">,</span> <span class="n">model_source</span><span class="p">,</span> <span class="n">model_file</span><span class="p">,</span> <span class="n">factory_class</span><span class="p">,</span>
+</span><span id="line-505">                     <span class="n">author</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">output_dir</span><span class="p">,</span> <span class="n">docker</span><span class="p">,</span> <span class="n">kubernetes</span><span class="p">,</span> <span class="n">no_prompt</span><span class="p">):</span>
+</span><span id="line-506"><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="line-507"><span class="sd">    Generate a new deployment project from template.</span>
+</span><span id="line-508">
+</span><span id="line-509"><span class="sd">    When --model-file is provided, the model is introspected and variable</span>
+</span><span id="line-510"><span class="sd">    mappings are pre-populated automatically (requires a lume-compatible model).</span>
 </span><span id="line-511">
-</span><span id="line-512"><span class="nd">@cli</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
-</span><span id="line-513"><span class="nd">@click</span><span class="o">.</span><span class="n">argument</span><span class="p">(</span><span class="s1">&#39;config_file&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">exists</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
-</span><span id="line-514"><span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s1">&#39;--output&#39;</span><span class="p">,</span> <span class="s1">&#39;-o&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Path</span><span class="p">(),</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Image file output path&#39;</span><span class="p">)</span>
-</span><span id="line-515"><span class="k">def</span><span class="w"> </span><span class="nf">visualize</span><span class="p">(</span><span class="n">config_file</span><span class="p">,</span> <span class="n">output</span><span class="p">):</span>
-</span><span id="line-516"><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="line-517"><span class="sd">    Visualize the configuration as an image file</span>
-</span><span id="line-518"><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="line-519">
-</span><span id="line-520">    <span class="k">try</span><span class="p">:</span>
-</span><span id="line-521">        <span class="kn">from</span><span class="w"> </span><span class="nn">poly_lithic.src.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigParser</span>
-</span><span id="line-522">        <span class="n">parser</span> <span class="o">=</span> <span class="n">ConfigParser</span><span class="p">(</span><span class="n">config_file</span><span class="p">)</span>
-</span><span id="line-523">        <span class="n">cfg</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">()</span>
-</span><span id="line-524">        <span class="n">cfg</span><span class="o">.</span><span class="n">save_routing_graph</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
-</span><span id="line-525">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">click</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Saved to </span><span class="si">{</span><span class="n">output</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s1">&#39;green&#39;</span><span class="p">))</span>
-</span><span id="line-526">
-</span><span id="line-527">    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-</span><span id="line-528">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">click</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Configuration error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">),</span> <span class="n">err</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="line-529">        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-</span><span id="line-530">
-</span><span id="line-531"><span class="c1"># ============================================================================</span>
-</span><span id="line-532"><span class="c1"># Legacy Support Functions</span>
-</span><span id="line-533"><span class="c1"># ============================================================================</span>
-</span><span id="line-534">
+</span><span id="line-512"><span class="sd">    Examples:</span>
+</span><span id="line-513">
+</span><span id="line-514"><span class="sd">        pl generate project --name my-model --interface p4p_server --model-source local</span>
+</span><span id="line-515">
+</span><span id="line-516"><span class="sd">        pl generate project -n my-model -f model_definition.py -i fastapi --no-prompt</span>
+</span><span id="line-517"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="line-518">    <span class="k">try</span><span class="p">:</span>
+</span><span id="line-519">        <span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+</span><span id="line-520">
+</span><span id="line-521">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">click</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">🚀 Creating Deployment Project</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s1">&#39;cyan&#39;</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+</span><span id="line-522">
+</span><span id="line-523">        <span class="k">if</span> <span class="n">no_prompt</span><span class="p">:</span>
+</span><span id="line-524">            <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="s1">&#39;my_deployment&#39;</span>
+</span><span id="line-525">            <span class="n">interface_type</span> <span class="o">=</span> <span class="n">interface_type</span> <span class="ow">or</span> <span class="s1">&#39;p4p_server&#39;</span>
+</span><span id="line-526">            <span class="n">model_source</span> <span class="o">=</span> <span class="n">model_source</span> <span class="ow">or</span> <span class="s1">&#39;local&#39;</span>
+</span><span id="line-527">            <span class="n">author</span> <span class="o">=</span> <span class="n">author</span> <span class="ow">or</span> <span class="s1">&#39;&#39;</span>
+</span><span id="line-528">            <span class="n">description</span> <span class="o">=</span> <span class="n">description</span> <span class="ow">or</span> <span class="s1">&#39;A poly-lithic deployment project&#39;</span>
+</span><span id="line-529">        <span class="k">else</span><span class="p">:</span>
+</span><span id="line-530">            <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="n">click</span><span class="o">.</span><span class="n">prompt</span><span class="p">(</span><span class="s1">&#39;Project name&#39;</span><span class="p">)</span>
+</span><span id="line-531">            <span class="n">interface_type</span> <span class="o">=</span> <span class="n">interface_type</span> <span class="ow">or</span> <span class="n">click</span><span class="o">.</span><span class="n">prompt</span><span class="p">(</span>
+</span><span id="line-532">                <span class="s1">&#39;Interface type&#39;</span><span class="p">,</span>
+</span><span id="line-533">                <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Choice</span><span class="p">([</span><span class="s1">&#39;p4p_server&#39;</span><span class="p">,</span> <span class="s1">&#39;fastapi&#39;</span><span class="p">,</span> <span class="s1">&#39;k2eg&#39;</span><span class="p">],</span> <span class="n">case_sensitive</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+</span><span id="line-534">                <span class="n">default</span><span class="o">=</span><span class="s1">&#39;p4p_server&#39;</span><span class="p">,</span>
+</span><span id="line-535">            <span class="p">)</span>
+</span><span id="line-536">            <span class="k">if</span> <span class="ow">not</span> <span class="n">model_file</span><span class="p">:</span>
+</span><span id="line-537">                <span class="n">model_source</span> <span class="o">=</span> <span class="n">model_source</span> <span class="ow">or</span> <span class="n">click</span><span class="o">.</span><span class="n">prompt</span><span class="p">(</span>
+</span><span id="line-538">                    <span class="s1">&#39;Model source&#39;</span><span class="p">,</span>
+</span><span id="line-539">                    <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Choice</span><span class="p">([</span><span class="s1">&#39;local&#39;</span><span class="p">,</span> <span class="s1">&#39;mlflow&#39;</span><span class="p">],</span> <span class="n">case_sensitive</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+</span><span id="line-540">                    <span class="n">default</span><span class="o">=</span><span class="s1">&#39;local&#39;</span><span class="p">,</span>
+</span><span id="line-541">                <span class="p">)</span>
+</span><span id="line-542">            <span class="k">else</span><span class="p">:</span>
+</span><span id="line-543">                <span class="n">model_source</span> <span class="o">=</span> <span class="s1">&#39;local&#39;</span>
+</span><span id="line-544">            <span class="n">author</span> <span class="o">=</span> <span class="n">author</span> <span class="ow">or</span> <span class="n">click</span><span class="o">.</span><span class="n">prompt</span><span class="p">(</span><span class="s1">&#39;Author name&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+</span><span id="line-545">            <span class="n">description</span> <span class="o">=</span> <span class="n">description</span> <span class="ow">or</span> <span class="n">click</span><span class="o">.</span><span class="n">prompt</span><span class="p">(</span><span class="s1">&#39;Short description&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+</span><span id="line-546">
+</span><span id="line-547">        <span class="n">output_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">output_dir</span><span class="p">)</span><span class="o">.</span><span class="n">expanduser</span><span class="p">()</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+</span><span id="line-548">
+</span><span id="line-549">        <span class="k">if</span> <span class="ow">not</span> <span class="n">output_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+</span><span id="line-550">            <span class="k">if</span> <span class="n">no_prompt</span> <span class="ow">or</span> <span class="n">click</span><span class="o">.</span><span class="n">confirm</span><span class="p">(</span>
+</span><span id="line-551">                <span class="sa">f</span><span class="s2">&quot;Directory &#39;</span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&#39; doesn&#39;t exist. Create it?&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">True</span>
+</span><span id="line-552">            <span class="p">):</span>
+</span><span id="line-553">                <span class="n">output_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="line-554">            <span class="k">else</span><span class="p">:</span>
+</span><span id="line-555">                <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="s2">&quot;Aborted.&quot;</span><span class="p">)</span>
+</span><span id="line-556">                <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="line-557">
+</span><span id="line-558">        <span class="k">if</span> <span class="n">model_file</span><span class="p">:</span>
+</span><span id="line-559">            <span class="kn">from</span><span class="w"> </span><span class="nn">poly_lithic.src.utils.project_generator</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReadyModelProjectGenerator</span>
+</span><span id="line-560">
+</span><span id="line-561">            <span class="n">model_source</span> <span class="o">=</span> <span class="s1">&#39;local&#39;</span>
+</span><span id="line-562">            <span class="n">generator</span> <span class="o">=</span> <span class="n">ReadyModelProjectGenerator</span><span class="p">()</span>
+</span><span id="line-563">            <span class="n">project_path</span> <span class="o">=</span> <span class="n">generator</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+</span><span id="line-564">                <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+</span><span id="line-565">                <span class="n">model_file</span><span class="o">=</span><span class="n">model_file</span><span class="p">,</span>
+</span><span id="line-566">                <span class="n">interface_type</span><span class="o">=</span><span class="n">interface_type</span><span class="p">,</span>
+</span><span id="line-567">                <span class="n">author</span><span class="o">=</span><span class="n">author</span><span class="p">,</span>
+</span><span id="line-568">                <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
+</span><span id="line-569">                <span class="n">output_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">output_path</span><span class="p">),</span>
+</span><span id="line-570">                <span class="n">include_docker</span><span class="o">=</span><span class="n">docker</span><span class="p">,</span>
+</span><span id="line-571">                <span class="n">include_kubernetes</span><span class="o">=</span><span class="n">kubernetes</span><span class="p">,</span>
+</span><span id="line-572">                <span class="n">factory_class</span><span class="o">=</span><span class="n">factory_class</span><span class="p">,</span>
+</span><span id="line-573">            <span class="p">)</span>
+</span><span id="line-574">        <span class="k">else</span><span class="p">:</span>
+</span><span id="line-575">            <span class="kn">from</span><span class="w"> </span><span class="nn">poly_lithic.src.utils.project_generator</span><span class="w"> </span><span class="kn">import</span> <span class="n">DeploymentProjectGenerator</span>
+</span><span id="line-576">
+</span><span id="line-577">            <span class="n">generator</span> <span class="o">=</span> <span class="n">DeploymentProjectGenerator</span><span class="p">()</span>
+</span><span id="line-578">            <span class="n">project_path</span> <span class="o">=</span> <span class="n">generator</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span>
+</span><span id="line-579">                <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+</span><span id="line-580">                <span class="n">interface_type</span><span class="o">=</span><span class="n">interface_type</span><span class="p">,</span>
+</span><span id="line-581">                <span class="n">model_source</span><span class="o">=</span><span class="n">model_source</span><span class="p">,</span>
+</span><span id="line-582">                <span class="n">author</span><span class="o">=</span><span class="n">author</span><span class="p">,</span>
+</span><span id="line-583">                <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span>
+</span><span id="line-584">                <span class="n">output_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">output_path</span><span class="p">),</span>
+</span><span id="line-585">                <span class="n">include_docker</span><span class="o">=</span><span class="n">docker</span><span class="p">,</span>
+</span><span id="line-586">                <span class="n">include_kubernetes</span><span class="o">=</span><span class="n">kubernetes</span><span class="p">,</span>
+</span><span id="line-587">            <span class="p">)</span>
+</span><span id="line-588">
+</span><span id="line-589">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">click</span><span class="o">.</span><span class="n">style</span><span class="p">(</span>
+</span><span id="line-590">            <span class="sa">f</span><span class="s2">&quot;✓ Deployment project created: </span><span class="si">{</span><span class="n">project_path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span>
+</span><span id="line-591">        <span class="p">))</span>
+</span><span id="line-592">
+</span><span id="line-593">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">click</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">📝 Next steps:&quot;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s1">&#39;yellow&#39;</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+</span><span id="line-594">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  1. cd </span><span class="si">{</span><span class="n">project_path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="line-595">        <span class="k">if</span> <span class="n">model_file</span><span class="p">:</span>
+</span><span id="line-596">            <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="s2">&quot;  2. Review the pre-populated deployment_config.yaml&quot;</span><span class="p">)</span>
+</span><span id="line-597">            <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="s2">&quot;  3. pl run --config deployment_config.yaml --debug --one-shot&quot;</span><span class="p">)</span>
+</span><span id="line-598">        <span class="k">elif</span> <span class="n">model_source</span> <span class="o">==</span> <span class="s1">&#39;local&#39;</span><span class="p">:</span>
+</span><span id="line-599">            <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="s2">&quot;  2. Edit model_definition.py with your model logic&quot;</span><span class="p">)</span>
+</span><span id="line-600">            <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="s2">&quot;  3. Update deployment_config.yaml with your variable names&quot;</span><span class="p">)</span>
+</span><span id="line-601">            <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="s2">&quot;  4. pl run --config deployment_config.yaml --debug --one-shot&quot;</span><span class="p">)</span>
+</span><span id="line-602">        <span class="k">else</span><span class="p">:</span>
+</span><span id="line-603">            <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="s2">&quot;  2. Update env.json with your MLflow credentials&quot;</span><span class="p">)</span>
+</span><span id="line-604">            <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="s2">&quot;  3. Update deployment_config.yaml with your model name/version&quot;</span><span class="p">)</span>
+</span><span id="line-605">            <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="s2">&quot;  4. pl run --config deployment_config.yaml -r -e env.json&quot;</span><span class="p">)</span>
+</span><span id="line-606">
+</span><span id="line-607">        <span class="k">if</span> <span class="n">docker</span><span class="p">:</span>
+</span><span id="line-608">            <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">click</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">🐳 Docker:&quot;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s1">&#39;cyan&#39;</span><span class="p">))</span>
+</span><span id="line-609">            <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  cd </span><span class="si">{</span><span class="n">project_path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">/docker &amp;&amp; docker compose up --build&quot;</span><span class="p">)</span>
+</span><span id="line-610">
+</span><span id="line-611">        <span class="k">if</span> <span class="n">kubernetes</span><span class="p">:</span>
+</span><span id="line-612">            <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">click</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">☸ Kubernetes:&quot;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s1">&#39;cyan&#39;</span><span class="p">))</span>
+</span><span id="line-613">            <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  kubectl apply -f </span><span class="si">{</span><span class="n">project_path</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">/k8s/&quot;</span><span class="p">)</span>
+</span><span id="line-614">
+</span><span id="line-615">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">()</span>
+</span><span id="line-616">
+</span><span id="line-617">    <span class="k">except</span> <span class="ne">FileExistsError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="line-618">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">click</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;✗ </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">),</span> <span class="n">err</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="line-619">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">click</span><span class="o">.</span><span class="n">style</span><span class="p">(</span>
+</span><span id="line-620">            <span class="s1">&#39;  Tip: Choose a different name or remove the existing directory&#39;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s1">&#39;yellow&#39;</span>
+</span><span id="line-621">        <span class="p">))</span>
+</span><span id="line-622">        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="line-623">    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="line-624">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">click</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;✗ Error creating project: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">),</span> <span class="n">err</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="line-625">        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;DEBUG&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;True&#39;</span><span class="p">:</span>
+</span><span id="line-626">            <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span>
+</span><span id="line-627">        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="line-628">
+</span><span id="line-629">
+</span><span id="line-630"><span class="nd">@generate</span><span class="o">.</span><span class="n">command</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;update&#39;</span><span class="p">)</span>
+</span><span id="line-631"><span class="nd">@click</span><span class="o">.</span><span class="n">argument</span><span class="p">(</span><span class="s1">&#39;config_file&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">exists</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+</span><span id="line-632"><span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s1">&#39;--model-file&#39;</span><span class="p">,</span> <span class="s1">&#39;-f&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">exists</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="line-633">              <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to the model_definition.py to introspect&#39;</span><span class="p">)</span>
+</span><span id="line-634"><span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s1">&#39;--factory-class&#39;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;ModelFactory&#39;</span><span class="p">,</span>
+</span><span id="line-635">              <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Factory class name inside the model file (default: ModelFactory)&#39;</span><span class="p">)</span>
+</span><span id="line-636"><span class="k">def</span><span class="w"> </span><span class="nf">generate_update</span><span class="p">(</span><span class="n">config_file</span><span class="p">,</span> <span class="n">model_file</span><span class="p">,</span> <span class="n">factory_class</span><span class="p">):</span>
+</span><span id="line-637"><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="line-638"><span class="sd">    Update an existing deployment config with variables from a model file.</span>
+</span><span id="line-639">
+</span><span id="line-640"><span class="sd">    Introspects the model to discover input/output variables and patches</span>
+</span><span id="line-641"><span class="sd">    the configuration file in-place.</span>
+</span><span id="line-642">
+</span><span id="line-643"><span class="sd">    Examples:</span>
+</span><span id="line-644">
+</span><span id="line-645"><span class="sd">        pl generate update deployment_config.yaml -f model_definition.py</span>
+</span><span id="line-646">
+</span><span id="line-647"><span class="sd">        pl generate update config.yaml -f model_def.py --factory-class MyFactory</span>
+</span><span id="line-648"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="line-649">    <span class="k">try</span><span class="p">:</span>
+</span><span id="line-650">        <span class="kn">from</span><span class="w"> </span><span class="nn">poly_lithic.src.utils.config_updater</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigUpdater</span>
+</span><span id="line-651">        <span class="kn">from</span><span class="w"> </span><span class="nn">poly_lithic.src.utils.model_introspector</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelIntrospector</span>
+</span><span id="line-652">
+</span><span id="line-653">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">click</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">🔄 Updating Deployment Config</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s1">&#39;cyan&#39;</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+</span><span id="line-654">
+</span><span id="line-655">        <span class="c1"># Show what we discovered</span>
+</span><span id="line-656">        <span class="n">introspector</span> <span class="o">=</span> <span class="n">ModelIntrospector</span><span class="p">(</span><span class="n">model_file</span><span class="p">,</span> <span class="n">factory_class</span><span class="p">)</span>
+</span><span id="line-657">        <span class="n">metadata</span> <span class="o">=</span> <span class="n">introspector</span><span class="o">.</span><span class="n">introspect</span><span class="p">()</span>
+</span><span id="line-658">
+</span><span id="line-659">        <span class="n">input_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">input_variables</span><span class="p">]</span>
+</span><span id="line-660">        <span class="n">output_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">metadata</span><span class="o">.</span><span class="n">output_variables</span><span class="p">]</span>
+</span><span id="line-661">
+</span><span id="line-662">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Model file: </span><span class="si">{</span><span class="n">model_file</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="line-663">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Factory class: </span><span class="si">{</span><span class="n">factory_class</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="line-664">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Inputs:  </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">input_names</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="line-665">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Outputs: </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_names</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="line-666">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">()</span>
+</span><span id="line-667">
+</span><span id="line-668">        <span class="n">updater</span> <span class="o">=</span> <span class="n">ConfigUpdater</span><span class="p">(</span><span class="n">config_file</span><span class="p">)</span>
+</span><span id="line-669">        <span class="n">updated_path</span> <span class="o">=</span> <span class="n">updater</span><span class="o">.</span><span class="n">update_from_model</span><span class="p">(</span><span class="n">model_file</span><span class="p">,</span> <span class="n">factory_class</span><span class="p">)</span>
+</span><span id="line-670">
+</span><span id="line-671">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">click</span><span class="o">.</span><span class="n">style</span><span class="p">(</span>
+</span><span id="line-672">            <span class="sa">f</span><span class="s2">&quot;✓ Config updated: </span><span class="si">{</span><span class="n">updated_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span>
+</span><span id="line-673">        <span class="p">))</span>
+</span><span id="line-674">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">()</span>
+</span><span id="line-675">
+</span><span id="line-676">    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="line-677">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">click</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;✗ Error updating config: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">),</span> <span class="n">err</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="line-678">        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;DEBUG&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;True&#39;</span><span class="p">:</span>
+</span><span id="line-679">            <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span>
+</span><span id="line-680">        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="line-681">
+</span><span id="line-682">
+</span><span id="line-683"><span class="c1"># ============================================================================</span>
+</span><span id="line-684"><span class="c1"># Utility Commands</span>
+</span><span id="line-685"><span class="c1"># ============================================================================</span>
+</span><span id="line-686">
+</span><span id="line-687"><span class="nd">@cli</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+</span><span id="line-688"><span class="nd">@click</span><span class="o">.</span><span class="n">argument</span><span class="p">(</span><span class="s1">&#39;config_file&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">exists</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+</span><span id="line-689"><span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s1">&#39;--env&#39;</span><span class="p">,</span> <span class="s1">&#39;-e&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">exists</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+</span><span id="line-690">              <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to environment configuration file (JSON format)&#39;</span><span class="p">)</span>
+</span><span id="line-691"><span class="k">def</span><span class="w"> </span><span class="nf">validate</span><span class="p">(</span><span class="n">config_file</span><span class="p">,</span> <span class="n">env</span><span class="p">):</span>
+</span><span id="line-692"><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="line-693"><span class="sd">    Validate a configuration file without running the model.</span>
+</span><span id="line-694"><span class="sd">    </span>
+</span><span id="line-695"><span class="sd">    Examples:</span>
+</span><span id="line-696"><span class="sd">        poly-lithic validate config.yaml</span>
+</span><span id="line-697"><span class="sd">        poly-lithic validate config.yaml --env env.json</span>
+</span><span id="line-698"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="line-699">    <span class="k">try</span><span class="p">:</span>
+</span><span id="line-700">        <span class="kn">from</span><span class="w"> </span><span class="nn">poly_lithic.src.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigParser</span>
+</span><span id="line-701">        
+</span><span id="line-702">        <span class="n">logger</span> <span class="o">=</span> <span class="n">make_logger</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+</span><span id="line-703">        
+</span><span id="line-704">        <span class="k">if</span> <span class="n">env</span><span class="p">:</span>
+</span><span id="line-705">            <span class="n">load_env_config</span><span class="p">(</span><span class="n">env</span><span class="p">)</span>
+</span><span id="line-706">        
+</span><span id="line-707">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Validating configuration file: </span><span class="si">{</span><span class="n">config_file</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+</span><span id="line-708">        
+</span><span id="line-709">        <span class="n">config_parser</span> <span class="o">=</span> <span class="n">ConfigParser</span><span class="p">(</span><span class="n">config_file</span><span class="p">)</span>
+</span><span id="line-710">        <span class="n">config</span> <span class="o">=</span> <span class="n">config_parser</span><span class="o">.</span><span class="n">parse</span><span class="p">()</span>
+</span><span id="line-711">        
+</span><span id="line-712">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">click</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="s1">&#39;✓ Configuration is valid&#39;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="n">bold</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+</span><span id="line-713">        
+</span><span id="line-714">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">Configuration Summary:&#39;</span><span class="p">)</span>
+</span><span id="line-715">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;  Deployment type: </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">deployment</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+</span><span id="line-716">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;  Deployment rate: </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">deployment</span><span class="o">.</span><span class="n">rate</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+</span><span id="line-717">        
+</span><span id="line-718">        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="s1">&#39;models&#39;</span><span class="p">):</span>
+</span><span id="line-719">            <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;  Models: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">models</span><span class="p">)</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nb">hasattr</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">models</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;__len__&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s2">&quot;configured&quot;</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+</span><span id="line-720">        
+</span><span id="line-721">        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="s1">&#39;variables&#39;</span><span class="p">):</span>
+</span><span id="line-722">            <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;  Variables: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">variables</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+</span><span id="line-723">        
+</span><span id="line-724">        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="s1">&#39;transformers&#39;</span><span class="p">):</span>
+</span><span id="line-725">            <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;  Transformers: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">transformers</span><span class="p">)</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="nb">hasattr</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">transformers</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;__len__&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s2">&quot;configured&quot;</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+</span><span id="line-726">        
+</span><span id="line-727">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">()</span>
+</span><span id="line-728">        
+</span><span id="line-729">    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="line-730">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">click</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;✗ Configuration is invalid: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">),</span> <span class="n">err</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="line-731">        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;DEBUG&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;True&#39;</span><span class="p">:</span>
+</span><span id="line-732">            <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span>
+</span><span id="line-733">        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="line-734">
+</span><span id="line-735"><span class="nd">@cli</span><span class="o">.</span><span class="n">command</span><span class="p">()</span>
+</span><span id="line-736"><span class="nd">@click</span><span class="o">.</span><span class="n">argument</span><span class="p">(</span><span class="s1">&#39;config_file&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">exists</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+</span><span id="line-737"><span class="nd">@click</span><span class="o">.</span><span class="n">option</span><span class="p">(</span><span class="s1">&#39;--output&#39;</span><span class="p">,</span> <span class="s1">&#39;-o&#39;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">click</span><span class="o">.</span><span class="n">Path</span><span class="p">(),</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Image file output path&#39;</span><span class="p">)</span>
+</span><span id="line-738"><span class="k">def</span><span class="w"> </span><span class="nf">visualize</span><span class="p">(</span><span class="n">config_file</span><span class="p">,</span> <span class="n">output</span><span class="p">):</span>
+</span><span id="line-739"><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="line-740"><span class="sd">    Visualize the configuration as an image file</span>
+</span><span id="line-741"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="line-742">
+</span><span id="line-743">    <span class="k">try</span><span class="p">:</span>
+</span><span id="line-744">        <span class="kn">from</span><span class="w"> </span><span class="nn">poly_lithic.src.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigParser</span>
+</span><span id="line-745">        <span class="n">parser</span> <span class="o">=</span> <span class="n">ConfigParser</span><span class="p">(</span><span class="n">config_file</span><span class="p">)</span>
+</span><span id="line-746">        <span class="n">cfg</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">()</span>
+</span><span id="line-747">        <span class="n">cfg</span><span class="o">.</span><span class="n">save_routing_graph</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+</span><span id="line-748">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">click</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Saved to </span><span class="si">{</span><span class="n">output</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s1">&#39;green&#39;</span><span class="p">))</span>
+</span><span id="line-749">
+</span><span id="line-750">    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="line-751">        <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span><span class="n">click</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Configuration error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">fg</span><span class="o">=</span><span class="s1">&#39;red&#39;</span><span class="p">),</span> <span class="n">err</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="line-752">        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</span><span id="line-753">
+</span><span id="line-754"><span class="c1"># ============================================================================</span>
+</span><span id="line-755"><span class="c1"># Legacy Support Functions</span>
+</span><span id="line-756"><span class="c1"># ============================================================================</span>
+</span><span id="line-757">
 <div class="viewcode-block" id="setup">
 <a class="viewcode-back" href="../../../api/poly_lithic.src.cli.html#poly_lithic.src.cli.setup">[docs]</a>
-</span><span id="line-535"><span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">():</span>
-</span><span id="line-536"><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-</span><span id="line-537"><span class="sd">    Legacy setup function for backward compatibility.</span>
-</span><span id="line-538"><span class="sd">    </span>
-</span><span id="line-539"><span class="sd">    This function is kept for existing code that imports and calls setup().</span>
-</span><span id="line-540"><span class="sd">    New code should use the Click CLI directly.</span>
-</span><span id="line-541"><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="line-542">    <span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
-</span><span id="line-543">    
-</span><span id="line-544">    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s1">&#39;Model Manager CLI&#39;</span><span class="p">)</span>
-</span><span id="line-545">    
-</span><span id="line-546">    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-d&#39;</span><span class="p">,</span> <span class="s1">&#39;--debug&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Debug mode&#39;</span><span class="p">)</span>
-</span><span id="line-547">    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-c&#39;</span><span class="p">,</span> <span class="s1">&#39;--config&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to the configuration file&#39;</span><span class="p">)</span>
-</span><span id="line-548">    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-g&#39;</span><span class="p">,</span> <span class="s1">&#39;--model_getter&#39;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;mlflow&#39;</span><span class="p">,</span> <span class="s1">&#39;local&#39;</span><span class="p">],</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;mlflow&#39;</span><span class="p">)</span>
-</span><span id="line-549">    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-v&#39;</span><span class="p">,</span> <span class="s1">&#39;--version&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Print version and exit&#39;</span><span class="p">)</span>
-</span><span id="line-550">    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-r&#39;</span><span class="p">,</span> <span class="s1">&#39;--requirements&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">)</span>
-</span><span id="line-551">    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-e&#39;</span><span class="p">,</span> <span class="s1">&#39;--env&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to environment configuration file&#39;</span><span class="p">)</span>
-</span><span id="line-552">    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-o&#39;</span><span class="p">,</span> <span class="s1">&#39;--one_shot&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">)</span>
-</span><span id="line-553">    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-p&#39;</span><span class="p">,</span> <span class="s1">&#39;--publish&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">)</span>
-</span><span id="line-554">    
-</span><span id="line-555">    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
-</span><span id="line-556">    
-</span><span id="line-557">    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">version</span><span class="p">:</span>
-</span><span id="line-558">        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Poly-Lithic version: </span><span class="si">{</span><span class="n">__version__</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-</span><span id="line-559">        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-</span><span id="line-560">    
-</span><span id="line-561">    <span class="n">logger</span> <span class="o">=</span> <span class="n">setup_logging</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">debug</span><span class="p">)</span>
-</span><span id="line-562">    
-</span><span id="line-563">    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">publish</span><span class="p">:</span>
-</span><span id="line-564">        <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PUBLISH&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;True&#39;</span>
-</span><span id="line-565">    <span class="k">else</span><span class="p">:</span>
-</span><span id="line-566">        <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PUBLISH&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;False&#39;</span>
-</span><span id="line-567">    
-</span><span id="line-568">    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">env</span><span class="p">:</span>
-</span><span id="line-569">        <span class="n">load_env_config</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">env</span><span class="p">)</span>
-</span><span id="line-570">    
-</span><span id="line-571">    <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">config</span> <span class="ow">and</span> <span class="s1">&#39;MODEL_CONFIG_FILE&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
-</span><span id="line-572">        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;No configuration file provided&#39;</span><span class="p">)</span>
-</span><span id="line-573">    
-</span><span id="line-574">    <span class="kn">from</span><span class="w"> </span><span class="nn">poly_lithic.src.utils.builder</span><span class="w"> </span><span class="kn">import</span> <span class="n">Builder</span>
-</span><span id="line-575">    
-</span><span id="line-576">    <span class="n">config</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">config</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;MODEL_CONFIG_FILE&#39;</span><span class="p">]</span>
-</span><span id="line-577">    <span class="n">builder</span> <span class="o">=</span> <span class="n">Builder</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-</span><span id="line-578">    <span class="n">broker</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
-</span><span id="line-579">    
-</span><span id="line-580">    <span class="k">return</span> <span class="n">args</span><span class="p">,</span> <span class="n">builder</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">broker</span></div>
+</span><span id="line-758"><span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">():</span>
+</span><span id="line-759"><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+</span><span id="line-760"><span class="sd">    Legacy setup function for backward compatibility.</span>
+</span><span id="line-761"><span class="sd">    </span>
+</span><span id="line-762"><span class="sd">    This function is kept for existing code that imports and calls setup().</span>
+</span><span id="line-763"><span class="sd">    New code should use the Click CLI directly.</span>
+</span><span id="line-764"><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="line-765">    <span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+</span><span id="line-766">    
+</span><span id="line-767">    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s1">&#39;Model Manager CLI&#39;</span><span class="p">)</span>
+</span><span id="line-768">    
+</span><span id="line-769">    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-d&#39;</span><span class="p">,</span> <span class="s1">&#39;--debug&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Debug mode&#39;</span><span class="p">)</span>
+</span><span id="line-770">    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-c&#39;</span><span class="p">,</span> <span class="s1">&#39;--config&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to the configuration file&#39;</span><span class="p">)</span>
+</span><span id="line-771">    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-g&#39;</span><span class="p">,</span> <span class="s1">&#39;--model_getter&#39;</span><span class="p">,</span> <span class="n">choices</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;mlflow&#39;</span><span class="p">,</span> <span class="s1">&#39;local&#39;</span><span class="p">],</span> <span class="n">default</span><span class="o">=</span><span class="s1">&#39;mlflow&#39;</span><span class="p">)</span>
+</span><span id="line-772">    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-v&#39;</span><span class="p">,</span> <span class="s1">&#39;--version&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Print version and exit&#39;</span><span class="p">)</span>
+</span><span id="line-773">    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-r&#39;</span><span class="p">,</span> <span class="s1">&#39;--requirements&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">)</span>
+</span><span id="line-774">    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-e&#39;</span><span class="p">,</span> <span class="s1">&#39;--env&#39;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s1">&#39;Path to environment configuration file&#39;</span><span class="p">)</span>
+</span><span id="line-775">    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-o&#39;</span><span class="p">,</span> <span class="s1">&#39;--one_shot&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">)</span>
+</span><span id="line-776">    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s1">&#39;-p&#39;</span><span class="p">,</span> <span class="s1">&#39;--publish&#39;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s1">&#39;store_true&#39;</span><span class="p">)</span>
+</span><span id="line-777">    
+</span><span id="line-778">    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+</span><span id="line-779">    
+</span><span id="line-780">    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">version</span><span class="p">:</span>
+</span><span id="line-781">        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Poly-Lithic version: </span><span class="si">{</span><span class="n">__version__</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+</span><span id="line-782">        <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="line-783">    
+</span><span id="line-784">    <span class="n">logger</span> <span class="o">=</span> <span class="n">setup_logging</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">debug</span><span class="p">)</span>
+</span><span id="line-785">    
+</span><span id="line-786">    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">publish</span><span class="p">:</span>
+</span><span id="line-787">        <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PUBLISH&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;True&#39;</span>
+</span><span id="line-788">    <span class="k">else</span><span class="p">:</span>
+</span><span id="line-789">        <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;PUBLISH&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;False&#39;</span>
+</span><span id="line-790">    
+</span><span id="line-791">    <span class="k">if</span> <span class="n">args</span><span class="o">.</span><span class="n">env</span><span class="p">:</span>
+</span><span id="line-792">        <span class="n">load_env_config</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">env</span><span class="p">)</span>
+</span><span id="line-793">    
+</span><span id="line-794">    <span class="k">if</span> <span class="ow">not</span> <span class="n">args</span><span class="o">.</span><span class="n">config</span> <span class="ow">and</span> <span class="s1">&#39;MODEL_CONFIG_FILE&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">:</span>
+</span><span id="line-795">        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;No configuration file provided&#39;</span><span class="p">)</span>
+</span><span id="line-796">    
+</span><span id="line-797">    <span class="kn">from</span><span class="w"> </span><span class="nn">poly_lithic.src.utils.builder</span><span class="w"> </span><span class="kn">import</span> <span class="n">Builder</span>
+</span><span id="line-798">    
+</span><span id="line-799">    <span class="n">config</span> <span class="o">=</span> <span class="n">args</span><span class="o">.</span><span class="n">config</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s1">&#39;MODEL_CONFIG_FILE&#39;</span><span class="p">]</span>
+</span><span id="line-800">    <span class="n">builder</span> <span class="o">=</span> <span class="n">Builder</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</span><span id="line-801">    <span class="n">broker</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
+</span><span id="line-802">    
+</span><span id="line-803">    <span class="k">return</span> <span class="n">args</span><span class="p">,</span> <span class="n">builder</span><span class="o">.</span><span class="n">config</span><span class="p">,</span> <span class="n">broker</span></div>
 
-</span><span id="line-581">
-</span><span id="line-582">
-</span><span id="line-583"><span class="c1"># ============================================================================</span>
-</span><span id="line-584"><span class="c1"># Main Entry Point</span>
-</span><span id="line-585"><span class="c1"># ============================================================================</span>
-</span><span id="line-586">
-</span><span id="line-587"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
-</span><span id="line-588">    <span class="n">cli</span><span class="p">()</span>
+</span><span id="line-804">
+</span><span id="line-805">
+</span><span id="line-806"><span class="c1"># ============================================================================</span>
+</span><span id="line-807"><span class="c1"># Main Entry Point</span>
+</span><span id="line-808"><span class="c1"># ============================================================================</span>
+</span><span id="line-809">
+</span><span id="line-810"><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+</span><span id="line-811">    <span class="n">cli</span><span class="p">()</span>
 </span></code></pre></div>
     </div></div>
           </main>
@@ -771,7 +994,7 @@
       <div class="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
         <p class="text-sm leading-loose text-center text-muted-foreground md:text-left">© 2025, Matuesz Leputa - ISIS Neutron and Muon Source at RAL - Science and Technology Facilities Council&nbsp;Built with <a class="font-medium underline underline-offset-4"
     href="https://www.sphinx-doc.org"
-    rel="noreferrer">Sphinx 9.0.4</a></p>
+    rel="noreferrer">Sphinx 9.1.0</a></p>
 </div>
 </div>
 </footer>

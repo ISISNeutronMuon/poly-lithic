@@ -28,7 +28,7 @@
 <link href="../_static/theme.css?v=73505e79" rel="stylesheet" type="text/css"/>
 <link href="../search.html" rel="search" title="Search"/>
 <link href="../genindex.html" rel="index" title="Index"/>
-<link href="poly_lithic.src.utils.plugin_generator.html" rel="next" title="poly_lithic.src.utils.plugin_generator module"/>
+<link href="poly_lithic.src.utils.model_introspector.html" rel="next" title="poly_lithic.src.utils.model_introspector module"/>
 <link href="poly_lithic.src.utils.lazyInterfaceLoader.html" rel="prev" title="poly_lithic.src.utils.lazyInterfaceLoader module"/>
 </head>
 <body :class="{ 'overflow-hidden': showSidebar }" class="min-h-screen font-sans antialiased bg-background text-foreground" x-data="{ showSidebar: false, showScrollTop: false }">
@@ -103,16 +103,386 @@
 <div class="mr-1">/</div><span aria-current="page" class="font-medium text-foreground overflow-hidden text-ellipsis whitespace-nowrap">poly_lithic.src.utils.messaging module</span>
 </nav>
 <div id="content" role="main">
-<section id="poly-lithic-src-utils-messaging-module">
-<h1>poly_lithic.src.utils.messaging module<a class="headerlink" href="#poly-lithic-src-utils-messaging-module" title="Link to this heading"><span>🔗</span></a></h1>
+<section id="module-poly_lithic.src.utils.messaging">
+<span id="poly-lithic-src-utils-messaging-module"></span><h1>poly_lithic.src.utils.messaging module<a class="headerlink" href="#module-poly_lithic.src.utils.messaging" title="Link to this heading"><span>🔗</span></a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.get_process_tree_cpu">
+<span class="sig-prename descclassname"><span class="pre">poly_lithic.src.utils.messaging.</span></span><span class="sig-name descname"><span class="pre">get_process_tree_cpu</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">process</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#get_process_tree_cpu"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.get_process_tree_cpu" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.get_process_tree_cpu'"><span>🔗</span></a></dt>
+<dd></dd></dl>
+<dl class="py function">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.profileit">
+<span class="sig-prename descclassname"><span class="pre">poly_lithic.src.utils.messaging.</span></span><span class="sig-name descname"><span class="pre">profileit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#profileit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.profileit" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.profileit'"><span>🔗</span></a></dt>
+<dd></dd></dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.Message">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">poly_lithic.src.utils.messaging.</span></span><span class="sig-name descname"><span class="pre">Message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">data</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#Message"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.Message" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.Message'"><span>🔗</span></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">BaseModel</span></code></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>topic</strong> (<em>str</em><em> | </em><em>list</em><em>[</em><em>str</em><em>]</em>)</p></li>
+<li><p><strong>source</strong> (<em>str</em>)</p></li>
+<li><p><strong>value</strong> (<em>dict</em>)</p></li>
+<li><p><strong>timestamp</strong> (<em>float</em>)</p></li>
+<li><p><strong>allow_unsafe</strong> (<em>bool</em><em> | </em><em>None</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.Message.topic">
+<span class="sig-name descname"><span class="pre">topic</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#poly_lithic.src.utils.messaging.Message.topic" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.Message.topic'"><span>🔗</span></a></dt>
+<dd></dd></dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.Message.source">
+<span class="sig-name descname"><span class="pre">source</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></span><a class="headerlink" href="#poly_lithic.src.utils.messaging.Message.source" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.Message.source'"><span>🔗</span></a></dt>
+<dd></dd></dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.Message.value">
+<span class="sig-name descname"><span class="pre">value</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></span><a class="headerlink" href="#poly_lithic.src.utils.messaging.Message.value" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.Message.value'"><span>🔗</span></a></dt>
+<dd></dd></dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.Message.timestamp">
+<span class="sig-name descname"><span class="pre">timestamp</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></span><a class="headerlink" href="#poly_lithic.src.utils.messaging.Message.timestamp" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.Message.timestamp'"><span>🔗</span></a></dt>
+<dd></dd></dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.Message.allow_unsafe">
+<span class="sig-name descname"><span class="pre">allow_unsafe</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#poly_lithic.src.utils.messaging.Message.allow_unsafe" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.Message.allow_unsafe'"><span>🔗</span></a></dt>
+<dd></dd></dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.Message.check_topic">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">check_topic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">topic</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#Message.check_topic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.Message.check_topic" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.Message.check_topic'"><span>🔗</span></a></dt>
+<dd></dd></dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.Message.check_value">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">check_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#Message.check_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.Message.check_value" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.Message.check_value'"><span>🔗</span></a></dt>
+<dd></dd></dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.Message.keys">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">keys</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#poly_lithic.src.utils.messaging.Message.keys" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.Message.keys'"><span>🔗</span></a></dt>
+<dd></dd></dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.Message.values">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">values</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#poly_lithic.src.utils.messaging.Message.values" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.Message.values'"><span>🔗</span></a></dt>
+<dd></dd></dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.Message.uid">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">uid</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></span><a class="headerlink" href="#poly_lithic.src.utils.messaging.Message.uid" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.Message.uid'"><span>🔗</span></a></dt>
+<dd><p>return a unique id for the message</p>
+</dd></dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.Message.model_config">
+<span class="sig-name descname"><span class="pre">model_config</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ClassVar</span><span class="p"><span class="pre">[</span></span><span class="pre">ConfigDict</span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></span><a class="headerlink" href="#poly_lithic.src.utils.messaging.Message.model_config" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.Message.model_config'"><span>🔗</span></a></dt>
+<dd><p>Configuration for the model, should be a dictionary conforming to [<cite>ConfigDict</cite>][pydantic.config.ConfigDict].</p>
+</dd></dl>
+</dd></dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.Observer">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">poly_lithic.src.utils.messaging.</span></span><span class="sig-name descname"><span class="pre">Observer</span></span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#Observer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.Observer" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.Observer'"><span>🔗</span></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.Observer.update">
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#Observer.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.Observer.update" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.Observer.update'"><span>🔗</span></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#poly_lithic.src.utils.messaging.Message" title="poly_lithic.src.utils.messaging.Message"><code class="xref py py-class docutils literal notranslate"><span class="pre">Message</span></code></a></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>message</strong> (<a class="reference internal" href="#poly_lithic.src.utils.messaging.Message" title="poly_lithic.src.utils.messaging.Message"><em>Message</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.MessageBroker">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">poly_lithic.src.utils.messaging.</span></span><span class="sig-name descname"><span class="pre">MessageBroker</span></span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#MessageBroker"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.MessageBroker" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.MessageBroker'"><span>🔗</span></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.MessageBroker.attach">
+<span class="sig-name descname"><span class="pre">attach</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">topic</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#MessageBroker.attach"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.MessageBroker.attach" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.MessageBroker.attach'"><span>🔗</span></a></dt>
+<dd><p>add observer to topic</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>observer</strong> (<a class="reference internal" href="#poly_lithic.src.utils.messaging.Observer" title="poly_lithic.src.utils.messaging.Observer"><em>Observer</em></a>)</p></li>
+<li><p><strong>topic</strong> (<em>str</em><em> | </em><em>list</em><em>[</em><em>str</em><em>]</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.MessageBroker.detach">
+<span class="sig-name descname"><span class="pre">detach</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">topic</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#MessageBroker.detach"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.MessageBroker.detach" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.MessageBroker.detach'"><span>🔗</span></a></dt>
+<dd><p>remove observer from topic, we will probably never use this</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>observer</strong> (<a class="reference internal" href="#poly_lithic.src.utils.messaging.Observer" title="poly_lithic.src.utils.messaging.Observer"><em>Observer</em></a>)</p></li>
+<li><p><strong>topic</strong> (<em>str</em><em> | </em><em>list</em><em>[</em><em>str</em><em>]</em>)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.MessageBroker.notify">
+<span class="sig-name descname"><span class="pre">notify</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#MessageBroker.notify"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.MessageBroker.notify" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.MessageBroker.notify'"><span>🔗</span></a></dt>
+<dd><p>notify all observers of a message</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>message</strong> (<a class="reference internal" href="#poly_lithic.src.utils.messaging.Message" title="poly_lithic.src.utils.messaging.Message"><em>Message</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.MessageBroker.get_stats">
+<span class="sig-name descname"><span class="pre">get_stats</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#MessageBroker.get_stats"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.MessageBroker.get_stats" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.MessageBroker.get_stats'"><span>🔗</span></a></dt>
+<dd></dd></dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.MessageBroker.get_all">
+<span class="sig-name descname"><span class="pre">get_all</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#MessageBroker.get_all"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.MessageBroker.get_all" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.MessageBroker.get_all'"><span>🔗</span></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.MessageBroker.parse_queue">
+<span class="sig-name descname"><span class="pre">parse_queue</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#MessageBroker.parse_queue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.MessageBroker.parse_queue" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.MessageBroker.parse_queue'"><span>🔗</span></a></dt>
+<dd><p>parse the queue and notify observers of each message</p>
+</dd></dl>
+</dd></dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.TransformerObserver">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">poly_lithic.src.utils.messaging.</span></span><span class="sig-name descname"><span class="pre">TransformerObserver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transformer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">topic</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unpack_output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#TransformerObserver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.TransformerObserver" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.TransformerObserver'"><span>🔗</span></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#poly_lithic.src.utils.messaging.Observer" title="poly_lithic.src.utils.messaging.Observer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Observer</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>transformer</strong> (<a class="reference internal" href="poly_lithic.src.transformers.BaseTransformer.html#poly_lithic.src.transformers.BaseTransformer.BaseTransformer" title="poly_lithic.src.transformers.BaseTransformer.BaseTransformer"><em>BaseTransformer</em></a>)</p></li>
+<li><p><strong>topic</strong> (<em>str</em>)</p></li>
+<li><p><strong>unpack_output</strong> (<em>bool</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.TransformerObserver.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#TransformerObserver.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.TransformerObserver.update" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.TransformerObserver.update'"><span>🔗</span></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#poly_lithic.src.utils.messaging.Message" title="poly_lithic.src.utils.messaging.Message"><code class="xref py py-class docutils literal notranslate"><span class="pre">Message</span></code></a> | <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<a class="reference internal" href="#poly_lithic.src.utils.messaging.Message" title="poly_lithic.src.utils.messaging.Message"><code class="xref py py-class docutils literal notranslate"><span class="pre">Message</span></code></a>]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>message</strong> (<a class="reference internal" href="#poly_lithic.src.utils.messaging.Message" title="poly_lithic.src.utils.messaging.Message"><em>Message</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.InterfaceObserver">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">poly_lithic.src.utils.messaging.</span></span><span class="sig-name descname"><span class="pre">InterfaceObserver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interface</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">topic</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sanitise</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#InterfaceObserver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.InterfaceObserver" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.InterfaceObserver'"><span>🔗</span></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#poly_lithic.src.utils.messaging.Observer" title="poly_lithic.src.utils.messaging.Observer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Observer</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>interface</strong> (<a class="reference internal" href="poly_lithic.src.interfaces.BaseInterface.html#poly_lithic.src.interfaces.BaseInterface.BaseInterface" title="poly_lithic.src.interfaces.BaseInterface.BaseInterface"><em>BaseInterface</em></a>)</p></li>
+<li><p><strong>topic</strong> (<em>str</em>)</p></li>
+<li><p><strong>sanitise</strong> (<em>bool</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.InterfaceObserver.interface">
+<span class="sig-name descname"><span class="pre">interface</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="poly_lithic.src.interfaces.BaseInterface.html#poly_lithic.src.interfaces.BaseInterface.BaseInterface" title="poly_lithic.src.interfaces.BaseInterface.BaseInterface"><span class="pre">BaseInterface</span></a></span><a class="headerlink" href="#poly_lithic.src.utils.messaging.InterfaceObserver.interface" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.InterfaceObserver.interface'"><span>🔗</span></a></dt>
+<dd></dd></dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.InterfaceObserver.topic">
+<span class="sig-name descname"><span class="pre">topic</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></span><a class="headerlink" href="#poly_lithic.src.utils.messaging.InterfaceObserver.topic" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.InterfaceObserver.topic'"><span>🔗</span></a></dt>
+<dd></dd></dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.InterfaceObserver.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#InterfaceObserver.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.InterfaceObserver.update" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.InterfaceObserver.update'"><span>🔗</span></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#poly_lithic.src.utils.messaging.Message" title="poly_lithic.src.utils.messaging.Message"><code class="xref py py-class docutils literal notranslate"><span class="pre">Message</span></code></a> | <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<a class="reference internal" href="#poly_lithic.src.utils.messaging.Message" title="poly_lithic.src.utils.messaging.Message"><code class="xref py py-class docutils literal notranslate"><span class="pre">Message</span></code></a>]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>message</strong> (<a class="reference internal" href="#poly_lithic.src.utils.messaging.Message" title="poly_lithic.src.utils.messaging.Message"><em>Message</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.InterfaceObserver.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#InterfaceObserver.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.InterfaceObserver.get" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.InterfaceObserver.get'"><span>🔗</span></a></dt>
+<dd><p>get a single variable from the interface</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<a class="reference internal" href="#poly_lithic.src.utils.messaging.Message" title="poly_lithic.src.utils.messaging.Message"><code class="xref py py-class docutils literal notranslate"><span class="pre">Message</span></code></a>]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>message</strong> (<a class="reference internal" href="#poly_lithic.src.utils.messaging.Message" title="poly_lithic.src.utils.messaging.Message"><em>Message</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.InterfaceObserver.get_all">
+<span class="sig-name descname"><span class="pre">get_all</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#InterfaceObserver.get_all"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.InterfaceObserver.get_all" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.InterfaceObserver.get_all'"><span>🔗</span></a></dt>
+<dd><p>get all variables from the interface based on internal variable list</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<a class="reference internal" href="#poly_lithic.src.utils.messaging.Message" title="poly_lithic.src.utils.messaging.Message"><code class="xref py py-class docutils literal notranslate"><span class="pre">Message</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.InterfaceObserver.get_many">
+<span class="sig-name descname"><span class="pre">get_many</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#InterfaceObserver.get_many"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.InterfaceObserver.get_many" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.InterfaceObserver.get_many'"><span>🔗</span></a></dt>
+<dd><p>get many variables from the interface</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<a class="reference internal" href="#poly_lithic.src.utils.messaging.Message" title="poly_lithic.src.utils.messaging.Message"><code class="xref py py-class docutils literal notranslate"><span class="pre">Message</span></code></a>]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>message</strong> (<a class="reference internal" href="#poly_lithic.src.utils.messaging.Message" title="poly_lithic.src.utils.messaging.Message"><em>Message</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.InterfaceObserver.put">
+<span class="sig-name descname"><span class="pre">put</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#InterfaceObserver.put"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.InterfaceObserver.put" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.InterfaceObserver.put'"><span>🔗</span></a></dt>
+<dd><p>put a single variable into the interface</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>message</strong> (<a class="reference internal" href="#poly_lithic.src.utils.messaging.Message" title="poly_lithic.src.utils.messaging.Message"><em>Message</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.InterfaceObserver.put_many">
+<span class="sig-name descname"><span class="pre">put_many</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#InterfaceObserver.put_many"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.InterfaceObserver.put_many" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.InterfaceObserver.put_many'"><span>🔗</span></a></dt>
+<dd><p>put many variables into the interface</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>message</strong> (<a class="reference internal" href="#poly_lithic.src.utils.messaging.Message" title="poly_lithic.src.utils.messaging.Message"><em>Message</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.MockModel">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">poly_lithic.src.utils.messaging.</span></span><span class="sig-name descname"><span class="pre">MockModel</span></span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#MockModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.MockModel" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.MockModel'"><span>🔗</span></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.MockModel.evaluate">
+<span class="sig-name descname"><span class="pre">evaluate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#MockModel.evaluate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.MockModel.evaluate" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.MockModel.evaluate'"><span>🔗</span></a></dt>
+<dd><p>placeholder for model prediction</p>
+</dd></dl>
+</dd></dl>
+<dl class="py class">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.ModelObserver">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">poly_lithic.src.utils.messaging.</span></span><span class="sig-name descname"><span class="pre">ModelObserver</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">topic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'model'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unpack_input</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pack_output</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#ModelObserver"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.ModelObserver" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.ModelObserver'"><span>🔗</span></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#poly_lithic.src.utils.messaging.Observer" title="poly_lithic.src.utils.messaging.Observer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Observer</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>topic</strong> (<em>str</em>)</p></li>
+<li><p><strong>unpack_input</strong> (<em>bool</em>)</p></li>
+<li><p><strong>pack_output</strong> (<em>bool</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="poly_lithic.src.utils.messaging.ModelObserver.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/poly_lithic/src/utils/messaging.html#ModelObserver.update"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#poly_lithic.src.utils.messaging.ModelObserver.update" title="Link to this definition" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#poly_lithic.src.utils.messaging.ModelObserver.update'"><span>🔗</span></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<a class="reference internal" href="#poly_lithic.src.utils.messaging.Message" title="poly_lithic.src.utils.messaging.Message"><code class="xref py py-class docutils literal notranslate"><span class="pre">Message</span></code></a>]</span></p>
+</dd>
+<dt class="field-even">Parameters<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>message</strong> (<a class="reference internal" href="#poly_lithic.src.utils.messaging.Message" title="poly_lithic.src.utils.messaging.Message"><em>Message</em></a>)</p>
+</dd>
+</dl>
+</dd></dl>
+</dd></dl>
 </section>
-</div></div>
+</div></div><aside class="hidden text-sm xl:block" id="right-sidebar">
+<div class="sticky top-16 -mt-10 max-h-[calc(100vh-5rem)] h-full overflow-y-auto pt-6 space-y-2"><p class="font-medium">On this page</p>
+<ul>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.get_process_tree_cpu'" class="reference internal" href="#poly_lithic.src.utils.messaging.get_process_tree_cpu"><code class="docutils literal notranslate"><span class="pre">get_process_tree_cpu()</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.profileit'" class="reference internal" href="#poly_lithic.src.utils.messaging.profileit"><code class="docutils literal notranslate"><span class="pre">profileit()</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.Message'" class="reference internal" href="#poly_lithic.src.utils.messaging.Message"><code class="docutils literal notranslate"><span class="pre">Message</span></code></a><ul>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.Message.topic'" class="reference internal" href="#poly_lithic.src.utils.messaging.Message.topic"><code class="docutils literal notranslate"><span class="pre">Message.topic</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.Message.source'" class="reference internal" href="#poly_lithic.src.utils.messaging.Message.source"><code class="docutils literal notranslate"><span class="pre">Message.source</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.Message.value'" class="reference internal" href="#poly_lithic.src.utils.messaging.Message.value"><code class="docutils literal notranslate"><span class="pre">Message.value</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.Message.timestamp'" class="reference internal" href="#poly_lithic.src.utils.messaging.Message.timestamp"><code class="docutils literal notranslate"><span class="pre">Message.timestamp</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.Message.allow_unsafe'" class="reference internal" href="#poly_lithic.src.utils.messaging.Message.allow_unsafe"><code class="docutils literal notranslate"><span class="pre">Message.allow_unsafe</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.Message.check_topic'" class="reference internal" href="#poly_lithic.src.utils.messaging.Message.check_topic"><code class="docutils literal notranslate"><span class="pre">Message.check_topic()</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.Message.check_value'" class="reference internal" href="#poly_lithic.src.utils.messaging.Message.check_value"><code class="docutils literal notranslate"><span class="pre">Message.check_value()</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.Message.keys'" class="reference internal" href="#poly_lithic.src.utils.messaging.Message.keys"><code class="docutils literal notranslate"><span class="pre">Message.keys</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.Message.values'" class="reference internal" href="#poly_lithic.src.utils.messaging.Message.values"><code class="docutils literal notranslate"><span class="pre">Message.values</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.Message.uid'" class="reference internal" href="#poly_lithic.src.utils.messaging.Message.uid"><code class="docutils literal notranslate"><span class="pre">Message.uid</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.Message.model_config'" class="reference internal" href="#poly_lithic.src.utils.messaging.Message.model_config"><code class="docutils literal notranslate"><span class="pre">Message.model_config</span></code></a></li>
+</ul>
+</li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.Observer'" class="reference internal" href="#poly_lithic.src.utils.messaging.Observer"><code class="docutils literal notranslate"><span class="pre">Observer</span></code></a><ul>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.Observer.update'" class="reference internal" href="#poly_lithic.src.utils.messaging.Observer.update"><code class="docutils literal notranslate"><span class="pre">Observer.update()</span></code></a></li>
+</ul>
+</li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.MessageBroker'" class="reference internal" href="#poly_lithic.src.utils.messaging.MessageBroker"><code class="docutils literal notranslate"><span class="pre">MessageBroker</span></code></a><ul>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.MessageBroker.attach'" class="reference internal" href="#poly_lithic.src.utils.messaging.MessageBroker.attach"><code class="docutils literal notranslate"><span class="pre">MessageBroker.attach()</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.MessageBroker.detach'" class="reference internal" href="#poly_lithic.src.utils.messaging.MessageBroker.detach"><code class="docutils literal notranslate"><span class="pre">MessageBroker.detach()</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.MessageBroker.notify'" class="reference internal" href="#poly_lithic.src.utils.messaging.MessageBroker.notify"><code class="docutils literal notranslate"><span class="pre">MessageBroker.notify()</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.MessageBroker.get_stats'" class="reference internal" href="#poly_lithic.src.utils.messaging.MessageBroker.get_stats"><code class="docutils literal notranslate"><span class="pre">MessageBroker.get_stats()</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.MessageBroker.get_all'" class="reference internal" href="#poly_lithic.src.utils.messaging.MessageBroker.get_all"><code class="docutils literal notranslate"><span class="pre">MessageBroker.get_all()</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.MessageBroker.parse_queue'" class="reference internal" href="#poly_lithic.src.utils.messaging.MessageBroker.parse_queue"><code class="docutils literal notranslate"><span class="pre">MessageBroker.parse_queue()</span></code></a></li>
+</ul>
+</li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.TransformerObserver'" class="reference internal" href="#poly_lithic.src.utils.messaging.TransformerObserver"><code class="docutils literal notranslate"><span class="pre">TransformerObserver</span></code></a><ul>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.TransformerObserver.update'" class="reference internal" href="#poly_lithic.src.utils.messaging.TransformerObserver.update"><code class="docutils literal notranslate"><span class="pre">TransformerObserver.update()</span></code></a></li>
+</ul>
+</li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.InterfaceObserver'" class="reference internal" href="#poly_lithic.src.utils.messaging.InterfaceObserver"><code class="docutils literal notranslate"><span class="pre">InterfaceObserver</span></code></a><ul>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.InterfaceObserver.interface'" class="reference internal" href="#poly_lithic.src.utils.messaging.InterfaceObserver.interface"><code class="docutils literal notranslate"><span class="pre">InterfaceObserver.interface</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.InterfaceObserver.topic'" class="reference internal" href="#poly_lithic.src.utils.messaging.InterfaceObserver.topic"><code class="docutils literal notranslate"><span class="pre">InterfaceObserver.topic</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.InterfaceObserver.update'" class="reference internal" href="#poly_lithic.src.utils.messaging.InterfaceObserver.update"><code class="docutils literal notranslate"><span class="pre">InterfaceObserver.update()</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.InterfaceObserver.get'" class="reference internal" href="#poly_lithic.src.utils.messaging.InterfaceObserver.get"><code class="docutils literal notranslate"><span class="pre">InterfaceObserver.get()</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.InterfaceObserver.get_all'" class="reference internal" href="#poly_lithic.src.utils.messaging.InterfaceObserver.get_all"><code class="docutils literal notranslate"><span class="pre">InterfaceObserver.get_all()</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.InterfaceObserver.get_many'" class="reference internal" href="#poly_lithic.src.utils.messaging.InterfaceObserver.get_many"><code class="docutils literal notranslate"><span class="pre">InterfaceObserver.get_many()</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.InterfaceObserver.put'" class="reference internal" href="#poly_lithic.src.utils.messaging.InterfaceObserver.put"><code class="docutils literal notranslate"><span class="pre">InterfaceObserver.put()</span></code></a></li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.InterfaceObserver.put_many'" class="reference internal" href="#poly_lithic.src.utils.messaging.InterfaceObserver.put_many"><code class="docutils literal notranslate"><span class="pre">InterfaceObserver.put_many()</span></code></a></li>
+</ul>
+</li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.MockModel'" class="reference internal" href="#poly_lithic.src.utils.messaging.MockModel"><code class="docutils literal notranslate"><span class="pre">MockModel</span></code></a><ul>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.MockModel.evaluate'" class="reference internal" href="#poly_lithic.src.utils.messaging.MockModel.evaluate"><code class="docutils literal notranslate"><span class="pre">MockModel.evaluate()</span></code></a></li>
+</ul>
+</li>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.ModelObserver'" class="reference internal" href="#poly_lithic.src.utils.messaging.ModelObserver"><code class="docutils literal notranslate"><span class="pre">ModelObserver</span></code></a><ul>
+<li><a :data-current="activeSection === '#poly_lithic.src.utils.messaging.ModelObserver.update'" class="reference internal" href="#poly_lithic.src.utils.messaging.ModelObserver.update"><code class="docutils literal notranslate"><span class="pre">ModelObserver.update()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div>
+</aside>
 </main>
 </div>
 </div><footer class="py-6 border-t border-border md:py-0">
 <div class="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
 <div class="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
-<p class="text-sm leading-loose text-center text-muted-foreground md:text-left">© 2025, Matuesz Leputa - ISIS Neutron and Muon Source at RAL - Science and Technology Facilities Council Built with <a class="font-medium underline underline-offset-4" href="https://www.sphinx-doc.org" rel="noreferrer">Sphinx 9.0.4</a></p>
+<p class="text-sm leading-loose text-center text-muted-foreground md:text-left">© 2025, Matuesz Leputa - ISIS Neutron and Muon Source at RAL - Science and Technology Facilities Council Built with <a class="font-medium underline underline-offset-4" href="https://www.sphinx-doc.org" rel="noreferrer">Sphinx 9.1.0</a></p>
 </div>
 </div>
 </footer>

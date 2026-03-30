@@ -106,7 +106,15 @@
 <p>This page explains how to use transformers in your project.</p>
 <section id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#overview'"><span>🔗</span></a></h2>
-<p>Transformers are used to transform data from one format to another…</p>
+<p>Transformers convert message payloads from one shape to another before model
+evaluation or interface publication.</p>
+<p>All transformer modules follow the
+<a class="reference internal" href="api/poly_lithic.src.transformers.BaseTransformer.html#poly_lithic.src.transformers.BaseTransformer.BaseTransformer" title="poly_lithic.src.transformers.BaseTransformer.BaseTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseTransformer</span></code></a> contract
+and expose:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">handler(pv_name,</span> <span class="pre">value)</span></code> to receive incoming struct data</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">transform()</span></code> to produce output values</p></li>
+</ul>
 </section>
 <section id="available-transformers">
 <h2>Available Transformers<a class="headerlink" href="#available-transformers" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#available-transformers'"><span>🔗</span></a></h2>
@@ -117,9 +125,159 @@
 <li><p><a class="reference internal" href="api/poly_lithic.src.transformers.CompoundTransformer.html#poly_lithic.src.transformers.CompoundTransformer.CompoundTransformer" title="poly_lithic.src.transformers.CompoundTransformer.CompoundTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">CompoundTransformer</span></code></a></p></li>
 </ul>
 </section>
-<section id="examples">
-<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#examples'"><span>🔗</span></a></h2>
-<p>Here are some examples of how to use transformers…</p>
+<section id="transformer-configs">
+<h2>Transformer Configs<a class="headerlink" href="#transformer-configs" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#transformer-configs'"><span>🔗</span></a></h2>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 24.0%"/>
+<col style="width: 46.0%"/>
+<col style="width: 30.0%"/>
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Module</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>YAML reference</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SimpleTransformer</span></code></p></td>
+<td><p>Scalar/array formula transform from input symbols to output variables</p></td>
+<td><p>See sample below</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CAImageTransformer</span></code></p></td>
+<td><p>Reconstruct image arrays from flattened channel + X + Y inputs</p></td>
+<td><p>See sample below</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PassThroughTransformer</span></code></p></td>
+<td><p>Relabel and forward values without numeric transformation</p></td>
+<td><p>See sample below</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">CompoundTransformer</span></code></p></td>
+<td><p>Run multiple transformers in one module</p></td>
+<td><p>See sample below</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="metadata-propagation">
+<h2>Metadata Propagation<a class="headerlink" href="#metadata-propagation" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#metadata-propagation'"><span>🔗</span></a></h2>
+<p>Transformer outputs may be either plain values or structured payloads with
+<code class="docutils literal notranslate"><span class="pre">value</span></code> and additional fields:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">PassThroughTransformer</span></code> preserves non-<code class="docutils literal notranslate"><span class="pre">value</span></code> fields (for example
+<code class="docutils literal notranslate"><span class="pre">alarm</span></code>, <code class="docutils literal notranslate"><span class="pre">timestamp</span></code>, <code class="docutils literal notranslate"><span class="pre">metadata</span></code>) when they are present in input
+structs.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SimpleTransformer</span></code> preserves non-<code class="docutils literal notranslate"><span class="pre">value</span></code> fields only for direct-symbol
+formulas (for example <code class="docutils literal notranslate"><span class="pre">OUT</span> <span class="pre">=</span> <span class="pre">IN</span></code>). Computed formulas emit value-only output.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">TransformerObserver</span></code> forwards structured outputs unchanged and wraps plain
+outputs as <code class="docutils literal notranslate"><span class="pre">{"value":</span> <span class="pre">...}</span></code>.</p></li>
+</ul>
+<p>This makes direct pass-through paths suitable for carrying alarm payloads across
+transformer stages.</p>
+</section>
+<section id="simpletransformer-sample-configuration">
+<h2><code class="docutils literal notranslate"><span class="pre">SimpleTransformer</span></code> Sample Configuration<a class="headerlink" href="#simpletransformer-sample-configuration" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#simpletransformer-sample-configuration'"><span>🔗</span></a></h2>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="nt">modules</span><span class="p">:</span>
+</span><span id="line-2"><span class="w">  </span><span class="nt">input_transformer</span><span class="p">:</span>
+</span><span id="line-3"><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"input_transformer"</span>
+</span><span id="line-4"><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">"transformer.SimpleTransformer"</span>
+</span><span id="line-5"><span class="w">    </span><span class="nt">pub</span><span class="p">:</span><span class="w"> </span><span class="s">"model_input"</span>
+</span><span id="line-6"><span class="w">    </span><span class="nt">sub</span><span class="p">:</span>
+</span><span id="line-7"><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"system_input"</span>
+</span><span id="line-8"><span class="w">    </span><span class="nt">module_args</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">None</span>
+</span><span id="line-9"><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+</span><span id="line-10"><span class="w">      </span><span class="nt">symbols</span><span class="p">:</span>
+</span><span id="line-11"><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"LUME:MLFLOW:TEST_B"</span>
+</span><span id="line-12"><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"LUME:MLFLOW:TEST_A"</span>
+</span><span id="line-13"><span class="w">      </span><span class="nt">variables</span><span class="p">:</span>
+</span><span id="line-14"><span class="w">        </span><span class="nt">x2</span><span class="p">:</span>
+</span><span id="line-15"><span class="w">          </span><span class="nt">formula</span><span class="p">:</span><span class="w"> </span><span class="s">"LUME:MLFLOW:TEST_B"</span>
+</span><span id="line-16"><span class="w">        </span><span class="nt">x1</span><span class="p">:</span>
+</span><span id="line-17"><span class="w">          </span><span class="nt">formula</span><span class="p">:</span><span class="w"> </span><span class="s">"LUME:MLFLOW:TEST_A"</span>
+</span></code></pre></div>
+</div>
+</section>
+<section id="caimagetransformer-sample-configuration">
+<h2><code class="docutils literal notranslate"><span class="pre">CAImageTransformer</span></code> Sample Configuration<a class="headerlink" href="#caimagetransformer-sample-configuration" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#caimagetransformer-sample-configuration'"><span>🔗</span></a></h2>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="nt">modules</span><span class="p">:</span>
+</span><span id="line-2"><span class="w">  </span><span class="nt">image_transformer</span><span class="p">:</span>
+</span><span id="line-3"><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"image_transformer"</span>
+</span><span id="line-4"><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">"transformer.CAImageTransformer"</span>
+</span><span id="line-5"><span class="w">    </span><span class="nt">pub</span><span class="p">:</span><span class="w"> </span><span class="s">"model_input"</span>
+</span><span id="line-6"><span class="w">    </span><span class="nt">sub</span><span class="p">:</span>
+</span><span id="line-7"><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"update"</span>
+</span><span id="line-8"><span class="w">    </span><span class="nt">module_args</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">None</span>
+</span><span id="line-9"><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+</span><span id="line-10"><span class="w">      </span><span class="nt">variables</span><span class="p">:</span>
+</span><span id="line-11"><span class="w">        </span><span class="nt">img_1</span><span class="p">:</span>
+</span><span id="line-12"><span class="w">          </span><span class="nt">img_ch</span><span class="p">:</span><span class="w"> </span><span class="s">"MY_TEST_CA"</span>
+</span><span id="line-13"><span class="w">          </span><span class="nt">img_x_ch</span><span class="p">:</span><span class="w"> </span><span class="s">"MY_TEST_CA_X"</span>
+</span><span id="line-14"><span class="w">          </span><span class="nt">img_y_ch</span><span class="p">:</span><span class="w"> </span><span class="s">"MY_TEST_CA_Y"</span>
+</span><span id="line-15"><span class="w">        </span><span class="nt">img_2</span><span class="p">:</span>
+</span><span id="line-16"><span class="w">          </span><span class="nt">img_ch</span><span class="p">:</span><span class="w"> </span><span class="s">"MY_TEST_C2"</span>
+</span><span id="line-17"><span class="w">          </span><span class="nt">img_x_ch</span><span class="p">:</span><span class="w"> </span><span class="s">"MY_TEST_CA_X2"</span>
+</span><span id="line-18"><span class="w">          </span><span class="nt">img_y_ch</span><span class="p">:</span><span class="w"> </span><span class="s">"MY_TEST_CA_Y2"</span>
+</span></code></pre></div>
+</div>
+</section>
+<section id="passthroughtransformer-sample-configuration">
+<h2><code class="docutils literal notranslate"><span class="pre">PassThroughTransformer</span></code> Sample Configuration<a class="headerlink" href="#passthroughtransformer-sample-configuration" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#passthroughtransformer-sample-configuration'"><span>🔗</span></a></h2>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="nt">modules</span><span class="p">:</span>
+</span><span id="line-2"><span class="w">  </span><span class="nt">output_transformer</span><span class="p">:</span>
+</span><span id="line-3"><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"output_transformer"</span>
+</span><span id="line-4"><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">"transformer.PassThroughTransformer"</span>
+</span><span id="line-5"><span class="w">    </span><span class="nt">pub</span><span class="p">:</span><span class="w"> </span><span class="s">"system_output"</span>
+</span><span id="line-6"><span class="w">    </span><span class="nt">sub</span><span class="p">:</span>
+</span><span id="line-7"><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"model_output"</span>
+</span><span id="line-8"><span class="w">    </span><span class="nt">module_args</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">None</span>
+</span><span id="line-9"><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+</span><span id="line-10"><span class="w">      </span><span class="nt">variables</span><span class="p">:</span>
+</span><span id="line-11"><span class="w">        </span><span class="nt">LUME:MLFLOW:TEST_IMAGE</span><span class="p">:</span><span class="w"> </span><span class="s">"y_img"</span>
+</span></code></pre></div>
+</div>
+</section>
+<section id="compoundtransformer-sample-configuration">
+<h2><code class="docutils literal notranslate"><span class="pre">CompoundTransformer</span></code> Sample Configuration<a class="headerlink" href="#compoundtransformer-sample-configuration" title="Link to this heading" x-intersect.margin.0%.0%.-70%.0%="activeSection = '#compoundtransformer-sample-configuration'"><span>🔗</span></a></h2>
+<div class="admonition caution">
+<p class="admonition-title">Caution</p>
+<p>This module may be deprecated in the future because the pub-sub model can
+replace most compound-transformer use cases.</p>
+</div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><code><span id="line-1"><span class="nt">modules</span><span class="p">:</span>
+</span><span id="line-2"><span class="w">  </span><span class="nt">compound_transformer</span><span class="p">:</span>
+</span><span id="line-3"><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"compound_transformer"</span>
+</span><span id="line-4"><span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">"transformer.CompoundTransformer"</span>
+</span><span id="line-5"><span class="w">    </span><span class="nt">pub</span><span class="p">:</span><span class="w"> </span><span class="s">"model_input"</span>
+</span><span id="line-6"><span class="w">    </span><span class="nt">sub</span><span class="p">:</span>
+</span><span id="line-7"><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"update"</span>
+</span><span id="line-8"><span class="w">    </span><span class="nt">module_args</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">None</span>
+</span><span id="line-9"><span class="w">    </span><span class="nt">config</span><span class="p">:</span>
+</span><span id="line-10"><span class="w">      </span><span class="nt">transformers</span><span class="p">:</span>
+</span><span id="line-11"><span class="w">        </span><span class="nt">transformer_1</span><span class="p">:</span>
+</span><span id="line-12"><span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">"SimpleTransformer"</span>
+</span><span id="line-13"><span class="w">          </span><span class="nt">config</span><span class="p">:</span>
+</span><span id="line-14"><span class="w">            </span><span class="nt">symbols</span><span class="p">:</span>
+</span><span id="line-15"><span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"MY_TEST_A"</span>
+</span><span id="line-16"><span class="w">              </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"MY_TEST_B"</span>
+</span><span id="line-17"><span class="w">            </span><span class="nt">variables</span><span class="p">:</span>
+</span><span id="line-18"><span class="w">              </span><span class="nt">x2</span><span class="p">:</span>
+</span><span id="line-19"><span class="w">                </span><span class="nt">formula</span><span class="p">:</span><span class="w"> </span><span class="s">"MY_TEST_A*2"</span>
+</span><span id="line-20"><span class="w">              </span><span class="nt">x1</span><span class="p">:</span>
+</span><span id="line-21"><span class="w">                </span><span class="nt">formula</span><span class="p">:</span><span class="w"> </span><span class="s">"MY_TEST_B+MY_TEST_A"</span>
+</span><span id="line-22"><span class="w">        </span><span class="nt">transformer_2</span><span class="p">:</span>
+</span><span id="line-23"><span class="w">          </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">"CAImageTransformer"</span>
+</span><span id="line-24"><span class="w">          </span><span class="nt">config</span><span class="p">:</span>
+</span><span id="line-25"><span class="w">            </span><span class="nt">variables</span><span class="p">:</span>
+</span><span id="line-26"><span class="w">              </span><span class="nt">img_1</span><span class="p">:</span>
+</span><span id="line-27"><span class="w">                </span><span class="nt">img_ch</span><span class="p">:</span><span class="w"> </span><span class="s">"MY_TEST_CA"</span>
+</span><span id="line-28"><span class="w">                </span><span class="nt">img_x_ch</span><span class="p">:</span><span class="w"> </span><span class="s">"MY_TEST_CA_X"</span>
+</span><span id="line-29"><span class="w">                </span><span class="nt">img_y_ch</span><span class="p">:</span><span class="w"> </span><span class="s">"MY_TEST_CA_Y"</span>
+</span><span id="line-30"><span class="w">              </span><span class="nt">img_2</span><span class="p">:</span>
+</span><span id="line-31"><span class="w">                </span><span class="nt">img_ch</span><span class="p">:</span><span class="w"> </span><span class="s">"MY_TEST_C2"</span>
+</span><span id="line-32"><span class="w">                </span><span class="nt">img_x_ch</span><span class="p">:</span><span class="w"> </span><span class="s">"MY_TEST_CA_X2"</span>
+</span><span id="line-33"><span class="w">                </span><span class="nt">img_y_ch</span><span class="p">:</span><span class="w"> </span><span class="s">"MY_TEST_CA_Y2"</span>
+</span></code></pre></div>
+</div>
 </section>
 </section>
 </div></div><aside class="hidden text-sm xl:block" id="right-sidebar">
@@ -127,7 +285,12 @@
 <ul>
 <li><a :data-current="activeSection === '#overview'" class="reference internal" href="#overview">Overview</a></li>
 <li><a :data-current="activeSection === '#available-transformers'" class="reference internal" href="#available-transformers">Available Transformers</a></li>
-<li><a :data-current="activeSection === '#examples'" class="reference internal" href="#examples">Examples</a></li>
+<li><a :data-current="activeSection === '#transformer-configs'" class="reference internal" href="#transformer-configs">Transformer Configs</a></li>
+<li><a :data-current="activeSection === '#metadata-propagation'" class="reference internal" href="#metadata-propagation">Metadata Propagation</a></li>
+<li><a :data-current="activeSection === '#simpletransformer-sample-configuration'" class="reference internal" href="#simpletransformer-sample-configuration"><code class="docutils literal notranslate"><span class="pre">SimpleTransformer</span></code> Sample Configuration</a></li>
+<li><a :data-current="activeSection === '#caimagetransformer-sample-configuration'" class="reference internal" href="#caimagetransformer-sample-configuration"><code class="docutils literal notranslate"><span class="pre">CAImageTransformer</span></code> Sample Configuration</a></li>
+<li><a :data-current="activeSection === '#passthroughtransformer-sample-configuration'" class="reference internal" href="#passthroughtransformer-sample-configuration"><code class="docutils literal notranslate"><span class="pre">PassThroughTransformer</span></code> Sample Configuration</a></li>
+<li><a :data-current="activeSection === '#compoundtransformer-sample-configuration'" class="reference internal" href="#compoundtransformer-sample-configuration"><code class="docutils literal notranslate"><span class="pre">CompoundTransformer</span></code> Sample Configuration</a></li>
 </ul>
 </div>
 </aside>
@@ -136,7 +299,7 @@
 </div><footer class="py-6 border-t border-border md:py-0">
 <div class="container flex flex-col items-center justify-between gap-4 md:h-24 md:flex-row">
 <div class="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
-<p class="text-sm leading-loose text-center text-muted-foreground md:text-left">© 2025, Matuesz Leputa - ISIS Neutron and Muon Source at RAL - Science and Technology Facilities Council Built with <a class="font-medium underline underline-offset-4" href="https://www.sphinx-doc.org" rel="noreferrer">Sphinx 9.0.4</a></p>
+<p class="text-sm leading-loose text-center text-muted-foreground md:text-left">© 2025, Matuesz Leputa - ISIS Neutron and Muon Source at RAL - Science and Technology Facilities Council Built with <a class="font-medium underline underline-offset-4" href="https://www.sphinx-doc.org" rel="noreferrer">Sphinx 9.1.0</a></p>
 </div>
 </div>
 </footer>

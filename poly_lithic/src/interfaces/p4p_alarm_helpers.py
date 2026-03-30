@@ -30,7 +30,7 @@ def _copy_optional_dict(
 
 
 def normalise_variable_settings(pv_name: str, pv_cfg: dict[str, Any]) -> dict[str, Any]:
-    """Normalise and validate the PV configuration for alarm computation.  """
+    """Normalise and validate the PV configuration for alarm computation."""
     pv_type = pv_cfg.get('type', 'scalar')
     if pv_type not in SUPPORTED_PV_TYPES:
         raise TypeError(f'Unknown PV type for {pv_name}: {pv_type}')
@@ -38,8 +38,12 @@ def normalise_variable_settings(pv_name: str, pv_cfg: dict[str, Any]) -> dict[st
     compute_alarm = bool(pv_cfg.get('compute_alarm', False))
     enforce_control_limits = bool(pv_cfg.get('enforce_control_limits', False))
 
-    display_cfg = _copy_optional_dict(pv_name, 'display', pv_cfg.get('display'), DISPLAY_FIELDS)
-    control_cfg = _copy_optional_dict(pv_name, 'control', pv_cfg.get('control'), CONTROL_FIELDS)
+    display_cfg = _copy_optional_dict(
+        pv_name, 'display', pv_cfg.get('display'), DISPLAY_FIELDS
+    )
+    control_cfg = _copy_optional_dict(
+        pv_name, 'control', pv_cfg.get('control'), CONTROL_FIELDS
+    )
     value_alarm_cfg = _copy_optional_dict(
         pv_name, 'valueAlarm', pv_cfg.get('valueAlarm'), VALUE_ALARM_FIELDS
     )
@@ -55,7 +59,9 @@ def normalise_variable_settings(pv_name: str, pv_cfg: dict[str, Any]) -> dict[st
     alarm_policy = None
     if compute_alarm:
         if value_alarm_cfg is None:
-            raise ValueError(f'{pv_name}: compute_alarm=true requires valueAlarm config')
+            raise ValueError(
+                f'{pv_name}: compute_alarm=true requires valueAlarm config'
+            )
         if 'active' not in value_alarm_cfg:
             value_alarm_cfg['active'] = True
         elif value_alarm_cfg.get('active') is not True:
@@ -63,7 +69,9 @@ def normalise_variable_settings(pv_name: str, pv_cfg: dict[str, Any]) -> dict[st
                 f'{pv_name}: compute_alarm=true does not allow valueAlarm.active=false'
             )
 
-        missing = [field for field in ALARM_LIMIT_FIELDS if field not in value_alarm_cfg]
+        missing = [
+            field for field in ALARM_LIMIT_FIELDS if field not in value_alarm_cfg
+        ]
         if missing:
             raise ValueError(
                 f'{pv_name}: compute_alarm requires valueAlarm fields: {missing}'
@@ -140,16 +148,16 @@ def compute_alarm(value: Any, policy: dict[str, Any]) -> dict[str, Any]:
 
 def enforce_control_limits(value: Any, control_cfg: dict[str, Any]) -> Any:
     # print(f'Enforcing control limits: value={value}, control_cfg={control_cfg}')
-    
+
     if 'limitLow' in control_cfg and value < control_cfg['limitLow']:
         return control_cfg['limitLow']
     if 'limitHigh' in control_cfg and value > control_cfg['limitHigh']:
         return control_cfg['limitHigh']
-    
+
     # round minStep if specified
     if 'minStep' in control_cfg:
         min_step = control_cfg['minStep']
         if min_step > 0:
             value = round(value / min_step) * min_step
-    
+
     return value

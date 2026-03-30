@@ -66,7 +66,9 @@ class K2EGInterface(BaseInterface):
     def put(self, name, value, **kwargs):
         # print(f"putting {name} with value {value}")
         try:
-            self.client.put(self.reverse_url_lookup[name], Scalar("value", value["value"]))
+            self.client.put(
+                self.reverse_url_lookup[name], Scalar('value', value['value'])
+            )
         except Exception as e:
             print(f'Error putting: {e}')
             raise e

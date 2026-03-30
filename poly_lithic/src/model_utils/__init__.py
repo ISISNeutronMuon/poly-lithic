@@ -12,7 +12,7 @@ from poly_lithic.src.model_utils.LocalModelGetter import LocalModelGetter
 registered_model_getters = {
     'mlflow': MLflowModelGetter,
     'mlflow_legacy': MLflowModelGetterLegacy,  # Add this line
-    'local': LocalModelGetter
+    'local': LocalModelGetter,
 }
 
 __all__ = [

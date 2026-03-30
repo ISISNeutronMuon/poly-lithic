@@ -13,7 +13,11 @@ from p4p.server.thread import SharedPV
 from poly_lithic.src.logging_utils import get_logger
 
 from .BaseInterface import BaseInterface
-from .p4p_alarm_helpers import compute_alarm, normalise_variable_settings, enforce_control_limits
+from .p4p_alarm_helpers import (
+    compute_alarm,
+    normalise_variable_settings,
+    enforce_control_limits,
+)
 
 # multi pool
 
@@ -68,7 +72,9 @@ class SimplePVAInterface(BaseInterface):
             self.variable_settings[pv_name] = settings
             self.variable_configs[pv_name] = pv_cfg
 
-        logger.debug(f'SimplePVAInterface initialized with out_list: {self.out_list} in_list: {self.in_list}')
+        logger.debug(
+            f'SimplePVAInterface initialized with out_list: {self.out_list} in_list: {self.in_list}'
+        )
 
     def __handler_wrapper(self, handler, name):
         # unwrap p4p.Value into name, value
@@ -130,7 +136,7 @@ class SimplePVAInterface(BaseInterface):
                 return payload['value'], True
             return None, False
         return payload, True
-    
+
     @staticmethod
     def _payload_set_value(payload: Any, value: Any) -> Any:
         if isinstance(payload, Value):
@@ -154,7 +160,9 @@ class SimplePVAInterface(BaseInterface):
         return {'value': payload, 'alarm': alarm}
 
     @staticmethod
-    def _payload_apply_metadata(payload: dict[str, Any], settings: dict[str, Any]) -> dict[str, Any]:
+    def _payload_apply_metadata(
+        payload: dict[str, Any], settings: dict[str, Any]
+    ) -> dict[str, Any]:
         payload = dict(payload)
         if settings['display'] is not None:
             payload['display'] = settings['display']
@@ -189,19 +197,18 @@ class SimplePVAInterface(BaseInterface):
             return payload, False
 
         value, has_value = self._payload_extract_value(payload)
-        
+
         # enforce control limits if configured
         if settings['enforce_control_limits'] and settings['control'] is not None:
-            
             value = enforce_control_limits(value, settings['control'])
             coerced = self._coerce_client_value(value)
             if isinstance(payload, dict):
                 payload['value'] = coerced
             elif hasattr(payload, 'value'):
-                payload.value = coerced   # NT wrapper objects
+                payload.value = coerced  # NT wrapper objects
             else:
                 payload = coerced
-        
+
         if not has_value:
             raise ValueError(f'{name}: compute_alarm requires payload with value')
 
@@ -259,6 +266,7 @@ class SimplePVAInterface(BaseInterface):
     def get_inputs(self):
         return self.in_list
 
+
 class SimplePVAInterfaceServer(SimplePVAInterface):
     """
     Simple PVA integfcae with a server rather than just a client, this will host the PVs provided in the config
@@ -298,7 +306,9 @@ class SimplePVAInterfaceServer(SimplePVAInterface):
                 x_size = pv_cfg['image_size']['x']
                 intial_value = np.zeros((y_size, x_size))
                 if 'default' in pv_cfg:
-                    raise NotImplementedError('Default values for images not implemented')
+                    raise NotImplementedError(
+                        'Default values for images not implemented'
+                    )
                 pv_type_nt = NTNDArray()
                 pv_type_init = intial_value
             elif pv_type == 'waveform' or pv_type == 'array':

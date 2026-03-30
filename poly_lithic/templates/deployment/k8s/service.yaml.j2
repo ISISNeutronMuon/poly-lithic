@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ project_name }}
+  labels:
+    app: {{ project_name }}
+spec:
+  selector:
+    app: {{ project_name }}
+  ports:
+{% if interface_type == "fastapi" %}
+    - name: http
+      port: 8000
+      targetPort: 8000
+{% endif %}
+    - name: pva
+      port: 5075
+      targetPort: 5075
+  type: ClusterIP

@@ -90,9 +90,12 @@ class TestSettings:
 
 class TestSubmit:
     def test_submit_single(self, client):
-        r = client.post('/submit', json={
-            'variables': {'A': {'value': 42.0}},
-        })
+        r = client.post(
+            '/submit',
+            json={
+                'variables': {'A': {'value': 42.0}},
+            },
+        )
         assert r.status_code == 200
         body = r.json()
         assert body['status'] == 'queued'
@@ -100,71 +103,101 @@ class TestSubmit:
         assert 'A' in body['updated']
 
     def test_submit_with_custom_job_id(self, client):
-        r = client.post('/submit', json={
-            'job_id': 'my-job',
-            'variables': {'A': {'value': 1.0}},
-        })
+        r = client.post(
+            '/submit',
+            json={
+                'job_id': 'my-job',
+                'variables': {'A': {'value': 1.0}},
+            },
+        )
         assert r.status_code == 200
         assert r.json()['job_id'] == 'my-job'
 
     def test_submit_unknown_variable(self, client):
-        r = client.post('/submit', json={
-            'variables': {'NONEXISTENT': {'value': 1.0}},
-        })
+        r = client.post(
+            '/submit',
+            json={
+                'variables': {'NONEXISTENT': {'value': 1.0}},
+            },
+        )
         assert r.status_code == 404
 
     def test_submit_write_to_output(self, client):
-        r = client.post('/submit', json={
-            'variables': {'C': {'value': 1.0}},
-        })
+        r = client.post(
+            '/submit',
+            json={
+                'variables': {'C': {'value': 1.0}},
+            },
+        )
         assert r.status_code == 403
 
     def test_submit_type_error(self, client):
-        r = client.post('/submit', json={
-            'variables': {'A': {'value': 'not_a_number'}},
-        })
+        r = client.post(
+            '/submit',
+            json={
+                'variables': {'A': {'value': 'not_a_number'}},
+            },
+        )
         assert r.status_code == 422
 
     def test_submit_duplicate_job_id(self, client):
-        client.post('/submit', json={
-            'job_id': 'dup',
-            'variables': {'A': {'value': 1.0}},
-        })
-        r = client.post('/submit', json={
-            'job_id': 'dup',
-            'variables': {'A': {'value': 2.0}},
-        })
+        client.post(
+            '/submit',
+            json={
+                'job_id': 'dup',
+                'variables': {'A': {'value': 1.0}},
+            },
+        )
+        r = client.post(
+            '/submit',
+            json={
+                'job_id': 'dup',
+                'variables': {'A': {'value': 2.0}},
+            },
+        )
         assert r.status_code == 409
 
     def test_submit_extra_field_rejected(self, client):
-        r = client.post('/submit', json={
-            'variables': {'A': {'value': 1.0, 'extra_field': 'bad'}},
-        })
+        r = client.post(
+            '/submit',
+            json={
+                'variables': {'A': {'value': 1.0, 'extra_field': 'bad'}},
+            },
+        )
         assert r.status_code == 422
 
     def test_submit_queue_full(self, client):
         # input_queue_max=5
         for i in range(5):
-            r = client.post('/submit', json={
-                'variables': {'A': {'value': float(i)}},
-            })
+            r = client.post(
+                '/submit',
+                json={
+                    'variables': {'A': {'value': float(i)}},
+                },
+            )
             assert r.status_code == 200
 
-        r = client.post('/submit', json={
-            'variables': {'A': {'value': 99.0}},
-        })
+        r = client.post(
+            '/submit',
+            json={
+                'variables': {'A': {'value': 99.0}},
+            },
+        )
         assert r.status_code == 429
 
     def test_submit_with_metadata(self, client):
-        r = client.post('/submit', json={
-            'variables': {
-                'A': {
-                    'value': 1.0,
-                    'timestamp': 1234567890.0,
-                    'metadata': {'custom_key': 'custom_val'},
+        r = client.post(
+            '/submit',
+            json={
+                'variables': {
+                    'A': {
+                        'value': 1.0,
+                        'timestamp': 1234567890.0,
+                        'metadata': {'custom_key': 'custom_val'},
+                    },
                 },
             },
-        })
+        )
         assert r.status_code == 200
 
 
@@ -175,24 +208,33 @@ class TestSubmit:
 
 class TestGetEndpoint:
     def test_get_variables(self, client):
-        r = client.post('/get', json={
-            'variables': ['A', 'D'],
-        })
+        r = client.post(
+            '/get',
+            json={
+                'variables': ['A', 'D'],
+            },
+        )
         assert r.status_code == 200
         body = r.json()
         assert body['values']['A']['value'] == 1.0
         assert body['values']['D']['value'] == 5.0
 
     def test_get_unknown_variable(self, client):
-        r = client.post('/get', json={
-            'variables': ['NONEXISTENT'],
-        })
+        r = client.post(
+            '/get',
+            json={
+                'variables': ['NONEXISTENT'],
+            },
+        )
         assert r.status_code == 404
 
     def test_get_array_returns_list(self, client):
-        r = client.post('/get', json={
-            'variables': ['B'],
-        })
+        r = client.post(
+            '/get',
+            json={
+                'variables': ['B'],
+            },
+        )
         assert r.status_code == 200
         assert r.json()['values']['B']['value'] == [10, 20, 30]
 
@@ -209,33 +251,42 @@ class TestGetEndpoint:
 
 class TestJobsBatch:
     def test_batch_submit(self, client):
-        r = client.post('/jobs', json={
-            'jobs': [
-                {'variables': {'A': {'value': 1.0}}},
-                {'variables': {'A': {'value': 2.0}}},
-            ],
-        })
+        r = client.post(
+            '/jobs',
+            json={
+                'jobs': [
+                    {'variables': {'A': {'value': 1.0}}},
+                    {'variables': {'A': {'value': 2.0}}},
+                ],
+            },
+        )
         assert r.status_code == 200
         body = r.json()
         assert len(body['accepted']) == 2
 
     def test_batch_duplicate_within(self, client):
-        r = client.post('/jobs', json={
-            'jobs': [
-                {'job_id': 'same', 'variables': {'A': {'value': 1.0}}},
-                {'job_id': 'same', 'variables': {'A': {'value': 2.0}}},
-            ],
-        })
+        r = client.post(
+            '/jobs',
+            json={
+                'jobs': [
+                    {'job_id': 'same', 'variables': {'A': {'value': 1.0}}},
+                    {'job_id': 'same', 'variables': {'A': {'value': 2.0}}},
+                ],
+            },
+        )
         assert r.status_code == 409
 
     def test_batch_atomic_validation(self, client, iface):
         """If second job has bad variable, nothing should be enqueued."""
-        r = client.post('/jobs', json={
-            'jobs': [
-                {'variables': {'A': {'value': 1.0}}},
-                {'variables': {'NONEXISTENT': {'value': 2.0}}},
-            ],
-        })
+        r = client.post(
+            '/jobs',
+            json={
+                'jobs': [
+                    {'variables': {'A': {'value': 1.0}}},
+                    {'variables': {'NONEXISTENT': {'value': 2.0}}},
+                ],
+            },
+        )
         assert r.status_code == 404
         # Nothing was enqueued
         assert len(iface._queued) == 0
@@ -248,10 +299,13 @@ class TestJobsBatch:
 
 class TestGetJobById:
     def test_get_job(self, client):
-        r = client.post('/submit', json={
-            'job_id': 'j1',
-            'variables': {'A': {'value': 1.0}},
-        })
+        r = client.post(
+            '/submit',
+            json={
+                'job_id': 'j1',
+                'variables': {'A': {'value': 1.0}},
+            },
+        )
         assert r.status_code == 200
 
         r = client.get('/jobs/j1')
@@ -277,10 +331,13 @@ class TestJobsNext:
 
     def test_next_returns_completed(self, client, iface):
         # Submit, consume, complete
-        client.post('/submit', json={
-            'job_id': 'j-next',
-            'variables': {'A': {'value': 1.0}},
-        })
+        client.post(
+            '/submit',
+            json={
+                'job_id': 'j-next',
+                'variables': {'A': {'value': 1.0}},
+            },
+        )
         iface.get_many([], consume_jobs=True)
         iface.put_many({
             'C': {
@@ -297,10 +354,13 @@ class TestJobsNext:
 
     def test_next_dequeues(self, client, iface):
         """After GET /jobs/next the same job should not appear again."""
-        client.post('/submit', json={
-            'job_id': 'j-once',
-            'variables': {'A': {'value': 1.0}},
-        })
+        client.post(
+            '/submit',
+            json={
+                'job_id': 'j-once',
+                'variables': {'A': {'value': 1.0}},
+            },
+        )
         iface.get_many([], consume_jobs=True)
         iface.put_many({
             'C': {
@@ -323,10 +383,13 @@ class TestJobsNext:
 class TestJobRoundTrip:
     def test_submit_consume_complete_poll(self, client, iface):
         # 1. Submit
-        r = client.post('/submit', json={
-            'job_id': 'round-trip',
-            'variables': {'A': {'value': 3.14}},
-        })
+        r = client.post(
+            '/submit',
+            json={
+                'job_id': 'round-trip',
+                'variables': {'A': {'value': 3.14}},
+            },
+        )
         assert r.status_code == 200
 
         # 2. Consume jobs (simulates InterfaceObserver.get_all path)
@@ -358,10 +421,13 @@ class TestJobRoundTrip:
         """Simulates the real clock-driven pipeline where transformers
         strip metadata. Jobs should still complete via FIFO matching."""
         # 1. Submit
-        r = client.post('/submit', json={
-            'job_id': 'clock-trip',
-            'variables': {'A': {'value': 10.0}},
-        })
+        r = client.post(
+            '/submit',
+            json={
+                'job_id': 'clock-trip',
+                'variables': {'A': {'value': 10.0}},
+            },
+        )
         assert r.status_code == 200
 
         # 2. Clock tick: get_many (default path) transitions queued→running

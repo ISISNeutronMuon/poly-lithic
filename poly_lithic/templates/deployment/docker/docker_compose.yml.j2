@@ -1,0 +1,13 @@
+services:
+  {{ project_name }}:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    # To run with requirements install first:
+    # command: ["sh", "-c", "pl run -c config.yaml -r -e env.json && pl run --publish -c config.yaml -e env.json"]
+    volumes:
+      - ../deployment_config.yaml:/opt/deployment/config.yaml
+      - ../env.json:/opt/deployment/env.json
+{% if model_source == "local" %}
+      - ../model_definition.py:/opt/deployment/model_definition.py
+{% endif %}

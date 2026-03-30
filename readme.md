@@ -13,6 +13,11 @@ use old docs in the meantime: [old docs](./readme_old.md) -->
 # Table of Contents
   - [Installation](#installation)
   - [Usage](#usage)
+  - [Project Commands](#project-commands)
+    - [Initialise a new project](#initialise-a-new-project)
+    - [Initialise from an existing model](#initialise-from-an-existing-model)
+    - [Initialise from a JSON sample file](#initialise-from-a-json-sample-file)
+    - [Update an existing config](#update-an-existing-config)
   - [Configuration file](#configuration-file-formerly-pv_mappings-files)
   - [Plugin API](#plugin-api)
   - [Modules](#modules)
@@ -99,6 +104,199 @@ Reqired variables are:
 - `PUBLISH` - set to `true` for the deployment to publish data to the interface. This flag serves as a safety measure to prevent accidental publishing of data to live system. 
 
 See [this](https://mlflow.org/docs/latest/api_reference/python_api/mlflow.environment_variables.html) for explantions of the MLFlow environment variables.
+
+## Project Commands
+
+The `project` command group scaffolds new deployment projects and updates existing configurations. It has two subcommands: `init` and `update`.
+
+```
+pl project --help
+pl project init --help
+pl project update --help
+```
+
+### Initialise a new project
+
+Create a blank deployment project with placeholder variables:
+
+```bash
+pl project init --name my-model --interface p4p_server --model-source local
+```
+
+Use `--docker` and `--kubernetes` to include Docker and K8s manifests:
+
+```bash
+pl project init -n my-model -i fastapi -m mlflow --docker --kubernetes
+```
+
+For non-interactive usage (CI, scripting), pass `--no-prompt`:
+
+```bash
+pl project init --name my-model --no-prompt
+```
+
+### Initialise from an existing model
+
+When you already have a `model_definition.py`, pass `--model-file` to introspect it at generation time. The generator extracts input/output variable names, types, defaults, and ranges, and pre-populates the deployment config:
+
+```bash
+pl project init --name lume-demo -f model_definition.py -i p4p_server --no-prompt
+```
+
+The introspector resolves variables in this order:
+
+1. **Module-level variables** — If the file defines `input_variables` and `output_variables` as top-level lists (of dicts or lume-base objects), those are used directly.
+2. **Factory class fallback** — Otherwise, a factory class (default `ModelFactory`) is instantiated and `get_model()` is called to obtain the variables from the model instance.
+
+You can override the factory class name:
+
+```bash
+pl project init --name my-proj -f model_def.py --factory-class MyFactory --no-prompt
+```
+
+#### Plain dict model files (no lume-base required)
+
+You can define variables as plain Python dicts — no external dependencies needed:
+
+```python
+input_variables = [
+    {"name": "x1", "type": "scalar", "default_value": 0.0, "value_range": [-1, 1]},
+    {"name": "x2", "type": "scalar", "default_value": 0.0},
+    {"name": "signal", "type": "waveform", "length": 256},
+]
+
+output_variables = [
+    {"name": "y", "type": "scalar"},
+    {"name": "image_out", "type": "image", "image_size": {"x": 64, "y": 48}},
+]
+
+class ModelFactory:
+    def get_model(self):
+        # your model class here
+        ...
+```
+
+Each dict must have a `"name"` key. Other supported keys:
+
+| Key | Required | Description |
+|---|---|---|
+| `name` | yes | Variable name |
+| `type` | no | One of `scalar`, `waveform`, `array`, `image` (defaults to `scalar`) |
+| `default_value` | no | Default value for the variable |
+| `value_range` | no | `[min, max]` range |
+| `length` | no | Length for `waveform`/`array` types |
+| `image_size` | no | `{"x": width, "y": height}` for `image` types |
+
+#### lume-base compatibility
+
+lume-base variable objects are also fully supported. The variable type is inferred automatically from the class name:
+
+| lume-base class | Inferred type |
+|---|---|
+| `ScalarVariable`, `ScalarInputVariable`, `ScalarOutputVariable` | `scalar` |
+| `ArrayVariable`, `ArrayInputVariable`, `ArrayOutputVariable` | `waveform` |
+| `ImageVariable`, `ImageInputVariable`, `ImageOutputVariable` | `image` |
+
+A minimal lume-base example:
+
+```python
+from lume_model.base import LUMEBaseModel
+from lume_model.variables import ScalarVariable
+
+class MyModel(LUMEBaseModel):
+    def _evaluate(self, input_dict):
+        return {"y": input_dict["x1"] + input_dict["x2"]}
+
+class ModelFactory:
+    def __init__(self):
+        self.model = MyModel(
+            input_variables=[
+                ScalarVariable(name="x1", default_value=0, value_range=[-1, 1]),
+                ScalarVariable(name="x2", default_value=0),
+            ],
+            output_variables=[ScalarVariable(name="y")],
+        )
+
+    def get_model(self):
+        return self.model
+```
+
+Install the lume extras to pull in the required dependencies:
+
+```bash
+pip install poly-lithic[lume]        # lume-model ≥ 2.0.0
+# or with torch support:
+pip install poly-lithic[torch]       # lume-model ≥ 2.0.0 + torch ≥ 2.6.0
+```
+
+### Initialise from a JSON sample file
+
+If you don't have a model file yet but know what your inputs and outputs look like, you can provide a **JSON sample file** with `--sample-file`. Variable names and types are inferred automatically from the sample data:
+
+```bash
+pl project init --name my-model -s sample.json -i fastapi --no-prompt
+```
+
+The JSON file must contain `"input"` and `"output"` keys. Each can be either a **named dict** or an **unnamed list**.
+
+#### Named dict format (recommended)
+
+Keys become variable names, values are used for type inference:
+
+```json
+{
+  "input": {
+    "x1": 1.0,
+    "x2": 2,
+    "signal": [0.1, 0.2, 0.3, 0.4],
+    "image": [[1, 2], [3, 4], [5, 6]]
+  },
+  "output": {
+    "y": 0.0,
+    "spectrum": [0.0, 0.0, 0.0]
+  }
+}
+```
+
+#### Unnamed list format
+
+Variables are named `input_0`, `input_1`, ..., `output_0`, etc.:
+
+```json
+{
+  "input": [1.0, 2.0, 3.0],
+  "output": [0.0]
+}
+```
+
+#### Type inference rules
+
+| Sample value | Inferred type | Extra fields |
+|---|---|---|
+| `int` or `float` | `scalar` | `default_value` set to the sample value |
+| `str` or `bool` | `scalar` | `default_value` set to the sample value |
+| 1-D list (e.g. `[1, 2, 3]`) | `waveform` | `length`, `default_value` |
+| 2-D list (e.g. `[[1, 2], [3, 4]]`) | `image` | `image_size: {x, y}`, `default_value` |
+| Empty list `[]` | `scalar` | — |
+
+### Update an existing config
+
+If you already have a generated project with placeholder variable names, you can patch the `deployment_config.yaml` in-place using a model file or a sample file:
+
+```bash
+pl project update deployment_config.yaml -f model_definition.py
+pl project update deployment_config.yaml -s sample.json
+```
+
+A coloured unified diff of the changes is printed after each update so you can see exactly what was modified. If the config is already up to date, a "No changes made" message is shown instead.
+
+This introspects the model (or infers from sample JSON) and replaces:
+- Interface variable entries (PV names / FastAPI variable definitions) — including type, length, and image_size
+- Input transformer symbols and variable mappings
+- Model output variables with their types
+- Output transformer symbols and variable mappings
+
+Options `--model-file` and `--sample-file` are mutually exclusive. An optional `--factory-class` flag is available when using `--model-file` if your factory is not named `ModelFactory`.
 
 ## Configuration file (formerly pv_mappings files)
 
@@ -756,7 +954,7 @@ model:
 
 Then to run the model:
 ```bash
-pl --publish -c examples/base/local/deployment_config.yaml
+pl run --publish -c examples/base/local/deployment_config.yaml
 ```
 See the [local example notebook](./examples/base/simple_model_local.ipynb) for more details.
 
@@ -770,10 +968,10 @@ See the [MLFlow example notebook](./examples/base/simple_model_mlflow.ipynb) for
 |-----------------------------------------------|--------------|----------|---------------|
 | 🖌️ 🎨 **Make logo**                            | 1–3 Months   | 🥇       | Compelte! |
 | 🔌 🧩 **Plugin System for Modules**                      | 1–3 Months   | 🥇       | Complete! |
-| 🧠 🔧 **Lume-Model Integration**               | 1–3 Months   | 🥇       | 🚧 In Progress |
+| 🧠 🔧 **Lume-Model Integration**               | 1–3 Months   | 🥇       | ✅ Complete |
 | ⚡ 🔄 **Event driven mode**                    | 1-3 Months   | 🥈       | 🚧 In Progress     |
 | 🌐 🔌 **FastAPI REST Interface**                | 1–3 Months   | 🥇       | ✅ Complete |
-| 🔗 📡 **Job trace propagation across broker**   | 1–1 Months   | 🥈       | ⏳ Planned     |
+| 🔗 📡 **Job trace propagation across broker**   | 1–3 Months   | 🥈       | ⏳ Planned     |
 | 📦 🤖 **MLflow 3.x Support**                   | 6–12 Months   | 🥇       | ⏳ Planned     |
 | 🌐 🚀 **Move to `gh-pages`**                   | 1–3 Months   | 🥈       | 🚧 In Progress |
 | 🔗 🧪 **p4p4isis Interface**                   | 6–12 Months  | 🥉       | ⏳ Planned     |

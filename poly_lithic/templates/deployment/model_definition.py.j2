@@ -1,0 +1,54 @@
+"""
+Model definition for {{ project_name }}.
+
+This module provides the ModelFactory and model class required by poly-lithic
+for local model loading. Modify the model architecture and evaluate() method
+to match your use case.
+"""
+
+input_variables = [
+    # TODO: Update with your actual input variables
+    {"name": "x", "type": "scalar", "default_value": 0.0},
+    {"name": "y", "type": "scalar", "default_value": 0.0},
+]
+
+output_variables = [
+    # TODO: Update with your actual output variables
+    {"name": "output", "type": "scalar"},
+]
+
+
+class ModelFactory:
+    """Factory class for creating and loading the model."""
+
+    def __init__(self):
+        self.model = {{ class_name }}Model()
+
+    def get_model(self):
+        """Required: returns the model instance for poly-lithic."""
+        return self.model
+
+
+class {{ class_name }}Model:
+    """
+    Model class with an evaluate() method.
+
+    Replace this with your actual model (e.g. a PyTorch nn.Module,
+    sklearn estimator, or any callable).
+    """
+
+    def evaluate(self, x: dict) -> dict:
+        """
+        Required: evaluate the model with input dict and return output dict.
+
+        Args:
+            x: Dictionary of input variable names to values,
+               e.g. {"x": 1.0, "y": 2.0}
+
+        Returns:
+            Dictionary of output variable names to values,
+            e.g. {"output": 3.0}
+        """
+        # TODO: Replace with your model logic
+        result = sum(x.values())
+        return {"output": result}
