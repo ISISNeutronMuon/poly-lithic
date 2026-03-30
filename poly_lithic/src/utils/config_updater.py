@@ -119,7 +119,17 @@ class ConfigUpdater:
                         entry['image_size'] = var['image_size']
                     new_vars[pv] = entry
                 else:
-                    new_vars[pv] = {'proto': 'pva', 'name': pv}
+                    entry = {'proto': 'pva', 'name': pv}
+                    vtype = var.get('type', 'scalar')
+                    if vtype != 'scalar':
+                        entry['type'] = vtype
+                    if 'default_value' in var:
+                        entry['default'] = var['default_value']
+                    if vtype in ('waveform', 'array') and 'length' in var:
+                        entry['length'] = var['length']
+                    elif vtype == 'image' and 'image_size' in var:
+                        entry['image_size'] = var['image_size']
+                    new_vars[pv] = entry
             for var in metadata.output_variables:
                 pv = f'{prefix}:{var["name"]}'
                 if is_fastapi:
@@ -137,7 +147,17 @@ class ConfigUpdater:
                         entry['image_size'] = var['image_size']
                     new_vars[pv] = entry
                 else:
-                    new_vars[pv] = {'proto': 'pva', 'name': pv}
+                    entry = {'proto': 'pva', 'name': pv}
+                    vtype = var.get('type', 'scalar')
+                    if vtype != 'scalar':
+                        entry['type'] = vtype
+                    if 'default_value' in var:
+                        entry['default'] = var['default_value']
+                    if vtype in ('waveform', 'array') and 'length' in var:
+                        entry['length'] = var['length']
+                    elif vtype == 'image' and 'image_size' in var:
+                        entry['image_size'] = var['image_size']
+                    new_vars[pv] = entry
             cfg['variables'] = new_vars
 
     @staticmethod

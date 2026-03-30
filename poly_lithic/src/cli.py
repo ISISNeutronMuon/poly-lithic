@@ -376,7 +376,7 @@ def init(name, author, email, description, output_dir, no_prompt):
         sys.exit(1)
 
 
-@plugin.command()
+@plugin.command(name='list')
 @click.option(
     '--type',
     '-t',
@@ -386,7 +386,7 @@ def init(name, author, email, description, output_dir, no_prompt):
     ),
     help='Filter by plugin type',
 )
-def list(plugin_type):
+def list_plugins(plugin_type):
     """
     List all available plugins.
 
@@ -840,6 +840,8 @@ def update(config_file, model_file, sample_file, factory_class):
         pl project update config.yaml -f model_def.py --factory-class MyFactory
     """
     try:
+        from pathlib import Path
+
         from poly_lithic.src.utils.config_updater import ConfigUpdater
         from poly_lithic.src.utils.model_introspector import ModelIntrospector
 
@@ -864,8 +866,10 @@ def update(config_file, model_file, sample_file, factory_class):
             click.echo(f'  Outputs: {", ".join(output_names)}')
             click.echo()
 
+            before = Path(config_file).read_text()
             updater = ConfigUpdater(config_file)
             updated_path = updater.update_from_metadata(metadata)
+            after = updated_path.read_text()
         else:
             # Show what we discovered
             introspector = ModelIntrospector(model_file, factory_class)
@@ -880,8 +884,36 @@ def update(config_file, model_file, sample_file, factory_class):
             click.echo(f'  Outputs: {", ".join(output_names)}')
             click.echo()
 
+            before = Path(config_file).read_text()
             updater = ConfigUpdater(config_file)
             updated_path = updater.update_from_model(model_file, factory_class)
+            after = updated_path.read_text()
+
+        # Show diff
+        import difflib
+
+        diff_lines = list(difflib.unified_diff(
+            before.splitlines(keepends=True),
+            after.splitlines(keepends=True),
+            fromfile=str(config_file) + ' (before)',
+            tofile=str(config_file) + ' (after)',
+        ))
+        if diff_lines:
+            click.echo(click.style('Changes:', fg='yellow', bold=True))
+            for line in diff_lines:
+                line = line.rstrip('\n')
+                if line.startswith('+') and not line.startswith('+++'):
+                    click.echo(click.style(line, fg='green'))
+                elif line.startswith('-') and not line.startswith('---'):
+                    click.echo(click.style(line, fg='red'))
+                elif line.startswith('@@'):
+                    click.echo(click.style(line, fg='cyan'))
+                else:
+                    click.echo(line)
+            click.echo()
+        else:
+            click.echo(click.style('  No changes made.', fg='yellow'))
+            click.echo()
 
         click.echo(
             click.style(f'✓ Config updated: {updated_path}', fg='green', bold=True)

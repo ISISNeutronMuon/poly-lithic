@@ -6,6 +6,17 @@ for local model loading. Modify the model architecture and evaluate() method
 to match your use case.
 """
 
+input_variables = [
+    # TODO: Update with your actual input variables
+    {"name": "x", "type": "scalar", "default_value": 0.0},
+    {"name": "y", "type": "scalar", "default_value": 0.0},
+]
+
+output_variables = [
+    # TODO: Update with your actual output variables
+    {"name": "output", "type": "scalar"},
+]
+
 
 class ModelFactory:
     """Factory class for creating and loading the model."""

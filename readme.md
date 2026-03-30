@@ -288,6 +288,8 @@ pl project update deployment_config.yaml -f model_definition.py
 pl project update deployment_config.yaml -s sample.json
 ```
 
+A coloured unified diff of the changes is printed after each update so you can see exactly what was modified. If the config is already up to date, a "No changes made" message is shown instead.
+
 This introspects the model (or infers from sample JSON) and replaces:
 - Interface variable entries (PV names / FastAPI variable definitions) — including type, length, and image_size
 - Input transformer symbols and variable mappings
@@ -952,7 +954,7 @@ model:
 
 Then to run the model:
 ```bash
-pl --publish -c examples/base/local/deployment_config.yaml
+pl run --publish -c examples/base/local/deployment_config.yaml
 ```
 See the [local example notebook](./examples/base/simple_model_local.ipynb) for more details.
 
@@ -969,7 +971,7 @@ See the [MLFlow example notebook](./examples/base/simple_model_mlflow.ipynb) for
 | 🧠 🔧 **Lume-Model Integration**               | 1–3 Months   | 🥇       | ✅ Complete |
 | ⚡ 🔄 **Event driven mode**                    | 1-3 Months   | 🥈       | 🚧 In Progress     |
 | 🌐 🔌 **FastAPI REST Interface**                | 1–3 Months   | 🥇       | ✅ Complete |
-| 🔗 📡 **Job trace propagation across broker**   | 1–1 Months   | 🥈       | ⏳ Planned     |
+| 🔗 📡 **Job trace propagation across broker**   | 1–3 Months   | 🥈       | ⏳ Planned     |
 | 📦 🤖 **MLflow 3.x Support**                   | 6–12 Months   | 🥇       | ⏳ Planned     |
 | 🌐 🚀 **Move to `gh-pages`**                   | 1–3 Months   | 🥈       | 🚧 In Progress |
 | 🔗 🧪 **p4p4isis Interface**                   | 6–12 Months  | 🥉       | ⏳ Planned     |

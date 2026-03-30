@@ -21,6 +21,19 @@ modules:
         {{ project_name | upper }}:{{ var.name }}:
           proto: pva
           name: {{ project_name | upper }}:{{ var.name }}
+{% if var.type is defined and var.type != "scalar" %}
+          type: {{ var.type }}
+{% endif %}
+{% if var.default_value is defined %}
+          default: {{ var.default_value }}
+{% endif %}
+{% if var.type | default("scalar") in ["waveform", "array"] and var.length is defined %}
+          length: {{ var.length }}
+{% elif var.type | default("scalar") == "image" and var.image_size is defined %}
+          image_size:
+            x: {{ var.image_size.x }}
+            y: {{ var.image_size.y }}
+{% endif %}
 {% endfor %}
 {% else %}
         {{ project_name | upper }}:INPUT_A:
@@ -35,6 +48,19 @@ modules:
         {{ project_name | upper }}:{{ var.name }}:
           proto: pva
           name: {{ project_name | upper }}:{{ var.name }}
+{% if var.type is defined and var.type != "scalar" %}
+          type: {{ var.type }}
+{% endif %}
+{% if var.default_value is defined %}
+          default: {{ var.default_value }}
+{% endif %}
+{% if var.type | default("scalar") in ["waveform", "array"] and var.length is defined %}
+          length: {{ var.length }}
+{% elif var.type | default("scalar") == "image" and var.image_size is defined %}
+          image_size:
+            x: {{ var.image_size.x }}
+            y: {{ var.image_size.y }}
+{% endif %}
 {% endfor %}
 {% else %}
         {{ project_name | upper }}:OUTPUT:
@@ -122,6 +148,19 @@ modules:
         {{ project_name | upper }}:{{ var.name }}:
           proto: pva
           name: {{ project_name | upper }}:{{ var.name }}
+{% if var.type is defined and var.type != "scalar" %}
+          type: {{ var.type }}
+{% endif %}
+{% if var.default_value is defined %}
+          default: {{ var.default_value }}
+{% endif %}
+{% if var.type | default("scalar") in ["waveform", "array"] and var.length is defined %}
+          length: {{ var.length }}
+{% elif var.type | default("scalar") == "image" and var.image_size is defined %}
+          image_size:
+            x: {{ var.image_size.x }}
+            y: {{ var.image_size.y }}
+{% endif %}
 {% endfor %}
 {% else %}
         {{ project_name | upper }}:INPUT_A:
@@ -136,6 +175,19 @@ modules:
         {{ project_name | upper }}:{{ var.name }}:
           proto: pva
           name: {{ project_name | upper }}:{{ var.name }}
+{% if var.type is defined and var.type != "scalar" %}
+          type: {{ var.type }}
+{% endif %}
+{% if var.default_value is defined %}
+          default: {{ var.default_value }}
+{% endif %}
+{% if var.type | default("scalar") in ["waveform", "array"] and var.length is defined %}
+          length: {{ var.length }}
+{% elif var.type | default("scalar") == "image" and var.image_size is defined %}
+          image_size:
+            x: {{ var.image_size.x }}
+            y: {{ var.image_size.y }}
+{% endif %}
 {% endfor %}
 {% else %}
         {{ project_name | upper }}:OUTPUT:
