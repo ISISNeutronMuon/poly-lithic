@@ -81,7 +81,6 @@ include =["poly_lithic"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["poly_lithic"]
-only-packages = true
 
 [tool.ruff.format]
 preview = true
