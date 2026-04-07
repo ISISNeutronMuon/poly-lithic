@@ -282,7 +282,11 @@ class TransformerObserver(Observer):
             message_dict = {}
             for key, value in values.items():
                 if isinstance(value, dict) and 'value' in value:
-                    message_dict[key] = value
+                    # Shallow-copy to avoid mutating transformer's internal
+                    # state (latest_input_struct) during trace injection.
+                    message_dict[key] = {**value}
+                    if 'metadata' in value:
+                        message_dict[key]['metadata'] = {**value['metadata']}
                 else:
                     message_dict[key] = {'value': value}
                 # Re-attach input metadata if this key had it
@@ -292,11 +296,23 @@ class TransformerObserver(Observer):
                     message_dict[key]['metadata'] = existing_meta
 
             self.transformer.updated = False
+
+            # Aggregate trace_ids from ALL contributing inputs,
+            # not just the triggering message.
+            parent_ids = {message.trace_id}
+            input_structs = getattr(self.transformer, 'latest_input_struct', {})
+            for struct in (input_structs or {}).values():
+                if isinstance(struct, dict):
+                    trace_info = (struct.get('metadata') or {}).get('trace') or {}
+                    tid = trace_info.get('trace_id')
+                    if tid:
+                        parent_ids.add(tid)
+
             out_msg = Message(
                 topic=self.topic,
                 source=str(self),
                 value=message_dict,
-                parent_trace_ids=[message.trace_id],
+                parent_trace_ids=list(parent_ids),
             )
             # Inject trace_id into each variable struct metadata
             for key in out_msg.value:
@@ -587,11 +603,20 @@ class ModelObserver(Observer):
             # logger.debug(f"not packing output passign raw: {pred}")
             output = pred
 
+        # Aggregate trace_ids from ALL input variables, not just
+        # the triggering message.
+        parent_ids = {message.trace_id}
+        for meta in input_meta.values():
+            trace_info = (meta.get('trace') or {})
+            tid = trace_info.get('trace_id')
+            if tid:
+                parent_ids.add(tid)
+
         out_msg = Message(
             topic=self.topic,
             source=str(self),
             value=output,
-            parent_trace_ids=[message.trace_id],
+            parent_trace_ids=list(parent_ids),
         )
         # Inject trace_id and merge input metadata into each output variable struct
         for key in out_msg.value:
