@@ -17,6 +17,7 @@ logger = get_logger()
 
 
 class K2EGInterface(BaseInterface):
+    supports_monitor = True
     def __init__(self, config):
         try:
             self.client = k2eg.dml(

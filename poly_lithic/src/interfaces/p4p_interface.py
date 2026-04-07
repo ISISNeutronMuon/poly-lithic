@@ -28,6 +28,8 @@ logger = get_logger()
 
 
 class SimplePVAInterface(BaseInterface):
+    supports_monitor = True
+
     def __init__(self, config):
         self.ctxt = Context('pva', nt=False)
         if 'EPICS_PVA_NAME_SERVERS' in os.environ:
@@ -85,11 +87,20 @@ class SimplePVAInterface(BaseInterface):
 
         return wrapped_handler
 
-    def monitor(self, handler, **kwargs):
-        for pv in self.in_list:
+    def monitor(self, handler, pv_name=None, **kwargs):
+        pvs = [pv_name] if pv_name else self.in_list
+        for pv in pvs:
             try:
-                new_handler = self.__handler_wrapper(handler, pv)
-                self.ctxt.monitor(pv, new_handler)
+                if pv_name:
+                    # Per-PV handler (event-driven mode): extract raw value
+                    def _wrap(h, p=pv):
+                        def wrapped(value):
+                            h(value['value'])
+                        return wrapped
+                    self.ctxt.monitor(pv, _wrap(handler))
+                else:
+                    new_handler = self.__handler_wrapper(handler, pv)
+                    self.ctxt.monitor(pv, new_handler)
             except Exception as e:
                 logger.error(
                     f'Error monitoring in function monitor for SimplePVAInterface: {e}'
@@ -98,20 +109,26 @@ class SimplePVAInterface(BaseInterface):
                 raise e
 
     def get(self, name, **kwargs):
-        value = self.ctxt.get(name)
-        if isinstance(value['value'], np.ndarray):
+        raw = self.ctxt.get(name)
+        if isinstance(raw['value'], np.ndarray):
             # if value has dimension
-            if 'dimension' in value:
-                y_size = value['dimension'][0]['size']
-                x_size = value['dimension'][1]['size']
-                value = value['value'].reshape((y_size, x_size))
+            if 'dimension' in raw:
+                y_size = raw['dimension'][0]['size']
+                x_size = raw['dimension'][1]['size']
+                value = raw['value'].reshape((y_size, x_size))
             else:
-                value = value['value']
+                value = raw['value']
         else:
-            value = value['value']
+            value = raw['value']
 
-        value = {'value': value}
-        return name, value
+        result = {'value': value}
+        # Extract timestamp from p4p.Value for tracing
+        try:
+            ts = raw['timeStamp']
+            result['timestamp'] = float(ts['secondsPastEpoch']) + float(ts['nanoseconds']) * 1e-9
+        except Exception:
+            pass
+        return name, result
 
     @staticmethod
     def _payload_has_explicit_alarm(payload: Any) -> bool:
@@ -240,19 +257,26 @@ class SimplePVAInterface(BaseInterface):
         results = self.ctxt.get(data, throw=False)
         output = {}
         # print(f"results: {results}")
-        for value, key in zip(results, data):
-            if isinstance(value['value'], np.ndarray):
+        for raw, key in zip(results, data):
+            if isinstance(raw['value'], np.ndarray):
                 # if value has dimension
-                if 'dimension' in value:
-                    y_size = value['dimension'][0]['size']
-                    x_size = value['dimension'][1]['size']
-                    value = value['value'].reshape((y_size, x_size))
+                if 'dimension' in raw:
+                    y_size = raw['dimension'][0]['size']
+                    x_size = raw['dimension'][1]['size']
+                    value = raw['value'].reshape((y_size, x_size))
                 else:
-                    value = value['value']
+                    value = raw['value']
             else:
-                value = value['value']
+                value = raw['value']
 
-            output[key] = {'value': value}
+            result = {'value': value}
+            # Extract timestamp from p4p.Value for tracing
+            try:
+                ts = raw['timeStamp']
+                result['timestamp'] = float(ts['secondsPastEpoch']) + float(ts['nanoseconds']) * 1e-9
+            except Exception:
+                pass
+            output[key] = result
 
         return output
 
@@ -275,6 +299,7 @@ class SimplePVAInterfaceServer(SimplePVAInterface):
     def __init__(self, config):
         super().__init__(config)
         self.shared_pvs = {}
+        self._pv_handlers = {}
         self.kv_store = {}
 
         if 'port' in config:
@@ -347,6 +372,7 @@ class SimplePVAInterfaceServer(SimplePVAInterface):
                     self.owner = owner
                     self.pv_name = pv_name
                     self.read_only = read_only
+                    self._monitor_callbacks = []
 
                 def put(self, pv: SharedPV, op: ServOpWrap):
                     if self.read_only:
@@ -357,21 +383,37 @@ class SimplePVAInterfaceServer(SimplePVAInterface):
                             self.pv_name, op.value()
                         )
                     except Exception as exc:
+                        logger.error(f'Handler.put prepare_write_payload error for {self.pv_name}: {exc}')
                         op.done(error=str(exc))
                         return
-                    pv.post(payload, timestamp=time.time())
+                    try:
+                        pv.post(payload, timestamp=time.time())
+                    except Exception as exc:
+                        logger.error(f'Handler.put pv.post error for {self.pv_name}: {exc}')
+                        op.done(error=str(exc))
+                        return
                     op.done()
+                    logger.debug(f'Handler.put completed for {self.pv_name}, payload type={type(payload).__name__}, callbacks={len(self._monitor_callbacks)}')
+                    # Notify event-driven monitor callbacks
+                    raw_value = payload.get('value', payload) if isinstance(payload, dict) else payload
+                    for cb in self._monitor_callbacks:
+                        try:
+                            cb(raw_value)
+                        except Exception as e:
+                            logger.error(f'Monitor callback error for {self.pv_name}: {e}')
 
             # PVs that are exclusively outputs are considered read-only
             read_only = False
             if 'mode' in pv_cfg:
                 read_only = pv_cfg['mode'] == 'out'
 
+            h = Handler(self, pv, read_only)
+            self._pv_handlers[pv] = h
             pv_item = {
                 pv: SharedPV(
                     initial=pv_type_init,
                     nt=pv_type_nt,
-                    handler=Handler(self, pv, read_only),
+                    handler=h,
                 )
             }
             # print(f"pv_item: {pv_item}")
@@ -398,6 +440,16 @@ class SimplePVAInterfaceServer(SimplePVAInterface):
         logger.debug('Closing SimplePVAInterfaceServer')
         self.server.stop()
         super().close()
+
+    def monitor(self, handler, pv_name=None, **kwargs):
+        """Register monitor callbacks on SharedPV handlers for event-driven mode."""
+        pvs = [pv_name] if pv_name else self.in_list
+        for pv in pvs:
+            if pv not in self._pv_handlers:
+                logger.warning(f'PV {pv} not found in handlers, skipping monitor')
+                continue
+            self._pv_handlers[pv]._monitor_callbacks.append(handler)
+            logger.debug(f'Registered event-driven monitor callback for {pv}')
 
     def put(self, name, value, **kwargs):
         payload, _ = self._prepare_write_payload(name, value)

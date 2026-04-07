@@ -101,6 +101,7 @@ def _numpy_to_native(obj):
 
 
 class SimpleFastAPIInterfaceServer(BaseInterface):
+    supports_monitor = True
     """HTTP interface backed by FastAPI with an in-memory job queue.
 
     Registered as ``"fastapi_server"`` so it can be referenced in the YAML
@@ -141,6 +142,7 @@ class SimpleFastAPIInterfaceServer(BaseInterface):
 
         # -- monitor callback slot (Stage 2 hook) -----------------------
         self._monitor_callback = None
+        self._monitor_callbacks_per_pv: dict[str, list] = {}  # {pv_name: [callbacks]}
 
         # -- build FastAPI app ------------------------------------------
         self.app = self._build_app()
@@ -350,14 +352,24 @@ class SimpleFastAPIInterfaceServer(BaseInterface):
                     'updated': updated_vars,
                 })
 
-            # -- Phase 4: fire monitor callback -------------------------
-            if self._monitor_callback is not None:
-                for jid, variables in resolved_jobs:
-                    snapshot = self._jobs[jid]['inputs']
+            # -- Phase 4: fire monitor callbacks ------------------------
+            for jid, variables in resolved_jobs:
+                snapshot = self._jobs[jid]['inputs']
+                # Global callback (continuous mode)
+                if self._monitor_callback is not None:
                     try:
                         self._monitor_callback(snapshot)
                     except Exception:
                         logger.exception('Monitor callback error (ignored)')
+                # Per-PV callbacks (event-driven mode)
+                for vname, vstruct in snapshot.items():
+                    for cb in self._monitor_callbacks_per_pv.get(vname, []):
+                        try:
+                            cb(vstruct['value'])
+                        except Exception:
+                            logger.exception(
+                                f'Per-PV monitor callback error for {vname} (ignored)'
+                            )
 
         return accepted
 
@@ -511,9 +523,17 @@ class SimpleFastAPIInterfaceServer(BaseInterface):
     def get_outputs(self) -> list[str]:
         return list(self._out_list)
 
-    def monitor(self, handler, **kwargs) -> bool:
-        """Register a single monitor callback. Returns ``True``."""
-        self._monitor_callback = handler
+    def monitor(self, handler, pv_name=None, **kwargs) -> bool:
+        """Register a monitor callback.
+
+        When *pv_name* is given the callback fires with the scalar value
+        for that specific variable (event-driven per-PV mode).  Without
+        *pv_name* a single global callback receives the full snapshot.
+        """
+        if pv_name is not None:
+            self._monitor_callbacks_per_pv.setdefault(pv_name, []).append(handler)
+        else:
+            self._monitor_callback = handler
         return True
 
     def close(self):

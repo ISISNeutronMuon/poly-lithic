@@ -71,7 +71,7 @@ def load_env_config(env_path):
         raise e
 
 
-async def model_main(args, config, broker):
+async def model_main(args, config, broker, builder=None):
     """
     Main async function for running the model manager.
 
@@ -79,6 +79,7 @@ async def model_main(args, config, broker):
         args: Parsed arguments namespace
         config: Configuration object
         broker: Broker instance
+        builder: Builder instance (needed for event_driven mode)
     """
     logger = get_logger()
     logger.info('Starting model manager')
@@ -97,6 +98,37 @@ async def model_main(args, config, broker):
                     if len(broker.queue) > 0:
                         broker.parse_queue()
 
+                if len(broker.queue) > 0:
+                    broker.parse_queue()
+
+                    if args.one_shot:
+                        logger.info('One shot mode, exiting')
+                        break
+
+                await asyncio.sleep(0.01)
+
+        elif config.deployment.type == 'event_driven':
+            # Start PV monitors on all input interfaces
+            input_observers = builder.get_input_interface_observers()
+            if not input_observers:
+                raise ValueError('No input InterfaceObservers found for event-driven mode')
+
+            # Seed all transformer inputs with current PV values so the
+            # all-inputs-present gate passes on the first monitor event.
+            broker.get_all()
+            while broker.queue:
+                broker.parse_queue()
+            logger.info('Seeded transformer inputs via get_all')
+
+            for obs in input_observers:
+                obs.start_monitors(
+                    broker,
+                    min_interval=config.deployment.min_monitor_interval,
+                    on_change_only=config.deployment.on_change_only,
+                )
+            logger.info(f'Started monitors on {len(input_observers)} input interface(s)')
+
+            while True:
                 if len(broker.queue) > 0:
                     broker.parse_queue()
 
@@ -218,10 +250,19 @@ def run_model(config, model_getter, debug, env, one_shot, publish, requirements)
 
         # Import heavy dependencies only when needed
         from poly_lithic.src.utils.builder import Builder
+        from poly_lithic.src.utils.trace_store import TraceStore
+        from poly_lithic.src.utils.trace_server import start_trace_server
 
         click.echo('Building model manager...')
         builder = Builder(config)
-        broker = builder.build()
+
+        trace_store = TraceStore(maxlen=builder.config.deployment.trace_buffer_size)
+        broker = builder.build(trace_store=trace_store)
+
+        # Start tracing API server
+        trace_port = int(os.environ.get('TRACE_PORT', builder.config.deployment.trace_port))
+        start_trace_server(trace_store, port=trace_port)
+        logger.info(f'Tracing API server started on port {trace_port}')
 
         if requirements:
             click.echo('Requirements-only mode - exiting after installation')
@@ -240,7 +281,7 @@ def run_model(config, model_getter, debug, env, one_shot, publish, requirements)
         )
 
         logger.info('Starting model manager main loop')
-        asyncio.run(model_main(args, builder.config, broker))
+        asyncio.run(model_main(args, builder.config, broker, builder=builder))
 
     except KeyboardInterrupt:
         click.echo('\n\nInterrupted by user')

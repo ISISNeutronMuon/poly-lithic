@@ -1,0 +1,130 @@
+# Multi-headed event-driven deployment example
+# Two input interfaces (FastAPI + p4p server) feed the same pipeline.
+# The model evaluates whenever EITHER interface receives new values.
+#
+# Usage:
+#   pl run --config ./examples/base/local/deployment_config_multihead_event_driven.yaml -p
+#
+# Test via PVAccess:
+#   spput ML:LOCAL:TEST_A 3.14
+#   spput ML:LOCAL:TEST_B 2.71
+#
+# Test via HTTP:
+#   curl -X POST http://localhost:8001/submit -H 'Content-Type: application/json' -d '{"variables":{"ML:LOCAL:TEST_A":{"value":3.14},"ML:LOCAL:TEST_B":{"value":2.71}}}'
+#
+# Monitor output PV:
+#   spmonitor ML:LOCAL:TEST_S
+
+deployment:
+  type: "event_driven"
+  min_monitor_interval: 0.01   # throttle per PV (seconds)
+  on_change_only: false
+
+modules:
+  # ── PVAccess server interface ────────────────────────────────────────
+  p4p_server:
+    name: "p4p_server"
+    type: "interface.p4p_server"
+    pub:
+      - "in_interface_1"
+    sub:
+      - "get_all"
+      - "out_transformer"
+      - "in_interface_0"
+    module_args: None
+    config:
+      EPICS_PVA_NAME_SERVERS: "localhost:5075"
+      variables:
+        ML:LOCAL:TEST_A:
+          proto: pva
+          name: ML:LOCAL:TEST_A
+        ML:LOCAL:TEST_B:
+          proto: pva
+          name: ML:LOCAL:TEST_B
+        ML:LOCAL:TEST_S:
+          proto: pva
+          name: ML:LOCAL:TEST_S
+
+  # ── FastAPI HTTP interface ───────────────────────────────────────────
+  fastapi_server:
+    name: "fastapi_server"
+    type: "interface.fastapi_server"
+    pub:
+      - "in_interface_0"
+    sub:
+      - "get_all"
+      - "out_transformer"
+      - "in_interface_1"
+    module_args: None
+    config:
+      name: "fastapi_server"
+      host: "0.0.0.0"
+      port: 8001
+      start_server: true
+      wait_for_server_start: true
+      startup_timeout_s: 5.0
+      input_queue_max: 1000
+      output_queue_max: 1000
+      variables:
+        ML:LOCAL:TEST_A:
+          mode: in
+          type: scalar
+          default: 0.0
+        ML:LOCAL:TEST_B:
+          mode: in
+          type: scalar
+          default: 0.0
+        ML:LOCAL:TEST_S:
+          mode: out
+          type: scalar
+          default: 0.0
+
+  # ── Input transformer ───────────────────────────────────────────────
+  input_transformer:
+    name: "input_transformer"
+    type: "transformer.SimpleTransformer"
+    pub: "in_transformer"
+    sub: 
+      - "in_interface_0"
+      - "in_interface_1"
+    module_args: None
+    config:
+      symbols:
+        - "ML:LOCAL:TEST_A"
+        - "ML:LOCAL:TEST_B"
+      variables:
+        x:
+          formula: "ML:LOCAL:TEST_A"
+        y:
+          formula: "ML:LOCAL:TEST_B"
+
+  # ── Model ────────────────────────────────────────────────────────────
+  model:
+    name: "model"
+    type: "model.SimpleModel"
+    pub: "model"
+    sub: "in_transformer"
+    module_args: None
+    config:
+      type: "LocalModelGetter"
+      args:
+        model_path: "examples/base/local/model_definition_event_driven.py"
+        model_factory_class: "ModelFactory"
+      variables:
+        max:
+          type: "scalar"
+
+  # ── Output transformer ──────────────────────────────────────────────
+  output_transformer:
+    name: "output_transformer"
+    type: "transformer.SimpleTransformer"
+    pub: "out_transformer"
+    sub: "model"
+    module_args:
+      unpack_data: True
+    config:
+      symbols:
+        - "output"
+      variables:
+        ML:LOCAL:TEST_S:
+          formula: "output"
