@@ -1,0 +1,86 @@
+# Event-driven deployment example
+# Instead of polling at a fixed rate, the pipeline triggers automatically
+# whenever a monitored PV value changes.
+#
+# Usage:
+#   pl run --config ./examples/base/local/deployment_config_event_driven.yaml
+#
+# Test by writing to a PV:
+#   pvput ML:LOCAL:TEST_A 3.14
+#   pvput ML:LOCAL:TEST_B 2.71
+#
+# The model will only evaluate when an input PV changes, rather than
+# every N seconds.
+
+deployment:
+  type: "event_driven"
+  min_monitor_interval: 0.01   # throttle: at most one update per PV every 100 ms
+  on_change_only: true         # skip updates where the value hasn't changed
+
+modules:
+  p4p_server:
+    name: "p4p_server"
+    type: "interface.p4p_server"
+    pub:
+      - "in_interface"
+    sub:
+      - "get_all"
+      - "out_transformer"
+    module_args: None
+    config:
+      EPICS_PVA_NAME_SERVERS: "localhost:5075"
+      variables:
+        ML:LOCAL:TEST_B:
+          proto: pva
+          name: ML:LOCAL:TEST_B
+        ML:LOCAL:TEST_A:
+          proto: pva
+          name: ML:LOCAL:TEST_A
+        ML:LOCAL:TEST_S:
+          proto: pva
+          name: ML:LOCAL:TEST_S
+
+  input_transformer:
+    name: "input_transformer"
+    type: "transformer.SimpleTransformer"
+    pub: "in_transformer"
+    sub: "in_interface"
+    module_args: None
+    config:
+      symbols:
+        - "ML:LOCAL:TEST_B"
+        - "ML:LOCAL:TEST_A"
+      variables:
+        x:
+          formula: "ML:LOCAL:TEST_A * 2 + 10"
+        y:
+          formula: "ML:LOCAL:TEST_B + 120"
+
+  model:
+    name: "model"
+    type: "model.SimpleModel"
+    pub: "model"
+    sub: "in_transformer"
+    module_args: None
+    config:
+      type: "LocalModelGetter"
+      args:
+        model_path: "examples/base/local/model_definition_event_driven.py"
+        model_factory_class: "ModelFactory"
+      variables:
+        max:
+          type: "scalar"
+
+  output_transformer:
+    name: "output_transformer"
+    type: "transformer.SimpleTransformer"
+    pub: "out_transformer"
+    sub: "model"
+    module_args:
+      unpack_data: True
+    config:
+      symbols:
+        - "output"
+      variables:
+        ML:LOCAL:TEST_S:
+          formula: "output"

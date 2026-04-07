@@ -18,6 +18,8 @@ class BaseDataInterface(ABC):
 
 
 class BaseInterface(ABC):
+    supports_monitor: bool = False
+
     @abstractmethod
     def __init__(self, config):
         pass

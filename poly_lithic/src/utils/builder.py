@@ -40,14 +40,23 @@ class Builder:
             logger.error(f'Error initializing configuration: {e}')
             raise e
 
-    def build(self) -> MessageBroker:
+    def build(self, trace_store=None) -> MessageBroker:
         """Build the model manager."""
 
         self.__build_observers()
-        self.__build_broker()
+        self.__build_broker(trace_store=trace_store)
 
         for name, observer in self.loaded_observers.items():
             self.broker.attach(observer, self.config.modules[name].sub)
+
+        # Validate event-driven compatibility
+        if self.config.deployment.type == 'event_driven':
+            for obs in self.get_input_interface_observers():
+                if not obs.interface.supports_monitor:
+                    raise ValueError(
+                        f'Interface {obs.interface.__class__.__name__} does not support '
+                        f'event-driven mode (supports_monitor=False)'
+                    )
 
         return self.broker
 
@@ -128,7 +137,18 @@ class Builder:
         self.loaded_observers = loaded_observers
         return None
 
-    def __build_broker(self):
+    def __build_broker(self, trace_store=None):
         """Build the message broker."""
-        self.broker = MessageBroker()
+        self.broker = MessageBroker(trace_store=trace_store)
         logger.debug(f'Built broker: {self.broker}')
+
+    def get_input_interface_observers(self) -> list[InterfaceObserver]:
+        """Return InterfaceObservers subscribed to 'get_all' (input interfaces)."""
+        input_observers = []
+        for name, observer in self.loaded_observers.items():
+            if isinstance(observer, InterfaceObserver):
+                sub = self.config.modules[name].sub
+                subs = [sub] if isinstance(sub, str) else (sub or [])
+                if 'get_all' in subs:
+                    input_observers.append(observer)
+        return input_observers

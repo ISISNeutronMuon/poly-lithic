@@ -119,7 +119,9 @@ def test_interface_observer_get_all(interface_observer):
 
     assert len(result) == 1
     assert result[0].topic == 'next_step'
-    assert result[0].value['test_scalar'] == {'value': 9.0}
+    assert result[0].value['test_scalar']['value'] == 9.0
+    # trace metadata is injected by InterfaceObserver.get_all
+    assert 'trace' in result[0].value['test_scalar'].get('metadata', {})
 
     np.testing.assert_array_equal(
         result[0].value['test_array']['value'], np.array([7.0, 8.0, 9.0])

@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poly-Lithic Trace Viewer</title>
+<style>
+  :root { --bg: #1e1e2e; --surface: #272738; --border: #3a3a50; --text: #e0e0e8; --dim: #888; --accent: #7aa2f7; --green: #9ece6a; --red: #f7768e; --yellow: #e0af68; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Consolas', 'Menlo', monospace; background: var(--bg); color: var(--text); min-height: 100vh; }
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  header h1 { font-size: 16px; color: var(--accent); white-space: nowrap; }
+  .conn { display: flex; align-items: center; gap: 8px; }
+  .conn input { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 4px; font-family: inherit; font-size: 13px; }
+  .conn input#host { width: 180px; }
+  .conn input#port { width: 70px; }
+  .conn input#limit { width: 60px; }
+  button { background: var(--accent); color: #1e1e2e; border: none; padding: 6px 14px; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 600; }
+  button:hover { opacity: 0.85; }
+  button.secondary { background: var(--border); color: var(--text); }
+  .status { font-size: 12px; margin-left: 8px; }
+  .status.ok { color: var(--green); }
+  .status.err { color: var(--red); }
+  main { display: flex; height: calc(100vh - 52px); }
+  .panel { overflow-y: auto; padding: 16px; }
+  .list-panel { width: 55%; border-right: 1px solid var(--border); }
+  .detail-panel { width: 45%; }
+  .controls { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+  .auto-label { font-size: 12px; color: var(--dim); display: flex; align-items: center; gap: 4px; }
+  .auto-label input { accent-color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; padding: 6px 8px; border-bottom: 2px solid var(--border); color: var(--dim); font-weight: 600; position: sticky; top: 0; background: var(--bg); }
+  td { padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: top; max-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  td.vals-cell { white-space: normal; word-break: break-all; }
+  tr { cursor: pointer; }
+  tr:hover td { background: var(--surface); }
+  tr.selected td { background: #2a2a4a; }
+  .tag { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 11px; margin-right: 3px; }
+  .tag-topic { background: #2d3a5a; color: var(--accent); }
+  .tag-key { background: #2a3a2a; color: var(--green); }
+  .val { color: var(--yellow); font-size: 11px; margin-left: 2px; }
+  .detail-panel h2 { font-size: 14px; color: var(--accent); margin-bottom: 12px; }
+  .detail-section { margin-bottom: 16px; }
+  .detail-section h3 { font-size: 12px; color: var(--dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .field { display: flex; gap: 8px; padding: 3px 0; font-size: 12px; }
+  .field-label { color: var(--dim); min-width: 110px; }
+  .field-value { word-break: break-all; }
+  .empty { color: var(--dim); font-size: 13px; text-align: center; padding: 40px; }
+  .mono { font-family: inherit; color: var(--yellow); }
+  .id-short { color: var(--yellow); }
+  .flow-graph-wrap { position: relative; border: 1px solid var(--border); border-radius: 6px; background: #1a1a28; overflow: auto; margin-top: 4px; }
+  .flow-graph-wrap canvas { display: block; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>&#9656; Trace Viewer</h1>
+  <div class="conn">
+    <input id="host" value="localhost" placeholder="host">
+    <span style="color:var(--dim)">:</span>
+    <input id="port" value="8100" placeholder="port" type="number">
+    <input id="limit" value="200" placeholder="limit" type="number" title="Max traces to fetch">
+    <button onclick="fetchTraces()">Fetch</button>
+    <button class="secondary" onclick="checkHealth()">Health</button>
+    <label class="auto-label"><input type="checkbox" id="autoRefresh" onchange="toggleAuto()"> Auto 2s</label>
+    <span id="status" class="status"></span>
+  </div>
+</header>
+
+<main>
+  <div class="list-panel panel" id="listPanel">
+    <div class="controls">
+      <input id="filter" placeholder="Filter by topic, source, key, trace_id…" style="flex:1; background:var(--bg); border:1px solid var(--border); color:var(--text); padding:5px 8px; border-radius:4px; font-family:inherit; font-size:12px;">
+    </div>
+    <table>
+      <thead><tr><th>Time</th><th>Trace ID</th><th>Topic</th><th>Source</th><th>Values</th><th>Parents</th></tr></thead>
+      <tbody id="traceBody"></tbody>
+    </table>
+    <div id="emptyList" class="empty">Enter server address and click Fetch</div>
+  </div>
+  <div class="detail-panel panel" id="detailPanel">
+    <div id="emptyDetail" class="empty">Select a trace to view details</div>
+    <div id="detailContent" style="display:none"></div>
+  </div>
+</main>
+
+<script>
+let allTraces = [];
+let autoTimer = null;
+
+function baseUrl() {
+  const h = document.getElementById('host').value.trim() || 'localhost';
+  const p = document.getElementById('port').value.trim() || '8100';
+  return `http://${h}:${p}`;
+}
+
+function setStatus(msg, ok) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = 'status ' + (ok ? 'ok' : 'err');
+  if (ok) setTimeout(() => el.textContent = '', 4000);
+}
+
+function shortId(id) { return id ? id.substring(0, 8) : '—'; }
+
+function fmtVal(v) {
+  if (v === null || v === undefined) return '—';
+  if (typeof v === 'number') return Number.isInteger(v) ? v.toString() : v.toPrecision(6);
+  if (Array.isArray(v)) {
+    if (v.length <= 6) return '[' + v.map(fmtVal).join(', ') + ']';
+    return '[' + v.slice(0, 3).map(fmtVal).join(', ') + ' … ' + v.slice(-2).map(fmtVal).join(', ') + '] (' + v.length + ')';
+  }
+  if (typeof v === 'object') return JSON.stringify(v);
+  return String(v);
+}
+
+function fmtKeyVals(t) {
+  const vv = t.variable_values || {};
+  return (t.variable_keys || []).map(k => {
+    const val = k in vv ? '<span class="val">=' + fmtVal(vv[k]) + '</span>' : '';
+    return '<span class="tag tag-key">' + k + val + '</span>';
+  }).join(' ') || '—';
+}
+
+function fmtTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts * 1000);
+  return d.toLocaleTimeString('en-GB', { hour12: false }) + '.' + String(d.getMilliseconds()).padStart(3, '0');
+}
+
+async function checkHealth() {
+  try {
+    const r = await fetch(baseUrl() + '/health');
+    const j = await r.json();
+    setStatus(j.status === 'ok' ? 'Connected' : 'Unexpected', j.status === 'ok');
+  } catch (e) { setStatus('Unreachable: ' + e.message, false); }
+}
+
+async function fetchTraces() {
+  const limit = document.getElementById('limit').value || 200;
+  try {
+    const r = await fetch(baseUrl() + '/traces?limit=' + limit);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    allTraces = await r.json();
+    allTraces.reverse();
+    renderList();
+    setStatus(`${allTraces.length} traces`, true);
+  } catch (e) { setStatus('Fetch failed: ' + e.message, false); }
+}
+
+function renderList() {
+  const filter = (document.getElementById('filter').value || '').toLowerCase();
+  const tbody = document.getElementById('traceBody');
+  const empty = document.getElementById('emptyList');
+  const filtered = allTraces.filter(t => {
+    if (!filter) return true;
+    const hay = [t.trace_id, t.topic, t.source, ...(t.variable_keys || []), ...(t.parent_trace_ids || [])].join(' ').toLowerCase();
+    return hay.includes(filter);
+  });
+  if (!filtered.length) { tbody.innerHTML = ''; empty.style.display = ''; empty.textContent = allTraces.length ? 'No matches' : 'No traces'; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = filtered.map(t => `
+    <tr onclick="showDetail('${t.trace_id}')" id="row-${t.trace_id}">
+      <td>${fmtTime(t.timestamp)}</td>
+      <td class="id-short" title="${t.trace_id}">${shortId(t.trace_id)}</td>
+      <td><span class="tag tag-topic">${t.topic || '—'}</span></td>
+      <td title="${t.source}">${(t.source || '').split('.').pop() || '—'}</td>
+      <td class="vals-cell">${fmtKeyVals(t)}</td>
+      <td class="id-short">${(t.parent_trace_ids || []).map(shortId).join(', ') || '—'}</td>
+    </tr>`).join('');
+}
+
+async function showDetail(traceId) {
+  document.querySelectorAll('#traceBody tr.selected').forEach(r => r.classList.remove('selected'));
+  const row = document.getElementById('row-' + traceId);
+  if (row) row.classList.add('selected');
+
+  const dp = document.getElementById('detailContent');
+  const de = document.getElementById('emptyDetail');
+  dp.style.display = ''; de.style.display = 'none';
+
+  const rec = allTraces.find(t => t.trace_id === traceId);
+  if (!rec) { dp.innerHTML = '<div class="empty">Not found locally</div>'; return; }
+
+  let chain = [];
+  dp.innerHTML = buildDetailHtml(rec);
+
+  try {
+    const r = await fetch(baseUrl() + '/traces/' + traceId + '/lineage');
+    if (r.ok) { chain = await r.json(); }
+  } catch (e) { /* lineage unavailable */ }
+
+  dp.innerHTML = buildDetailHtml(rec);
+  if (chain.length) drawFlowGraph(chain, traceId);
+}
+
+function buildDetailHtml(rec) {
+  return `
+    <div class="detail-section">
+      <h2>Trace Detail</h2>
+      <div class="field"><span class="field-label">Trace ID</span><span class="field-value mono">${rec.trace_id}</span></div>
+      <div class="field"><span class="field-label">Topic</span><span class="field-value">${rec.topic}</span></div>
+      <div class="field"><span class="field-label">Source</span><span class="field-value">${rec.source}</span></div>
+      <div class="field"><span class="field-label">Timestamp</span><span class="field-value">${fmtTime(rec.timestamp)} <span style="color:var(--dim)">(${rec.timestamp})</span></span></div>
+      <div class="field"><span class="field-label">Variables</span><span class="field-value">${fmtKeyVals(rec)}</span></div>
+      <div class="field"><span class="field-label">Parent IDs</span><span class="field-value">${(rec.parent_trace_ids||[]).map(p=>'<span class="mono" style="cursor:pointer" onclick="showDetail(\''+p+'\')">'+p+'</span>').join('<br>')||'(origin)'}</span></div>
+    </div>
+    <div class="detail-section">
+      <h3>Flow Graph</h3>
+      <div class="flow-graph-wrap"><canvas id="flowCanvas"></canvas></div>
+    </div>`;
+}
+
+function toggleAuto() {
+  if (document.getElementById('autoRefresh').checked) {
+    fetchTraces();
+    autoTimer = setInterval(fetchTraces, 2000);
+  } else { clearInterval(autoTimer); autoTimer = null; }
+}
+
+document.getElementById('filter').addEventListener('input', renderList);
+
+/* ========== Flow Graph (canvas DAG) ========== */
+
+const FLOW = {
+  nodeW: 340, nodeH: 90, padX: 50, padY: 44, marginTop: 28, marginLeft: 28,
+  radius: 10, font: '11.5px Consolas, Menlo, monospace',
+  colors: { bg: '#1a1a28', node: '#22223a', border: '#3a3a50', text: '#e0e0e8',
+            dim: '#777', accent: '#7aa2f7', green: '#9ece6a', yellow: '#e0af68',
+            arrow: '#4a4a6a', highlight: '#7aa2f7', topicBg: '#2d3a5a' }
+};
+
+let flowNodeRects = []; // [{x,y,w,h,id}] for click detection
+
+/** Extract a clean class name from the Observer.__str__ output */
+function cleanSource(src) {
+  if (!src) return '?';
+  // "<TransformerObserver object at 0x...>" → "TransformerObserver"
+  let m = src.match(/^<?\s*(\w+)\s+object/i);
+  if (m) return m[1];
+  // "module.ClassName" → "ClassName"
+  const parts = src.split('.');
+  return parts[parts.length - 1] || src;
+}
+
+function drawFlowGraph(chain, currentId) {
+  const canvas = document.getElementById('flowCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+
+  // Build lookup & compute depth (layer) via BFS from roots
+  const byId = {};
+  chain.forEach(n => byId[n.trace_id] = n);
+  const childrenOf = {}; // parent_id -> [child_id]
+  chain.forEach(n => {
+    (n.parent_trace_ids || []).forEach(pid => {
+      if (pid in byId) {
+        if (!childrenOf[pid]) childrenOf[pid] = [];
+        childrenOf[pid].push(n.trace_id);
+      }
+    });
+  });
+
+  // Roots = nodes with no parents in the set
+  const roots = chain.filter(n => !(n.parent_trace_ids || []).some(p => p in byId));
+  const depth = {};
+  const queue = roots.map(r => { depth[r.trace_id] = 0; return r.trace_id; });
+  while (queue.length) {
+    const id = queue.shift();
+    (childrenOf[id] || []).forEach(cid => {
+      const d = (depth[id] || 0) + 1;
+      if (!(cid in depth) || depth[cid] < d) { depth[cid] = d; queue.push(cid); }
+    });
+  }
+  chain.forEach(n => { if (!(n.trace_id in depth)) depth[n.trace_id] = 0; });
+
+  // Group by layer
+  const layers = {};
+  chain.forEach(n => {
+    const d = depth[n.trace_id];
+    if (!layers[d]) layers[d] = [];
+    layers[d].push(n);
+  });
+  const maxLayer = Math.max(...Object.keys(layers).map(Number));
+
+  // Canvas size
+  const maxNodesInRow = Math.max(...Object.values(layers).map(r => r.length));
+  const canvasW = FLOW.marginLeft * 2 + maxNodesInRow * FLOW.nodeW + (maxNodesInRow - 1) * FLOW.padX;
+  const canvasH = FLOW.marginTop * 2 + (maxLayer + 1) * FLOW.nodeH + maxLayer * FLOW.padY;
+
+  // Assign positions — center each row horizontally
+  const pos = {};
+  for (let d = 0; d <= maxLayer; d++) {
+    const row = layers[d] || [];
+    const rowW = row.length * FLOW.nodeW + (row.length - 1) * FLOW.padX;
+    const offsetX = (canvasW - rowW) / 2;
+    row.forEach((n, i) => {
+      pos[n.trace_id] = {
+        x: offsetX + i * (FLOW.nodeW + FLOW.padX),
+        y: FLOW.marginTop + d * (FLOW.nodeH + FLOW.padY)
+      };
+    });
+  }
+
+  canvas.style.width = canvasW + 'px';
+  canvas.style.height = canvasH + 'px';
+  canvas.width = canvasW * dpr;
+  canvas.height = canvasH * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  // Clear
+  ctx.fillStyle = FLOW.colors.bg;
+  ctx.fillRect(0, 0, canvasW, canvasH);
+
+  // Draw arrows (behind nodes)
+  chain.forEach(n => {
+    const to = pos[n.trace_id];
+    (n.parent_trace_ids || []).forEach(pid => {
+      if (!(pid in pos)) return;
+      const from = pos[pid];
+      const x1 = from.x + FLOW.nodeW / 2;
+      const y1 = from.y + FLOW.nodeH;
+      const x2 = to.x + FLOW.nodeW / 2;
+      const y2 = to.y;
+      // Line
+      ctx.strokeStyle = FLOW.colors.arrow;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      const cy = (y1 + y2) / 2;
+      ctx.bezierCurveTo(x1, cy, x2, cy, x2, y2);
+      ctx.stroke();
+      // Arrowhead
+      drawArrowhead(ctx, x2, y2, x2 - x1, y2 - cy);
+    });
+  });
+
+  // Draw nodes
+  flowNodeRects = [];
+  const pad = 12;
+  chain.forEach(n => {
+    const p = pos[n.trace_id];
+    const isCurrent = n.trace_id === currentId;
+    const W = FLOW.nodeW, H = FLOW.nodeH;
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    roundRect(ctx, p.x + 2, p.y + 2, W, H, FLOW.radius);
+    ctx.fill();
+
+    // Box
+    ctx.fillStyle = FLOW.colors.node;
+    ctx.strokeStyle = isCurrent ? FLOW.colors.highlight : FLOW.colors.border;
+    ctx.lineWidth = isCurrent ? 2.5 : 1;
+    roundRect(ctx, p.x, p.y, W, H, FLOW.radius);
+    ctx.fill(); ctx.stroke();
+
+    ctx.textBaseline = 'top';
+
+    // Row 1: Class name (bold, left) — trace ID (right)
+    const label = cleanSource(n.source);
+    ctx.font = 'bold 13px Consolas, Menlo, monospace';
+    ctx.fillStyle = FLOW.colors.accent;
+    ctx.fillText(label, p.x + pad, p.y + pad);
+
+    ctx.font = FLOW.font;
+    ctx.fillStyle = FLOW.colors.yellow;
+    const idText = shortId(n.trace_id);
+    const idW = ctx.measureText(idText).width;
+    ctx.fillText(idText, p.x + W - pad - idW, p.y + pad + 1);
+
+    // Row 2: Topic pill
+    const topic = n.topic || '';
+    ctx.font = '10.5px Consolas, Menlo, monospace';
+    const topicW = ctx.measureText(topic).width + 10;
+    const topicY = p.y + pad + 18;
+    ctx.fillStyle = FLOW.colors.topicBg;
+    roundRect(ctx, p.x + pad, topicY, topicW, 16, 3);
+    ctx.fill();
+    ctx.fillStyle = FLOW.colors.accent;
+    ctx.fillText(topic, p.x + pad + 5, topicY + 3);
+
+    // Time next to topic
+    ctx.fillStyle = FLOW.colors.dim;
+    const timeText = fmtTime(n.timestamp);
+    const timeW = ctx.measureText(timeText).width;
+    ctx.fillText(timeText, p.x + W - pad - timeW, topicY + 3);
+
+    // Row 3: Variable values (green)
+    ctx.font = FLOW.font;
+    ctx.fillStyle = FLOW.colors.green;
+    const vv = n.variable_values || {};
+    const keys = n.variable_keys || [];
+    const maxChars = Math.floor((W - pad * 2) / 6.8);
+    let valLine = keys.map(k => k + (k in vv ? '=' + fmtVal(vv[k]) : '')).join('   ');
+    if (valLine.length > maxChars) valLine = valLine.substring(0, maxChars - 1) + '…';
+    ctx.fillText(valLine, p.x + pad, p.y + pad + 52);
+
+    flowNodeRects.push({ x: p.x, y: p.y, w: W, h: H, id: n.trace_id });
+  });
+
+  // Click handler
+  canvas.onclick = function(e) {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    for (const nr of flowNodeRects) {
+      if (mx >= nr.x && mx <= nr.x + nr.w && my >= nr.y && my <= nr.y + nr.h) {
+        showDetail(nr.id);
+        return;
+      }
+    }
+  };
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function drawArrowhead(ctx, x, y, dx, dy) {
+  const len = Math.sqrt(dx * dx + dy * dy) || 1;
+  const ux = dx / len, uy = dy / len;
+  const size = 7;
+  ctx.fillStyle = FLOW.colors.arrow;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x - size * ux + size * 0.4 * uy, y - size * uy - size * 0.4 * ux);
+  ctx.lineTo(x - size * ux - size * 0.4 * uy, y - size * uy + size * 0.4 * ux);
+  ctx.closePath();
+  ctx.fill();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.activeElement.closest('.conn')) fetchTraces();
+});
+</script>
+</body>
+</html>

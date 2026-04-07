@@ -1099,21 +1099,3 @@ See the [local example notebook](./examples/base/simple_model_local.ipynb) for m
 
 #### Example Model - MLFLow Model
 See the [MLFlow example notebook](./examples/base/simple_model_mlflow.ipynb) for more details.
-
-
-## Roadmap
-
-| Feature / Task                                | Timeline     | Priority | Status        |
-|-----------------------------------------------|--------------|----------|---------------|
-| 🖌️ 🎨 **Make logo**                            | 1–3 Months   | 🥇       | Compelte! |
-| 🔌 🧩 **Plugin System for Modules**                      | 1–3 Months   | 🥇       | Complete! |
-| 🧠 🔧 **Lume-Model Integration**               | 1–3 Months   | 🥇       | ✅ Complete |
-| ⚡ 🔄 **Event driven mode**                    | 1-3 Months   | 🥈       | 🚧 In Progress     |
-| 🌐 🔌 **FastAPI REST Interface**                | 1–3 Months   | 🥇       | ✅ Complete |
-| 🔗 📡 **Job trace propagation across broker**   | 1–3 Months   | 🥈       | ⏳ Planned     |
-| 📦 🤖 **MLflow 3.x Support**                   | 6–12 Months   | 🥇       | ⏳ Planned     |
-| 🌐 🚀 **Move to `gh-pages`**                   | 1–3 Months   | 🥈       | 🚧 In Progress |
-| 🔗 🧪 **p4p4isis Interface**                   | 6–12 Months  | 🥉       | ⏳ Planned     |
-| 📊 🧭 **Time Series Aggregation**              | 3–6 Months   | 🥉       | ⏳ Planned     |
-| 📈 🔍 **Model Evaluator Module**               | 3–6 Months   | 🥉       | ⏳ Planned     |
-| 🔁 🔧 **Model Retrainer Module**               | 6–12 Months  | 🥈       | ⏳ Planned     |

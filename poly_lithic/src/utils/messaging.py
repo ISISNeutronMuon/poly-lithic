@@ -8,6 +8,9 @@ from pydantic import (
     computed_field,
 )
 import time
+import threading
+import collections
+from uuid import uuid4
 from poly_lithic.src.logging_utils import get_logger
 from poly_lithic.src.transformers import BaseTransformer
 from poly_lithic.src.interfaces import BaseInterface
@@ -61,6 +64,9 @@ class Message(BaseModel):
     timestamp: float = Field(default_factory=time.time)
     # optional
     allow_unsafe: Optional[bool] = False
+    # tracing fields
+    trace_id: str = Field(default_factory=lambda: str(uuid4()))
+    parent_trace_ids: list[str] = Field(default_factory=list)
 
     @field_validator('topic')
     @classmethod
@@ -146,13 +152,15 @@ class Observer(ABC):
 
 
 class MessageBroker:
-    def __init__(self):
+    def __init__(self, trace_store=None):
         """initialize the message broker"""
         self._observers: Dict[str, list[Observer]] = {}
         self._stats = {}
         self._stats_cnt = {}
-        self.queue = []
+        self.queue = collections.deque()
+        self._queue_lock = threading.Lock()
         self.last_update = time.time()
+        self.trace_store = trace_store
 
     def attach(self, observer: Observer, topic: str | list[str]) -> None:
         """add observer to topic"""
@@ -182,6 +190,9 @@ class MessageBroker:
     # @profileit
     def notify(self, message: Message) -> None:
         """notify all observers of a message"""
+        if self.trace_store is not None:
+            self.trace_store.record(message)
+
         if message.topic in self._observers:
             # logger.debug(f"notifying observers of {message}")
 
@@ -200,10 +211,12 @@ class MessageBroker:
                 if result is not None:
                     # if list of messages
                     if isinstance(result, list):
-                        for r in result:
-                            self.queue.append(r)
+                        with self._queue_lock:
+                            for r in result:
+                                self.queue.append(r)
                     else:
-                        self.queue.append(result)
+                        with self._queue_lock:
+                            self.queue.append(result)
 
             if time.time() - self.last_update > 1:
                 self.last_update = time.time()
@@ -237,12 +250,12 @@ class MessageBroker:
 
     def parse_queue(self):
         """parse the queue and notify observers of each message"""
-        queue_snapshot = self.queue.copy()
+        with self._queue_lock:
+            queue_snapshot = list(self.queue)
+            self.queue.clear()
         for message in queue_snapshot:
             self.notify(message)
-            self.queue.remove(message)
             logger.debug(f'queue length: {len(self.queue)}')
-            # logger.debug(f"queue: {self.queue}")
 
 
 class TransformerObserver(Observer):
@@ -255,6 +268,12 @@ class TransformerObserver(Observer):
         self.unpack_output = unpack_output
 
     def update(self, message: Message) -> Message | list[Message]:
+        # Snapshot input metadata before transformer strips it
+        input_meta = {}
+        for k, v in message.value.items():
+            if isinstance(v, dict) and 'metadata' in v:
+                input_meta[k] = v['metadata']
+
         for key, value in message.value.items():
             self.transformer.handler(key, value)
 
@@ -263,12 +282,44 @@ class TransformerObserver(Observer):
             message_dict = {}
             for key, value in values.items():
                 if isinstance(value, dict) and 'value' in value:
-                    message_dict[key] = value
+                    # Shallow-copy to avoid mutating transformer's internal
+                    # state (latest_input_struct) during trace injection.
+                    message_dict[key] = {**value}
+                    if 'metadata' in value:
+                        message_dict[key]['metadata'] = {**value['metadata']}
                 else:
                     message_dict[key] = {'value': value}
+                # Re-attach input metadata if this key had it
+                if key in input_meta:
+                    existing_meta = message_dict[key].get('metadata', {})
+                    existing_meta.update(input_meta[key])
+                    message_dict[key]['metadata'] = existing_meta
 
             self.transformer.updated = False
-            return Message(topic=self.topic, source=str(self), value=message_dict)
+
+            # Aggregate trace_ids from ALL contributing inputs,
+            # not just the triggering message.
+            parent_ids = {message.trace_id}
+            input_structs = getattr(self.transformer, 'latest_input_struct', {})
+            for struct in (input_structs or {}).values():
+                if isinstance(struct, dict):
+                    trace_info = (struct.get('metadata') or {}).get('trace') or {}
+                    tid = trace_info.get('trace_id')
+                    if tid:
+                        parent_ids.add(tid)
+
+            out_msg = Message(
+                topic=self.topic,
+                source=str(self),
+                value=message_dict,
+                parent_trace_ids=list(parent_ids),
+            )
+            # Inject trace_id into each variable struct metadata
+            for key in out_msg.value:
+                if isinstance(out_msg.value[key], dict):
+                    meta = out_msg.value[key].setdefault('metadata', {})
+                    meta['trace'] = {'trace_id': out_msg.trace_id}
+            return out_msg
 
 
 class InterfaceObserver(Observer):
@@ -309,7 +360,15 @@ class InterfaceObserver(Observer):
 
             logger.debug(f'updating {self}')
             if os.environ['PUBLISH'] == 'True':
-                self.interface.put_many(message.value)
+                # Strip internal metadata before writing to the interface
+                # (e.g. p4p NTScalar doesn't have a 'metadata' field)
+                clean = {}
+                for k, v in message.value.items():
+                    if isinstance(v, dict) and 'metadata' in v:
+                        clean[k] = {fk: fv for fk, fv in v.items() if fk != 'metadata'}
+                    else:
+                        clean[k] = v
+                self.interface.put_many(clean)
             else:
                 logger.warning(
                     'PUBLISH is set to False, this will not publish to the interface'
@@ -337,7 +396,13 @@ class InterfaceObserver(Observer):
             if value is not None:
                 output_dict[key] = value
 
-        messages.append(Message(topic=self.topic, source=str(self), value=output_dict))
+        msg = Message(topic=self.topic, source=str(self), value=output_dict)
+        # Inject trace_id into each variable struct metadata (origin — no parent)
+        for key in msg.value:
+            if isinstance(msg.value[key], dict):
+                meta = msg.value[key].setdefault('metadata', {})
+                meta['trace'] = {'trace_id': msg.trace_id}
+        messages.append(msg)
         return messages
 
         # if self.last_get_all is not None:
@@ -380,6 +445,47 @@ class InterfaceObserver(Observer):
         if not isinstance(message.value, dict):
             raise ValueError('message value must be a dictionary')
         self.interface.put_many(message.value)
+
+    def start_monitors(self, broker, min_interval: float = 0.0, on_change_only: bool = False):
+        """Start PV monitors that push updates into the broker queue (event-driven mode).
+
+        Args:
+            broker: MessageBroker instance to push messages into.
+            min_interval: Minimum seconds between updates per PV (throttle).
+            on_change_only: When True, skip updates where the value hasn't changed.
+        """
+        last_fire_time = {}
+        last_value = {}
+        self._monitors = []
+
+        def _make_handler(pv_name):
+            def handler(value):
+                now = time.time()
+                # Throttle
+                if min_interval > 0:
+                    if pv_name in last_fire_time and (now - last_fire_time[pv_name]) < min_interval:
+                        return
+                # Dedup
+                if on_change_only:
+                    if pv_name in last_value and last_value[pv_name] == value:
+                        return
+                    last_value[pv_name] = value
+
+                last_fire_time[pv_name] = now
+                val_struct = {'value': value}
+                msg = Message(
+                    topic=self.topic,
+                    source=str(self),
+                    value={pv_name: val_struct},
+                )
+                val_struct.setdefault('metadata', {})['trace'] = {'trace_id': msg.trace_id}
+                with broker._queue_lock:
+                    broker.queue.append(msg)
+            return handler
+
+        for pv_name in self.interface.get_inputs():
+            mon = self.interface.monitor(_make_handler(pv_name), pv_name)
+            self._monitors.append(mon)
 
 
 class MockModel:
@@ -470,6 +576,12 @@ class ModelObserver(Observer):
         messages = []
         logger.debug(f'updating {self}')
 
+        # Snapshot input metadata before unpacking
+        input_meta = {}
+        for k, v in message.value.items():
+            if isinstance(v, dict) and 'metadata' in v:
+                input_meta[k] = v['metadata']
+
         if self.unpack_input:
             # logger.debug(f"unpacking input: {message.value}")
             value = {v: message.value[v]['value'] for v in message.value}
@@ -491,7 +603,27 @@ class ModelObserver(Observer):
             # logger.debug(f"not packing output passign raw: {pred}")
             output = pred
 
-        messages.append(Message(topic=self.topic, source=str(self), value=output))
+        # Aggregate trace_ids from ALL input variables, not just
+        # the triggering message.
+        parent_ids = {message.trace_id}
+        for meta in input_meta.values():
+            trace_info = (meta.get('trace') or {})
+            tid = trace_info.get('trace_id')
+            if tid:
+                parent_ids.add(tid)
+
+        out_msg = Message(
+            topic=self.topic,
+            source=str(self),
+            value=output,
+            parent_trace_ids=list(parent_ids),
+        )
+        # Inject trace_id and merge input metadata into each output variable struct
+        for key in out_msg.value:
+            if isinstance(out_msg.value[key], dict):
+                meta = out_msg.value[key].setdefault('metadata', {})
+                meta['trace'] = {'trace_id': out_msg.trace_id}
+        messages.append(out_msg)
 
         return messages
 

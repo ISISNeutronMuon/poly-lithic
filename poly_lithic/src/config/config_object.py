@@ -30,6 +30,17 @@ class ModuleConfig(pydantic.BaseModel):
 class DeploymentConfig(pydantic.BaseModel):
     type: str
     rate: Optional[Union[float, int]] = None
+    min_monitor_interval: float = 0.0
+    on_change_only: bool = False
+    trace_buffer_size: int = 10000
+    trace_port: int = 8100
+
+    @pydantic.field_validator('type')
+    def validate_type(cls, v):
+        allowed = {'continuous', 'event_driven'}
+        if v not in allowed:
+            raise ValueError(f'deployment type must be one of {allowed}, got {v!r}')
+        return v
 
 
 class ConfigObject(pydantic.BaseModel):
