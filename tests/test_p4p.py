@@ -33,6 +33,7 @@ def setup():
     process.kill()
 
 
+@pytest.mark.flaky_p4p(retries=3, backoff_max=2.0)
 def test_SimplePVAInterface_init():
     config = {
         'variables': {

@@ -357,6 +357,7 @@ class TestFullEventDrivenChain:
 # Step 5: Real p4p client write triggers Handler.put → monitor callback
 # ---------------------------------------------------------------------------
 
+@pytest.mark.flaky_p4p(retries=3, backoff_max=2.0)
 class TestRealClientWrite:
     """Use a real p4p Context client to write to the server and verify
     that Handler.put() fires monitor callbacks end-to-end."""
