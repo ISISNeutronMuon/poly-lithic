@@ -24,7 +24,7 @@ modules:
 {% if var.type is defined and var.type != "scalar" %}
           type: {{ var.type }}
 {% endif %}
-{% if var.default_value is defined %}
+{% if var.default_value is defined and var.type | default("scalar") != "image" %}
           default: {{ var.default_value }}
 {% endif %}
 {% if var.type | default("scalar") in ["waveform", "array"] and var.length is defined %}
@@ -51,7 +51,7 @@ modules:
 {% if var.type is defined and var.type != "scalar" %}
           type: {{ var.type }}
 {% endif %}
-{% if var.default_value is defined %}
+{% if var.default_value is defined and var.type | default("scalar") != "image" %}
           default: {{ var.default_value }}
 {% endif %}
 {% if var.type | default("scalar") in ["waveform", "array"] and var.length is defined %}
@@ -79,7 +79,7 @@ modules:
     module_args: None
     config:
       name: "fastapi_server"
-      host: "127.0.0.1"
+      host: "{{ fastapi_host | default('127.0.0.1') }}"
       port: 8000
       start_server: true
       wait_for_server_start: true
@@ -92,7 +92,11 @@ modules:
         {{ project_name | upper }}:{{ var.name }}:
           mode: in
           type: {{ var.type | default("scalar") }}
+{% if var.type | default("scalar") == "scalar" %}
           default: {{ var.default_value | default(0.0) }}
+{% elif var.type != "image" and var.default_value is defined %}
+          default: {{ var.default_value }}
+{% endif %}
 {% if var.type | default("scalar") in ["waveform", "array"] and var.length is defined %}
           length: {{ var.length }}
 {% elif var.type | default("scalar") == "image" and var.image_size is defined %}
@@ -116,7 +120,11 @@ modules:
         {{ project_name | upper }}:{{ var.name }}:
           mode: out
           type: {{ var.type | default("scalar") }}
+{% if var.type | default("scalar") == "scalar" %}
           default: {{ var.default_value | default(0.0) }}
+{% elif var.type != "image" and var.default_value is defined %}
+          default: {{ var.default_value }}
+{% endif %}
 {% if var.type | default("scalar") in ["waveform", "array"] and var.length is defined %}
           length: {{ var.length }}
 {% elif var.type | default("scalar") == "image" and var.image_size is defined %}
@@ -151,7 +159,7 @@ modules:
 {% if var.type is defined and var.type != "scalar" %}
           type: {{ var.type }}
 {% endif %}
-{% if var.default_value is defined %}
+{% if var.default_value is defined and var.type | default("scalar") != "image" %}
           default: {{ var.default_value }}
 {% endif %}
 {% if var.type | default("scalar") in ["waveform", "array"] and var.length is defined %}
@@ -178,7 +186,7 @@ modules:
 {% if var.type is defined and var.type != "scalar" %}
           type: {{ var.type }}
 {% endif %}
-{% if var.default_value is defined %}
+{% if var.default_value is defined and var.type | default("scalar") != "image" %}
           default: {{ var.default_value }}
 {% endif %}
 {% if var.type | default("scalar") in ["waveform", "array"] and var.length is defined %}

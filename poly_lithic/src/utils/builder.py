@@ -89,7 +89,7 @@ class Builder:
                 interface = InterfaceObserver(
                     interface_class(self.config.modules[module].config),
                     self.config.modules[module].pub,
-                    *args,
+                    **args,
                 )
                 loaded_observers[module] = interface
             elif module_type == 'transformer':
@@ -107,7 +107,7 @@ class Builder:
                 transformer = TransformerObserver(
                     transformer_class(self.config.modules[module].config),
                     self.config.modules[module].pub,
-                    *args,
+                    **args,
                 )
                 loaded_observers[module] = transformer
             elif module_type == 'model':
@@ -118,7 +118,7 @@ class Builder:
                 observer = ModelObserver(
                     config=self.config.modules[module].config,
                     topic=self.config.modules[module].pub,
-                    *args,
+                    **args,
                 )
                 loaded_observers[module] = observer
             else:

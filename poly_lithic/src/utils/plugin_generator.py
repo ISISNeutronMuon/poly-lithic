@@ -30,6 +30,7 @@ class PluginGenerator:
         email: str = '',
         description: str = '',
         output_dir: str = '.',
+        license: str = 'BSD-3-Clause',
     ) -> Path:
         """
         Generate a plugin project from templates.

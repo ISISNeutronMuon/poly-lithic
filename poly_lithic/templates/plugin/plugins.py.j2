@@ -46,8 +46,16 @@ class CustomInterface(BaseInterface):
         
         # For demonstration, we'll use a simple in-memory store
         self._data_store = {}
-    
-    def get(self, variable: str) -> Tuple[str, Dict[str, Any]]:
+
+    def get_inputs(self) -> list:
+        """Variables read on each clock tick (the 'get_all' topic)."""
+        return list(self.variable_list)
+
+    def get_outputs(self) -> list:
+        """Variables this interface can be written to."""
+        return list(self.variable_list)
+
+    def get(self, variable: str, **kwargs) -> Tuple[str, Dict[str, Any]]:
         """
         Get a variable value from the external system.
         
@@ -84,7 +92,7 @@ class CustomInterface(BaseInterface):
             "status": "OK"
         }
     
-    def put(self, variable: str, value: Any) -> Dict[str, Any]:
+    def put(self, variable: str, value: Any, **kwargs) -> Dict[str, Any]:
         """
         Set a variable value in the external system.
         
@@ -107,7 +115,7 @@ class CustomInterface(BaseInterface):
         self._data_store[variable] = value
         return {variable: value}
     
-    def get_many(self, variables: list) -> Dict[str, Dict[str, Any]]:
+    def get_many(self, variables: list, **kwargs) -> Dict[str, Dict[str, Any]]:
         """
         Get multiple variable values at once.
         
@@ -147,7 +155,7 @@ class CustomInterface(BaseInterface):
             }
         return results
     
-    def put_many(self, variable_values: Dict[str, Any]) -> Dict[str, Any]:
+    def put_many(self, variable_values: Dict[str, Any], **kwargs) -> Dict[str, Any]:
         """
         Set multiple variable values at once.
         
@@ -173,15 +181,19 @@ class CustomInterface(BaseInterface):
             self._data_store[variable] = value
         return variable_values
     
-    def monitor(self, variables: list, callback) -> None:
+    def monitor(self, callback, pv_name=None, **kwargs) -> None:
         """
         Monitor variables for changes and call callback when they change.
-        
+
+        Only used in event-driven deployments, which also require the class
+        attribute ``supports_monitor = True``.
+
         Args:
-            variables: List of variable names to monitor
-            callback: Function to call when variables change.
-                     Should accept (variable_name, value_dict) as arguments.
+            callback: Function to call when a variable changes. With pv_name
+                     (event-driven mode) it takes the new bare value.
+            pv_name: The single variable to monitor.
         """
+        variables = [pv_name] if pv_name else self.get_inputs()
         # TODO: Replace this with your actual monitoring logic
         # Example for subscription-based monitoring:
         # for variable in variables:
@@ -266,12 +278,25 @@ class CustomTransformer(BaseTransformer):
         
         # Example configuration
 
+        # updated and latest_transformed are read by the pipeline after handler()
         self.updated = False # this is mandatory, it will be made into a mandatory attribute in future versions
+        self.latest_input = {}
+        self.latest_transformed = {}
         self.scale = config.get('scale', 1.0)
         self.offset = config.get('offset', 0.0)
         self.input_vars = config.get('input_vars', [])
         self.output_vars = config.get('output_vars', [])
     
+    def handler(self, pv_name: str, value: Any) -> None:
+        """
+        Receive one input variable from the pipeline.
+
+        Called once per variable in each incoming message; store the value and
+        set self.latest_transformed / self.updated when a new output is ready.
+        """
+        self.latest_input[pv_name] = value['value'] if isinstance(value, dict) else value
+        self.latest_transformed = self.transform(dict(self.latest_input))
+
     def transform(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Transform input data.
@@ -351,7 +376,6 @@ class CustomModelGetter(ModelGetterBase):
                 - model_name: Optional model name for model registry
                 - version: Optional model version
         """
-        super().__init__(config)
         self.config = config
         self.model_path = config.get('model_path')
         self.model_type = config.get('model_type', 'pickle')
@@ -361,6 +385,17 @@ class CustomModelGetter(ModelGetterBase):
         # Example: self.registry_url = config.get('registry_url')
         # Example: self.credentials = config.get('credentials')
     
+    def get_model(self) -> Any:
+        """Return the model; called by poly-lithic when the model module loads."""
+        return self.load_model()
+
+    def get_requirements(self):
+        """Path to a requirements file, a list of requirements, or None.
+
+        Used by `pl run --requirements` to pip install the model's dependencies.
+        """
+        return self.config.get('requirements')
+
     def load_model(self) -> Any:
         """
         Load and return the model.

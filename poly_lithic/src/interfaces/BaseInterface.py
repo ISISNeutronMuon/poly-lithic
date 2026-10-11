@@ -19,6 +19,11 @@ class BaseDataInterface(ABC):
 
 class BaseInterface(ABC):
     supports_monitor: bool = False
+    # True if the interface implements monitor_jobs(handler) and wants each
+    # submitted job delivered as a single message in event-driven mode
+    supports_job_monitor: bool = False
+    # True if put_many should receive structs with their 'metadata' intact
+    accepts_metadata: bool = False
 
     @abstractmethod
     def __init__(self, config):

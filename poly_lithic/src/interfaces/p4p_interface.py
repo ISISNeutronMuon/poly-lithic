@@ -31,7 +31,6 @@ class SimplePVAInterface(BaseInterface):
     supports_monitor = True
 
     def __init__(self, config):
-        self.ctxt = Context('pva', nt=False)
         if 'EPICS_PVA_NAME_SERVERS' in os.environ:
             logger.warning(
                 f'EPICS_PVA_NAME_SERVERS: {os.environ["EPICS_PVA_NAME_SERVERS"]}'
@@ -46,6 +45,9 @@ class SimplePVAInterface(BaseInterface):
                 'EPICS_PVA_NAME_SERVERS not set in config or environment, using localhost:5075'
             )
             os.environ['EPICS_PVA_NAME_SERVERS'] = 'localhost:5075'
+
+        # the client reads EPICS_* from the environment when it is created
+        self.ctxt = Context('pva', nt=False)
 
         pv_dict = config['variables']
         self.in_list = []
@@ -206,25 +208,23 @@ class SimplePVAInterface(BaseInterface):
         if settings is None:
             return payload, False
 
+        value, has_value = self._payload_extract_value(payload)
+
+        # enforce control limits if configured, independently of alarms
+        if (
+            has_value
+            and settings['enforce_control_limits']
+            and settings['control'] is not None
+        ):
+            value = enforce_control_limits(value, settings['control'])
+            payload = self._payload_set_value(payload, value)
+
         has_explicit_alarm = self._payload_has_explicit_alarm(payload)
         if has_explicit_alarm:
             return payload, True
 
         if not settings['compute_alarm']:
             return payload, False
-
-        value, has_value = self._payload_extract_value(payload)
-
-        # enforce control limits if configured
-        if settings['enforce_control_limits'] and settings['control'] is not None:
-            value = enforce_control_limits(value, settings['control'])
-            coerced = self._coerce_client_value(value)
-            if isinstance(payload, dict):
-                payload['value'] = coerced
-            elif hasattr(payload, 'value'):
-                payload.value = coerced  # NT wrapper objects
-            else:
-                payload = coerced
 
         if not has_value:
             raise ValueError(f'{name}: compute_alarm requires payload with value')
@@ -258,6 +258,10 @@ class SimplePVAInterface(BaseInterface):
         output = {}
         # print(f"results: {results}")
         for raw, key in zip(results, data):
+            if isinstance(raw, Exception):
+                # throw=False returns the error in place of the value
+                logger.error(f'get_many: failed to read {key}: {raw!r}')
+                continue
             if isinstance(raw['value'], np.ndarray):
                 # if value has dimension
                 if 'dimension' in raw:

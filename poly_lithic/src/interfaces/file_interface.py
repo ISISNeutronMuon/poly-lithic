@@ -23,8 +23,11 @@ class h5dfInterface(BaseDataInterface):
                 yield key, f[key][()]
 
     def save(self, data, **kwargs):
-        with h5py.File(self.path, 'w') as f:
-            for key, value in data:
+        # append so earlier saves are kept; replace datasets being re-written
+        with h5py.File(self.path, 'a') as f:
+            for key, value in data.items():
+                if key in f:
+                    del f[key]
                 f.create_dataset(key, data=value)
 
     def monitor(self, handler, **kwargs):
