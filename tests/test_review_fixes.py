@@ -211,9 +211,9 @@ class TestBuilderModuleArgs:
         assert model.pack_output is False
         assert builder.loaded_observers['fastapi_server'].sanitise is False
 
-    def test_unknown_module_args_are_ignored(self, tmp_path, caplog):
+    def test_unknown_module_args_are_ignored(self, tmp_path, monkeypatch):
         """Generated configs use unpack_data, which no observer accepts."""
-        from poly_lithic.src.utils.builder import Builder
+        from poly_lithic.src.utils import builder as builder_module
 
         cfg = yaml.safe_load(open('./tests/pv_mapping.yaml'))
         # only the transformers: the p4p interface needs a network
@@ -229,11 +229,15 @@ class TestBuilderModuleArgs:
         path = tmp_path / 'config.yaml'
         path.write_text(yaml.safe_dump(cfg))
 
-        caplog.set_level(logging.WARNING)
-        Builder(str(path)).build()
-        assert (
-            "ignoring module_args not accepted by TransformerObserver: ['unpack_data']"
-            in (caplog.text)
+        # record directly: the shared logger may not propagate to caplog
+        warnings = []
+        monkeypatch.setattr(builder_module.logger, 'warning', warnings.append)
+        builder = builder_module.Builder(str(path))
+        builder.build()
+        assert set(builder.loaded_observers) == set(cfg['modules'])
+        assert any(
+            "not accepted by TransformerObserver: ['unpack_data']" in w
+            for w in warnings
         )
 
 
