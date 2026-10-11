@@ -211,6 +211,31 @@ class TestBuilderModuleArgs:
         assert model.pack_output is False
         assert builder.loaded_observers['fastapi_server'].sanitise is False
 
+    def test_unknown_module_args_are_ignored(self, tmp_path, caplog):
+        """Generated configs use unpack_data, which no observer accepts."""
+        from poly_lithic.src.utils.builder import Builder
+
+        cfg = yaml.safe_load(open('./tests/pv_mapping.yaml'))
+        # only the transformers: the p4p interface needs a network
+        cfg['modules'] = {
+            name: module
+            for name, module in cfg['modules'].items()
+            if module['type'].startswith('transformer')
+        }
+        assert any(
+            isinstance(m['module_args'], dict) and 'unpack_data' in m['module_args']
+            for m in cfg['modules'].values()
+        )
+        path = tmp_path / 'config.yaml'
+        path.write_text(yaml.safe_dump(cfg))
+
+        caplog.set_level(logging.WARNING)
+        Builder(str(path)).build()
+        assert (
+            "ignoring module_args not accepted by TransformerObserver: ['unpack_data']"
+            in (caplog.text)
+        )
+
 
 class TestRoutingGraph:
     def test_visualize_cyclic_pipeline(self, tmp_path):
