@@ -56,9 +56,12 @@ docker compose up --build
 
 ## Kubernetes
 
-Apply the manifests:
+Build the project image (config, env and model are baked in), push it to a
+registry your cluster can pull from, set `image:` in `k8s/deployment.yaml`
+to match, then apply the manifests:
 
 ```bash
+docker build -f docker/Dockerfile -t {{ project_image }} .
 kubectl apply -f k8s/
 ```
 {% endif %}

@@ -1,3 +1,5 @@
+import inspect
+
 from poly_lithic.src.config import ConfigParser
 from poly_lithic.src.interfaces import registered_interfaces
 from poly_lithic.src.logging_utils import get_logger
@@ -15,6 +17,24 @@ from poly_lithic.src.utils.messaging import (
 )
 
 logger = get_logger()
+
+
+def _observer_kwargs(observer_class, module_name: str, module_args: dict) -> dict:
+    """module_args the observer accepts; unknown keys are logged and dropped.
+
+    Existing configs carry keys no observer takes (e.g. unpack_data in the
+    generated deployment config), so warn instead of failing the build.
+    """
+    # arguments the builder passes itself cannot come from module_args
+    reserved = {'self', 'interface', 'transformer', 'model', 'config', 'topic'}
+    params = set(inspect.signature(observer_class.__init__).parameters) - reserved
+    unknown = [k for k in module_args if k not in params]
+    if unknown:
+        logger.warning(
+            f'{module_name}: ignoring module_args not accepted by '
+            f'{observer_class.__name__}: {unknown}'
+        )
+    return {k: v for k, v in module_args.items() if k in params}
 
 
 class MockModel:
@@ -89,7 +109,7 @@ class Builder:
                 interface = InterfaceObserver(
                     interface_class(self.config.modules[module].config),
                     self.config.modules[module].pub,
-                    *args,
+                    **_observer_kwargs(InterfaceObserver, module, args),
                 )
                 loaded_observers[module] = interface
             elif module_type == 'transformer':
@@ -107,7 +127,7 @@ class Builder:
                 transformer = TransformerObserver(
                     transformer_class(self.config.modules[module].config),
                     self.config.modules[module].pub,
-                    *args,
+                    **_observer_kwargs(TransformerObserver, module, args),
                 )
                 loaded_observers[module] = transformer
             elif module_type == 'model':
@@ -118,7 +138,7 @@ class Builder:
                 observer = ModelObserver(
                     config=self.config.modules[module].config,
                     topic=self.config.modules[module].pub,
-                    *args,
+                    **_observer_kwargs(ModelObserver, module, args),
                 )
                 loaded_observers[module] = observer
             else:

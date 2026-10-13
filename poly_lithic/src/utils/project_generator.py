@@ -46,6 +46,30 @@ class BaseProjectGenerator(ABC):
         content = template.render(**context)
         output_path.write_text(content)
 
+    def _render_container_files(self, project_path: Path, context: dict):
+        """Render the optional Docker files and Kubernetes manifests."""
+        # Kubernetes runs the image built from the Dockerfile, so it needs one
+        if context['include_docker'] or context['include_kubernetes']:
+            docker_path = project_path / 'docker'
+            docker_path.mkdir()
+            self._render_template(
+                'docker/Dockerfile.j2', docker_path / 'Dockerfile', context
+            )
+            # compose.yaml is found by `docker compose` without -f
+            self._render_template(
+                'docker/compose.yaml.j2', docker_path / 'compose.yaml', context
+            )
+
+        if context['include_kubernetes']:
+            k8s_path = project_path / 'k8s'
+            k8s_path.mkdir()
+            self._render_template(
+                'k8s/deployment.yaml.j2', k8s_path / 'deployment.yaml', context
+            )
+            self._render_template(
+                'k8s/service.yaml.j2', k8s_path / 'service.yaml', context
+            )
+
     @staticmethod
     def _normalize_project_name(name: str) -> str:
         """Normalize *name* to a valid snake_case identifier."""
@@ -110,6 +134,12 @@ class DeploymentProjectGenerator(BaseProjectGenerator):
             'include_docker': include_docker,
             'include_kubernetes': include_kubernetes,
             'docker_image': 'matindocker/poly-lithic:base-latest',
+            # the image built from the generated Dockerfile (config baked in)
+            'project_image': f'{project_name}:latest',
+            # inside a container loopback is unreachable from outside
+            'fastapi_host': (
+                '0.0.0.0' if include_docker or include_kubernetes else '127.0.0.1'
+            ),
         }
 
         # Core files
@@ -128,29 +158,7 @@ class DeploymentProjectGenerator(BaseProjectGenerator):
                 context,
             )
 
-        # Optional Docker files
-        if include_docker:
-            docker_path = project_path / 'docker'
-            docker_path.mkdir()
-            self._render_template(
-                'docker/Dockerfile.j2', docker_path / 'Dockerfile', context
-            )
-            self._render_template(
-                'docker/docker_compose.yml.j2',
-                docker_path / 'docker_compose.yml',
-                context,
-            )
-
-        # Optional Kubernetes manifests
-        if include_kubernetes:
-            k8s_path = project_path / 'k8s'
-            k8s_path.mkdir()
-            self._render_template(
-                'k8s/deployment.yaml.j2', k8s_path / 'deployment.yaml', context
-            )
-            self._render_template(
-                'k8s/service.yaml.j2', k8s_path / 'service.yaml', context
-            )
+        self._render_container_files(project_path, context)
 
         return project_path
 
@@ -224,6 +232,12 @@ class ReadyModelProjectGenerator(BaseProjectGenerator):
             'include_docker': include_docker,
             'include_kubernetes': include_kubernetes,
             'docker_image': 'matindocker/poly-lithic:base-latest',
+            # the image built from the generated Dockerfile (config baked in)
+            'project_image': f'{project_name}:latest',
+            # inside a container loopback is unreachable from outside
+            'fastapi_host': (
+                '0.0.0.0' if include_docker or include_kubernetes else '127.0.0.1'
+            ),
             'input_variables': metadata.input_variables,
             'output_variables': metadata.output_variables,
             'factory_class': factory_class,
@@ -250,28 +264,6 @@ class ReadyModelProjectGenerator(BaseProjectGenerator):
                 context,
             )
 
-        # Optional Docker files
-        if include_docker:
-            docker_path = project_path / 'docker'
-            docker_path.mkdir()
-            self._render_template(
-                'docker/Dockerfile.j2', docker_path / 'Dockerfile', context
-            )
-            self._render_template(
-                'docker/docker_compose.yml.j2',
-                docker_path / 'docker_compose.yml',
-                context,
-            )
-
-        # Optional Kubernetes manifests
-        if include_kubernetes:
-            k8s_path = project_path / 'k8s'
-            k8s_path.mkdir()
-            self._render_template(
-                'k8s/deployment.yaml.j2', k8s_path / 'deployment.yaml', context
-            )
-            self._render_template(
-                'k8s/service.yaml.j2', k8s_path / 'service.yaml', context
-            )
+        self._render_container_files(project_path, context)
 
         return project_path

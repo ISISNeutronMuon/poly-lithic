@@ -101,12 +101,17 @@ def _numpy_to_native(obj):
 
 
 class SimpleFastAPIInterfaceServer(BaseInterface):
-    supports_monitor = True
     """HTTP interface backed by FastAPI with an in-memory job queue.
 
     Registered as ``"fastapi_server"`` so it can be referenced in the YAML
     config as ``type: "interface.fastapi_server"``.
     """
+
+    supports_monitor = True
+    # event-driven mode delivers each job as one message (see monitor_jobs)
+    supports_job_monitor = True
+    # put_many reads trace.job_id from struct metadata to complete jobs
+    accepts_metadata = True
 
     def __init__(self, config: dict):
         # -- config fields with defaults --------------------------------
@@ -143,6 +148,7 @@ class SimpleFastAPIInterfaceServer(BaseInterface):
         # -- monitor callback slot (Stage 2 hook) -----------------------
         self._monitor_callback = None
         self._monitor_callbacks_per_pv: dict[str, list] = {}  # {pv_name: [callbacks]}
+        self._job_callback = None  # event-driven: called once per job
 
         # -- build FastAPI app ------------------------------------------
         self.app = self._build_app()
@@ -355,6 +361,20 @@ class SimpleFastAPIInterfaceServer(BaseInterface):
             # -- Phase 4: fire monitor callbacks ------------------------
             for jid, variables in resolved_jobs:
                 snapshot = self._jobs[jid]['inputs']
+                # Job callback (event-driven mode): the job is handed to the
+                # pipeline now, so it is running from here on
+                if self._job_callback is not None:
+                    self._queued.remove(jid)
+                    job = self._jobs[jid]
+                    job['status'] = 'running'
+                    job['started_at'] = time.time()
+                    try:
+                        self._job_callback(jid, snapshot)
+                    except Exception as exc:
+                        logger.exception('Job monitor callback error')
+                        job['status'] = 'failed'
+                        job['error'] = f'Monitor callback error: {exc}'
+                    continue
                 # Global callback (continuous mode)
                 if self._monitor_callback is not None:
                     try:
@@ -417,8 +437,10 @@ class SimpleFastAPIInterfaceServer(BaseInterface):
             # consume_jobs=True on each clock tick.  We only promote one
             # job so that each tick processes exactly one job through
             # the pipeline before the next is started.
+            promoted_jid = None
             if self._queued:
                 jid = self._queued.popleft()
+                promoted_jid = jid
                 job = self._jobs[jid]
                 job['status'] = 'running'
                 job['started_at'] = time.time()
@@ -443,6 +465,10 @@ class SimpleFastAPIInterfaceServer(BaseInterface):
             for name in names:
                 if name in self._var_store:
                     result[name] = {'value': self._var_store[name]}
+                    if promoted_jid is not None:
+                        # carried through the pipeline so put_many can
+                        # complete exactly this job
+                        result[name]['metadata'] = {'trace': {'job_id': promoted_jid}}
             return result
 
     def put_many(self, data: dict, **kwargs) -> None:
@@ -478,14 +504,20 @@ class SimpleFastAPIInterfaceServer(BaseInterface):
                     logger.warning(f'put_many: coercion error for {vname}: {exc}')
 
             # -- Job completion -----------------------------------------
-            # Stage 1 fallback: the pipeline (transformers) strips metadata,
-            # so job_id will typically be None.  In that case, FIFO-complete
-            # the oldest running job.
+            # The pipeline carries trace.job_id from input to output.  Without
+            # one, only complete a job when exactly one is running; with
+            # several running we cannot tell which job produced these outputs.
             if not job_id:
-                for candidate_id, candidate_job in self._jobs.items():
-                    if candidate_job['status'] == 'running':
-                        job_id = candidate_id
-                        break
+                running = [
+                    jid for jid, job in self._jobs.items() if job['status'] == 'running'
+                ]
+                if len(running) == 1:
+                    job_id = running[0]
+                elif len(running) > 1:
+                    logger.warning(
+                        'put_many: outputs carry no job_id and several jobs are '
+                        'running; not completing any job'
+                    )
 
             if job_id and job_id in self._jobs:
                 job = self._jobs[job_id]
@@ -534,6 +566,16 @@ class SimpleFastAPIInterfaceServer(BaseInterface):
             self._monitor_callbacks_per_pv.setdefault(pv_name, []).append(handler)
         else:
             self._monitor_callback = handler
+        return True
+
+    def monitor_jobs(self, handler) -> bool:
+        """Register a per-job callback (event-driven mode).
+
+        ``handler(job_id, snapshot)`` fires once per submitted job with all of
+        its input structs, and the job moves to ``running``.  Per-PV callbacks
+        are not fired for jobs while this is registered.
+        """
+        self._job_callback = handler
         return True
 
     def close(self):

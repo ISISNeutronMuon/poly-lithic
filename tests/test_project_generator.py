@@ -94,7 +94,7 @@ class TestDeploymentProjectGenerator:
             output_dir=str(output_dir),
         )
         assert (path / 'docker' / 'Dockerfile').exists()
-        assert (path / 'docker' / 'docker_compose.yml').exists()
+        assert (path / 'docker' / 'compose.yaml').exists()
 
     def test_generate_with_kubernetes(self, generator, output_dir):
         path = generator.generate(

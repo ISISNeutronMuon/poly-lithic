@@ -16,7 +16,9 @@ spec:
     spec:
       containers:
         - name: {{ project_name }}
-          image: {{ docker_image }}
+          # built from docker/Dockerfile, which bakes in the config, env and
+          # model; push it to a registry your cluster can pull from first
+          image: {{ project_image }}
           command: ["pl", "run", "--publish", "-c", "config.yaml", "-e", "env.json"]
           ports:
 {% if interface_type == "fastapi" %}

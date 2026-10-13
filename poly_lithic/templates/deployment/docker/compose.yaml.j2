@@ -3,6 +3,13 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
+{% if interface_type == "fastapi" %}
+    ports:
+      - "8000:8000"
+{% elif interface_type == "p4p_server" %}
+    ports:
+      - "5075:5075"
+{% endif %}
     # To run with requirements install first:
     # command: ["sh", "-c", "pl run -c config.yaml -r -e env.json && pl run --publish -c config.yaml -e env.json"]
     volumes:

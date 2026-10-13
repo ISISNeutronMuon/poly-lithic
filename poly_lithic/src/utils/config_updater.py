@@ -93,6 +93,23 @@ class ConfigUpdater:
         return 'PROJECT'
 
     @staticmethod
+    def _default_entry(var: dict, fastapi: bool) -> dict:
+        """The 'default' key (if any) an interface accepts for this variable.
+
+        Images take no default (interfaces raise NotImplementedError) and
+        array defaults must come from the model; only fastapi scalars fall
+        back to 0.0.
+        """
+        vtype = var.get('type', 'scalar')
+        if vtype == 'image':
+            return {}
+        if 'default_value' in var:
+            return {'default': var['default_value']}
+        if fastapi and vtype == 'scalar':
+            return {'default': 0.0}
+        return {}
+
+    @staticmethod
     def _update_interface(modules: dict, prefix: str, metadata):
         """Replace interface variable entries with real model variables."""
         for key in ('p4p_server', 'fastapi_server', 'k2eg_interface'):
@@ -108,7 +125,7 @@ class ConfigUpdater:
                     entry: dict = {
                         'mode': 'in',
                         'type': var.get('type', 'scalar'),
-                        'default': var.get('default_value', 0.0),
+                        **ConfigUpdater._default_entry(var, fastapi=True),
                     }
                     if (
                         var.get('type', 'scalar') in ('waveform', 'array')
@@ -123,8 +140,7 @@ class ConfigUpdater:
                     vtype = var.get('type', 'scalar')
                     if vtype != 'scalar':
                         entry['type'] = vtype
-                    if 'default_value' in var:
-                        entry['default'] = var['default_value']
+                    entry.update(ConfigUpdater._default_entry(var, fastapi=False))
                     if vtype in ('waveform', 'array') and 'length' in var:
                         entry['length'] = var['length']
                     elif vtype == 'image' and 'image_size' in var:
@@ -136,7 +152,7 @@ class ConfigUpdater:
                     entry = {
                         'mode': 'out',
                         'type': var.get('type', 'scalar'),
-                        'default': var.get('default_value', 0.0),
+                        **ConfigUpdater._default_entry(var, fastapi=True),
                     }
                     if (
                         var.get('type', 'scalar') in ('waveform', 'array')
@@ -151,8 +167,7 @@ class ConfigUpdater:
                     vtype = var.get('type', 'scalar')
                     if vtype != 'scalar':
                         entry['type'] = vtype
-                    if 'default_value' in var:
-                        entry['default'] = var['default_value']
+                    entry.update(ConfigUpdater._default_entry(var, fastapi=False))
                     if vtype in ('waveform', 'array') and 'length' in var:
                         entry['length'] = var['length']
                     elif vtype == 'image' and 'image_size' in var:

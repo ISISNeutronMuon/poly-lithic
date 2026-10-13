@@ -42,6 +42,14 @@ class DeploymentConfig(pydantic.BaseModel):
             raise ValueError(f'deployment type must be one of {allowed}, got {v!r}')
         return v
 
+    @pydantic.model_validator(mode='after')
+    def check_rate(self):
+        if self.type == 'continuous' and (self.rate is None or self.rate <= 0):
+            raise ValueError(
+                f'continuous deployments require a positive rate, got {self.rate!r}'
+            )
+        return self
+
 
 class ConfigObject(pydantic.BaseModel):
     deployment: DeploymentConfig
@@ -69,7 +77,12 @@ class ConfigObject(pydantic.BaseModel):
 
                         for pub in value.pub:
                             for sub in value2.sub:
-                                if pub == sub and value.name != value2.name:
+                                # YAML `pub: None` is the string 'None': no topic
+                                if (
+                                    pub == sub
+                                    and str(pub).lower() != 'none'
+                                    and value.name != value2.name
+                                ):
                                     edges.append((value.name, value2.name))
 
             nodes.append(value.name)
@@ -84,14 +97,21 @@ class ConfigObject(pydantic.BaseModel):
         G.add_edges_from(edges)
         return G
 
-    @pydantic.field_validator('graph')
-    def check_routing(cls, v):
-        isolated_nodes = list(nx.isolates(v))
+    def isolated_modules(self) -> list[str]:
+        """Modules that neither publish to nor subscribe from any other module."""
+        return list(nx.isolates(self.graph))
+
+    # field_validator does not run on computed fields, so check after init
+    @pydantic.model_validator(mode='after')
+    def check_routing(self):
+        isolated_nodes = self.isolated_modules()
         if isolated_nodes:
-            raise ValueError(
-                f'Isolated nodes found in routing graph: {isolated_nodes}, this means that a modules is niether a publisher or subscriber to any other module'
+            logging.warning(
+                f'Isolated nodes found in routing graph: {isolated_nodes}, these modules '
+                'neither publish to nor subscribe from any other module and will '
+                'never receive messages'
             )
-        return v
+        return self
 
     def draw_routing_graph(self):
         G = self.graph
@@ -101,12 +121,37 @@ class ConfigObject(pydantic.BaseModel):
             os.makedirs('./graphs')
         plt.savefig('./graphs/{}_routing_graph.png'.format(uuid4()))
 
+    def _acyclic_routing(self, G: nx.DiGraph) -> nx.DiGraph:
+        """Copy of G with the edges that close cycles removed.
+
+        Pipelines are normally cyclic (an interface publishes the inputs and
+        subscribes to the outputs), which topological sorting rejects.  Walk
+        from the input modules (subscribed to 'get_all') and drop the edge
+        that closes each cycle, so inputs land in the first layer.
+        """
+        dag = G.copy()
+        sources = [
+            m.name
+            for m in self.modules.values()
+            if m.name in dag
+            and 'get_all' in ([m.sub] if isinstance(m.sub, str) else (m.sub or []))
+        ]
+        sources += [n for n in dag if dag.in_degree(n) == 0 and n not in sources]
+        while not nx.is_directed_acyclic_graph(dag):
+            try:
+                cycle = nx.find_cycle(dag, source=sources or None)
+            except nx.NetworkXNoCycle:
+                # cycle not reachable from the sources
+                cycle = nx.find_cycle(dag)
+            dag.remove_edge(*cycle[-1][:2])
+        return dag
+
     def save_routing_graph(self, path: str) -> None:
         """Save routing graph to the specified file"""
         plt.figure(figsize=(10, 10))
         G = self.graph
         # Sort based on topology
-        for i, l in enumerate(nx.topological_generations(G)):
+        for i, l in enumerate(nx.topological_generations(self._acyclic_routing(G))):
             for n in l:
                 G.nodes[n]['layer'] = i
         nx.draw(

@@ -3,6 +3,7 @@ import asyncio
 import json
 import logging
 import os
+import subprocess
 import sys
 import time
 import traceback
@@ -71,6 +72,46 @@ def load_env_config(env_path):
         raise e
 
 
+def install_model_requirements(config_path):
+    """pip install the requirements of every model module in the config."""
+    from poly_lithic.src.config import ConfigParser
+    from poly_lithic.src.utils.messaging import resolve_model_getter_class
+
+    logger = get_logger()
+    config = ConfigParser(config_path).parse()
+    for name, module in config.modules.items():
+        if module.type.split('.')[0] != 'model':
+            continue
+        model_type = module.config['type']
+        if model_type == 'mock':
+            continue
+        getter = resolve_model_getter_class(model_type)(module.config['args'])
+        reqs = getter.get_requirements()
+        if not reqs:
+            logger.info(f'{name}: no requirements to install')
+            continue
+        if isinstance(reqs, (list, tuple)):
+            cmd = [sys.executable, '-m', 'pip', 'install', *reqs]
+        elif os.path.isfile(reqs):
+            cmd = [sys.executable, '-m', 'pip', 'install', '-r', reqs]
+        else:
+            raise click.ClickException(
+                f'{name}: requirements {reqs!r} is not a requirements file'
+            )
+        logger.info(f'{name}: installing requirements: {" ".join(cmd[3:])}')
+        subprocess.run(cmd, check=True)
+
+
+def drain_queue(broker, max_hops=100):
+    """Parse the broker queue until it is empty, i.e. the run has finished."""
+    for _ in range(max_hops):
+        if not broker.queue:
+            return
+        broker.parse_queue()
+    # e.g. monitors in event-driven mode keep adding new updates
+    get_logger().warning(f'Queue still not empty after {max_hops} hops, stopping')
+
+
 async def model_main(args, config, broker, builder=None):
     """
     Main async function for running the model manager.
@@ -102,6 +143,8 @@ async def model_main(args, config, broker, builder=None):
                     broker.parse_queue()
 
                     if args.one_shot:
+                        # parse_queue only advances one hop; finish the run
+                        drain_queue(broker)
                         logger.info('One shot mode, exiting')
                         break
 
@@ -133,6 +176,7 @@ async def model_main(args, config, broker, builder=None):
                     broker.parse_queue()
 
                     if args.one_shot:
+                        drain_queue(broker)
                         logger.info('One shot mode, exiting')
                         break
 
@@ -153,10 +197,53 @@ async def model_main(args, config, broker, builder=None):
 # ============================================================================
 
 
+def run_options(func):
+    """Options shared by `run` and the bare `poly-lithic` invocation."""
+    options = [
+        click.option(
+            '--config',
+            '-c',
+            type=click.Path(exists=True),
+            help='Path to the configuration file',
+        ),
+        click.option(
+            '--model-getter',
+            '-g',
+            type=click.Choice(['mlflow', 'local'], case_sensitive=False),
+            default='mlflow',
+            help='Method to obtain the model',
+        ),
+        click.option('--debug', '-d', is_flag=True, help='Enable debug mode'),
+        click.option(
+            '--env',
+            '-e',
+            type=click.Path(exists=True),
+            help='Path to environment configuration file (JSON format)',
+        ),
+        click.option(
+            '--one-shot',
+            '-o',
+            is_flag=True,
+            help='One shot mode - run once and exit (helpful for debugging)',
+        ),
+        click.option('--publish', '-p', is_flag=True, help='Publish data to system'),
+        click.option(
+            '--requirements',
+            '-r',
+            is_flag=True,
+            help='Requirements install only - install requirements.txt from model and exit',
+        ),
+    ]
+    for option in reversed(options):
+        func = option(func)
+    return func
+
+
 @click.group(invoke_without_command=True)
 @click.pass_context
 @click.version_option(version=__version__, prog_name='poly-lithic')
-def cli(ctx):
+@run_options
+def cli(ctx, **run_params):
     """
     Poly-Lithic - A modular ML model deployment framework with plugin support.
 
@@ -173,43 +260,11 @@ def cli(ctx):
     print_banner()
 
     if ctx.invoked_subcommand is None:
-        ctx.invoke(run_model, **ctx.params)
+        ctx.invoke(run_model, **run_params)
 
 
 @cli.command(name='run')
-@click.option(
-    '--config',
-    '-c',
-    type=click.Path(exists=True),
-    help='Path to the configuration file',
-)
-@click.option(
-    '--model-getter',
-    '-g',
-    type=click.Choice(['mlflow', 'local'], case_sensitive=False),
-    default='mlflow',
-    help='Method to obtain the model',
-)
-@click.option('--debug', '-d', is_flag=True, help='Enable debug mode')
-@click.option(
-    '--env',
-    '-e',
-    type=click.Path(exists=True),
-    help='Path to environment configuration file (JSON format)',
-)
-@click.option(
-    '--one-shot',
-    '-o',
-    is_flag=True,
-    help='One shot mode - run once and exit (helpful for debugging)',
-)
-@click.option('--publish', '-p', is_flag=True, help='Publish data to system')
-@click.option(
-    '--requirements',
-    '-r',
-    is_flag=True,
-    help='Requirements install only - install requirements.txt from model and exit',
-)
+@run_options
 def run_model(config, model_getter, debug, env, one_shot, publish, requirements):
     """
     Run the model manager with the specified configuration.
@@ -248,6 +303,12 @@ def run_model(config, model_getter, debug, env, one_shot, publish, requirements)
         else:
             logger.info(f'Configuration file provided: {config}')
 
+        if requirements:
+            # install before building: loading the model may need them
+            install_model_requirements(config)
+            click.echo('Requirements installed - exiting')
+            sys.exit(0)
+
         # Import heavy dependencies only when needed
         from poly_lithic.src.utils.builder import Builder
         from poly_lithic.src.utils.trace_store import TraceStore
@@ -264,9 +325,6 @@ def run_model(config, model_getter, debug, env, one_shot, publish, requirements)
         start_trace_server(trace_store, port=trace_port)
         logger.info(f'Tracing API server started on port {trace_port}')
 
-        if requirements:
-            click.echo('Requirements-only mode - exiting after installation')
-            sys.exit(0)
         # ugly but we needed to do some legacy support, this will eventially all be click handled
         import argparse
 
@@ -314,6 +372,13 @@ def plugin():
 @click.option('--email', default=None, help='Author email')
 @click.option('--description', '-d', default=None, help='Plugin description')
 @click.option(
+    '--license',
+    'license_',
+    default='BSD-3-Clause',
+    show_default=True,
+    help='License for the generated pyproject.toml and README',
+)
+@click.option(
     '--output-dir',
     '--dir',
     '-o',
@@ -326,7 +391,7 @@ def plugin():
     is_flag=True,
     help='Skip interactive prompts (use defaults or provided values)',
 )
-def init(name, author, email, description, output_dir, no_prompt):
+def init(name, author, email, description, license_, output_dir, no_prompt):
     """
     Initialize a new plugin project from template.
 
@@ -376,6 +441,7 @@ def init(name, author, email, description, output_dir, no_prompt):
             email=email,
             description=description,
             output_dir=str(output_path),
+            license=license_,
         )
 
         click.echo(
@@ -1003,6 +1069,15 @@ def validate(config_file, env):
         config = config_parser.parse()
 
         click.echo(click.style('✓ Configuration is valid', fg='green', bold=True))
+
+        isolated = config.isolated_modules()
+        if isolated:
+            click.echo(
+                click.style(
+                    f'⚠ Isolated modules (never receive messages): {isolated}',
+                    fg='yellow',
+                )
+            )
 
         click.echo('\nConfiguration Summary:')
         click.echo(f'  Deployment type: {config.deployment.type}')

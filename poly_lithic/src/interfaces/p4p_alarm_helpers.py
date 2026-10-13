@@ -1,5 +1,7 @@
 from typing import Any
 
+import numpy as np
+
 from .p4p_alarm_constants import (
     ALARM_LIMIT_FIELDS,
     ALARM_SEVERITY_FIELDS,
@@ -147,17 +149,23 @@ def compute_alarm(value: Any, policy: dict[str, Any]) -> dict[str, Any]:
 
 
 def enforce_control_limits(value: Any, control_cfg: dict[str, Any]) -> Any:
-    # print(f'Enforcing control limits: value={value}, control_cfg={control_cfg}')
+    low = control_cfg.get('limitLow')
+    high = control_cfg.get('limitHigh')
+    min_step = control_cfg.get('minStep')
 
-    if 'limitLow' in control_cfg and value < control_cfg['limitLow']:
-        return control_cfg['limitLow']
-    if 'limitHigh' in control_cfg and value > control_cfg['limitHigh']:
-        return control_cfg['limitHigh']
+    if isinstance(value, np.ndarray):
+        if min_step is not None and min_step > 0:
+            value = np.round(value / min_step) * min_step
+        if low is not None or high is not None:
+            value = np.clip(value, low, high)
+        return value
 
-    # round minStep if specified
-    if 'minStep' in control_cfg:
-        min_step = control_cfg['minStep']
-        if min_step > 0:
-            value = round(value / min_step) * min_step
+    # round to minStep first, so rounding can never push past a limit
+    if min_step is not None and min_step > 0:
+        value = round(value / min_step) * min_step
+    if low is not None and value < low:
+        return low
+    if high is not None and value > high:
+        return high
 
     return value

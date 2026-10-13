@@ -51,33 +51,46 @@ class MLflowModelGetterLegacy(ModelGetterBase):
         self.model_type = None
         self.tags = None
 
-    def get_requirements(self):
-        if int(self.model_version) >= 0:
-            version = self.client.get_model_version(self.model_name, self.model_version)
-        elif self.model_version == 'champion':
-            version_no = self.client.get_model_version_by_alias(
+    def _get_model_version(self):
+        """Resolve model_version, a version number or an alias (e.g. 'champion')."""
+        try:
+            number = int(self.model_version)
+        except (TypeError, ValueError):
+            number = None
+
+        if number is not None:
+            if number < 0:
+                raise ValueError(
+                    f'Invalid model version: {self.model_version}. Must be a non-negative integer or an alias.'
+                )
+            version = self.client.get_model_version(self.model_name, str(number))
+        elif isinstance(self.model_version, str) and self.model_version:
+            version = self.client.get_model_version_by_alias(
                 self.model_name, self.model_version
             )
-            version = self.client.get_model_version(self.model_name, version_no.version)
         else:
             raise ValueError(
-                f'Invalid model version: {self.model_version}. Must be a non-negative integer or "champion".'
+                f'Invalid model version: {self.model_version!r}. Must be a non-negative integer or an alias.'
             )
         if not version:
             raise ValueError(
                 f'Model version {self.model_version} not found for model {self.model_name}.'
             )
-        deps = self.mlflow.artifacts.download_artifacts(
-            f'{version.source}/requirements.txt'
-        )
+        return version
+
+    def get_requirements(self):
+        if self.model_uri is not None:
+            source = self.model_uri.rstrip('/')
+        else:
+            source = self._get_model_version().source
+        deps = self.mlflow.artifacts.download_artifacts(f'{source}/requirements.txt')
         return deps
 
     def get_model(self):
         if self.model_uri is not None:
             model_uri = self.model_uri
         elif self.model_version is not None:
-            version = self.client.get_model_version(self.model_name, self.model_version)
-            model_uri = version.source
+            model_uri = self._get_model_version().source
         else:
             raise Exception(
                 'Either model_version and model name or model_uri must be supplied'
@@ -131,8 +144,7 @@ class MLflowModelGetter(MLflowModelGetterLegacy):
         if self.model_uri is not None:
             model_uri = self.model_uri
         elif self.model_version is not None:
-            version = self.client.get_model_version(self.model_name, self.model_version)
-            model_uri = version.source
+            model_uri = self._get_model_version().source
         else:
             raise Exception(
                 'Either model_version and model name or model_uri must be supplied'

@@ -11,6 +11,7 @@ import time
 import threading
 import collections
 from uuid import uuid4
+import numpy as np
 from poly_lithic.src.logging_utils import get_logger
 from poly_lithic.src.transformers import BaseTransformer
 from poly_lithic.src.interfaces import BaseInterface
@@ -54,6 +55,49 @@ def profileit(func):
         return retval
 
     return wrapper
+
+
+def _without_trace_id(metadata):
+    """return a copy of struct metadata without the per-message trace_id"""
+    if not isinstance(metadata, dict):
+        return metadata
+    trace = metadata.get('trace')
+    if not isinstance(trace, dict) or 'trace_id' not in trace:
+        return metadata
+    stripped = dict(metadata)
+    stripped['trace'] = {k: v for k, v in trace.items() if k != 'trace_id'}
+    return stripped
+
+
+def _values_equal(a, b) -> bool:
+    """equality that is safe for numpy arrays (plain == is ambiguous for them)"""
+    if isinstance(a, np.ndarray) or isinstance(b, np.ndarray):
+        return np.array_equal(a, b)
+    try:
+        return bool(a == b)
+    except (TypeError, ValueError):
+        return False
+
+
+def _job_id_of(message: 'Message') -> Optional[str]:
+    """return the job_id carried in the trace metadata of any struct in message"""
+    for struct in message.value.values():
+        if isinstance(struct, dict):
+            trace = (struct.get('metadata') or {}).get('trace') or {}
+            if isinstance(trace, dict) and trace.get('job_id'):
+                return trace['job_id']
+    return None
+
+
+def _inject_trace(message: 'Message', job_id: Optional[str] = None) -> None:
+    """stamp message.trace_id (and job_id, if any) into each struct's metadata"""
+    for struct in message.value.values():
+        if isinstance(struct, dict):
+            meta = struct.setdefault('metadata', {})
+            trace = {'trace_id': message.trace_id}
+            if job_id:
+                trace['job_id'] = job_id
+            meta['trace'] = trace
 
 
 class Message(BaseModel):
@@ -117,10 +161,17 @@ class Message(BaseModel):
 
     @computed_field
     def uid(self) -> str:
-        """return a unique id for the message"""
+        """return a content id for the message
+
+        The per-message ``trace_id`` stored in each struct's metadata is
+        excluded, otherwise identical data would never produce the same uid.
+        """
         items = []
         for key, value in self.value.items():
-            value_items = frozenset((k, str(v)) for k, v in value.items())
+            value_items = frozenset(
+                (k, str(_without_trace_id(v) if k == 'metadata' else v))
+                for k, v in value.items()
+            )
             items.append((key, value_items))
 
         return hashlib.md5(str(frozenset(items)).encode()).hexdigest()
@@ -314,11 +365,8 @@ class TransformerObserver(Observer):
                 value=message_dict,
                 parent_trace_ids=list(parent_ids),
             )
-            # Inject trace_id into each variable struct metadata
-            for key in out_msg.value:
-                if isinstance(out_msg.value[key], dict):
-                    meta = out_msg.value[key].setdefault('metadata', {})
-                    meta['trace'] = {'trace_id': out_msg.trace_id}
+            # Inject trace_id (and the triggering job_id) into each struct
+            _inject_trace(out_msg, job_id=_job_id_of(message))
             return out_msg
 
 
@@ -360,6 +408,10 @@ class InterfaceObserver(Observer):
 
             logger.debug(f'updating {self}')
             if os.environ['PUBLISH'] == 'True':
+                if getattr(self.interface, 'accepts_metadata', False) is True:
+                    # e.g. fastapi_server reads trace.job_id to finish the job
+                    self.interface.put_many(message.value)
+                    return None
                 # Strip internal metadata before writing to the interface
                 # (e.g. p4p NTScalar doesn't have a 'metadata' field)
                 clean = {}
@@ -388,38 +440,30 @@ class InterfaceObserver(Observer):
         """get all variables from the interface based on internal variable list"""
         messages = []
         output_dict = {}
+        inputs = self.interface.get_inputs()
 
-        self.interface.get_many(self.interface.get_inputs())
-        # print(f"values: {values}")
-        for key in self.interface.get_inputs():
-            key, value = self.interface.get(key)
+        # One batched read; only fall back to per-variable get() for values
+        # the batch did not return as a {'value': ...} struct.
+        batch = self.interface.get_many(inputs)
+        if not isinstance(batch, dict):
+            batch = {}
+        for key in inputs:
+            value = batch.get(key)
+            if not (isinstance(value, dict) and 'value' in value):
+                try:
+                    key, value = self.interface.get(key)
+                except Exception as e:
+                    logger.error(f'{self}: failed to read {key}, skipping: {e}')
+                    continue
             if value is not None:
                 output_dict[key] = value
 
         msg = Message(topic=self.topic, source=str(self), value=output_dict)
-        # Inject trace_id into each variable struct metadata (origin — no parent)
-        for key in msg.value:
-            if isinstance(msg.value[key], dict):
-                meta = msg.value[key].setdefault('metadata', {})
-                meta['trace'] = {'trace_id': msg.trace_id}
+        # Inject trace_id (origin — no parent), keeping any job_id the
+        # interface attached to this read
+        _inject_trace(msg, job_id=_job_id_of(msg))
         messages.append(msg)
         return messages
-
-        # if self.last_get_all is not None:
-        #     diff = DeepDiff(self.last_get_all, output_dict)
-        #     self.last_get_all = output_dict
-        #     if diff:
-        #         messages.append(
-        #             Message(topic=self.topic, source=str(self), value=output_dict)
-        #         )
-        #     else:
-        #         logger.debug("no diff")
-        # else:
-        #     self.last_get_all = output_dict
-        #     messages.append(
-        #         Message(topic=self.topic, source=str(self), value=output_dict)
-        #     )
-        # return messages
 
     def get_many(self, message: Message) -> list[Message]:
         """get many variables from the interface"""
@@ -467,25 +511,84 @@ class InterfaceObserver(Observer):
                         return
                 # Dedup
                 if on_change_only:
-                    if pv_name in last_value and last_value[pv_name] == value:
+                    if pv_name in last_value and _values_equal(
+                        last_value[pv_name], value
+                    ):
                         return
-                    last_value[pv_name] = value
+                    last_value[pv_name] = (
+                        value.copy() if isinstance(value, np.ndarray) else value
+                    )
 
                 last_fire_time[pv_name] = now
-                val_struct = {'value': value}
                 msg = Message(
                     topic=self.topic,
                     source=str(self),
-                    value={pv_name: val_struct},
+                    value={pv_name: {'value': value}},
                 )
-                val_struct.setdefault('metadata', {})['trace'] = {'trace_id': msg.trace_id}
+                _inject_trace(msg)
                 with broker._queue_lock:
                     broker.queue.append(msg)
             return handler
 
+        def job_handler(job_id, snapshot):
+            # A submitted job is an explicit request: deliver all of its
+            # variables in one message (one pipeline run) and never throttle
+            # or dedup it, otherwise the job would never complete.
+            msg = Message(
+                topic=self.topic,
+                source=str(self),
+                value={name: {'value': s['value']} for name, s in snapshot.items()},
+            )
+            _inject_trace(msg, job_id=job_id)
+            with broker._queue_lock:
+                broker.queue.append(msg)
+
+        if getattr(self.interface, 'supports_job_monitor', False) is True:
+            self._monitors.append(self.interface.monitor_jobs(job_handler))
+            return
+
         for pv_name in self.interface.get_inputs():
             mon = self.interface.monitor(_make_handler(pv_name), pv_name)
             self._monitors.append(mon)
+
+
+def resolve_model_getter_class(model_type: str):
+    """Return the model getter class registered for model_type."""
+    builtins = {
+        'MlflowModelGetterLegacy': (
+            'poly_lithic.src.model_utils.MlflowModelGetter',
+            'MLflowModelGetterLegacy',
+        ),
+        'mlflow_legacy': (
+            'poly_lithic.src.model_utils.MlflowModelGetter',
+            'MLflowModelGetterLegacy',
+        ),
+        'MlflowModelGetter': (
+            'poly_lithic.src.model_utils.MlflowModelGetter',
+            'MLflowModelGetter',
+        ),
+        'mlflow': (
+            'poly_lithic.src.model_utils.MlflowModelGetter',
+            'MLflowModelGetter',
+        ),
+        'LocalModelGetter': (
+            'poly_lithic.src.model_utils.LocalModelGetter',
+            'LocalModelGetter',
+        ),
+        'local': (
+            'poly_lithic.src.model_utils.LocalModelGetter',
+            'LocalModelGetter',
+        ),
+    }
+    if model_type in builtins:
+        module_name, class_name = builtins[model_type]
+        return getattr(import_module(module_name), class_name)
+
+    # External model getter plugins are discovered via entry points and loaded on demand.
+    if model_getter_plugin_registry.has_plugin(model_type):
+        return model_getter_plugin_registry.get(model_type)
+
+    raise ValueError(f'model type not recognised: {model_type}')
 
 
 class MockModel:
@@ -527,50 +630,12 @@ class ModelObserver(Observer):
         model_type = self.config['type']
         if model_type == 'mock':
             return MockModel()
-        model_getter_class = self.__resolve_model_getter_class(model_type)
+        model_getter_class = resolve_model_getter_class(model_type)
         model_getter = model_getter_class(self.config['args'])
         model = model_getter.get_model()
         if model_type == 'MlflowModelGetterLegacy' and model is None:
             raise ValueError('model is None')
         return model
-
-    @staticmethod
-    def __resolve_model_getter_class(model_type: str):
-        builtins = {
-            'MlflowModelGetterLegacy': (
-                'poly_lithic.src.model_utils.MlflowModelGetter',
-                'MLflowModelGetterLegacy',
-            ),
-            'mlflow_legacy': (
-                'poly_lithic.src.model_utils.MlflowModelGetter',
-                'MLflowModelGetterLegacy',
-            ),
-            'MlflowModelGetter': (
-                'poly_lithic.src.model_utils.MlflowModelGetter',
-                'MLflowModelGetter',
-            ),
-            'mlflow': (
-                'poly_lithic.src.model_utils.MlflowModelGetter',
-                'MLflowModelGetter',
-            ),
-            'LocalModelGetter': (
-                'poly_lithic.src.model_utils.LocalModelGetter',
-                'LocalModelGetter',
-            ),
-            'local': (
-                'poly_lithic.src.model_utils.LocalModelGetter',
-                'LocalModelGetter',
-            ),
-        }
-        if model_type in builtins:
-            module_name, class_name = builtins[model_type]
-            return getattr(import_module(module_name), class_name)
-
-        # External model getter plugins are discovered via entry points and loaded on demand.
-        if model_getter_plugin_registry.has_plugin(model_type):
-            return model_getter_plugin_registry.get(model_type)
-
-        raise ValueError(f'model type not recognised: {model_type}')
 
     def update(self, message: Message) -> list[Message]:
         messages = []
@@ -618,11 +683,8 @@ class ModelObserver(Observer):
             value=output,
             parent_trace_ids=list(parent_ids),
         )
-        # Inject trace_id and merge input metadata into each output variable struct
-        for key in out_msg.value:
-            if isinstance(out_msg.value[key], dict):
-                meta = out_msg.value[key].setdefault('metadata', {})
-                meta['trace'] = {'trace_id': out_msg.trace_id}
+        # Inject trace_id (and the triggering job_id) into each output struct
+        _inject_trace(out_msg, job_id=_job_id_of(message))
         messages.append(out_msg)
 
         return messages

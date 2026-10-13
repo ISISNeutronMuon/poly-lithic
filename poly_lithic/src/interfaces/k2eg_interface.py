@@ -18,16 +18,18 @@ logger = get_logger()
 
 class K2EGInterface(BaseInterface):
     supports_monitor = True
+
     def __init__(self, config):
+        self.client = None
         try:
             self.client = k2eg.dml(
-                'env',
-                'app-three',
+                config.get('environment_id', 'env'),
+                config.get('app_name', 'app-three'),
+                group_name=config.get('group_name'),
             )
         except Exception as e:
-            print(f'Error initializing K2EGInterface: {e}')
-            self.close()
-            raise e
+            logger.error(f'Error initializing K2EGInterface: {e}')
+            raise
 
         pv_dict = config['variables']
         pv_url_list = []
@@ -50,14 +52,36 @@ class K2EGInterface(BaseInterface):
             f'K2EGInterface initialized with reverse_url_lookup: {self.reverse_url_lookup}'
         )
 
-    def monitor(self, handler, **kwargs):
-        logger.debug(f'Monitoring {self.pv_url_list}')
+    def monitor(self, handler, pv_name=None, **kwargs):
+        """Monitor PVs.
 
+        With *pv_name* (event-driven mode) only that variable is monitored and
+        *handler* receives the bare value.  Without it all PVs are monitored
+        and *handler* receives k2eg's ``(pv_name, data)`` callback arguments.
+        """
+        if pv_name is not None:
+            url = self.reverse_url_lookup[pv_name]
+            logger.debug(f'Monitoring {url}')
+
+            def wrapped(_name, data):
+                handler(
+                    data['value']
+                    if isinstance(data, dict) and 'value' in data
+                    else data
+                )
+
+            try:
+                return self.client.monitor(url, wrapped, timeout=1000)
+            except Exception as e:
+                logger.error(f'Error monitoring {url}: {e}')
+                raise
+
+        logger.debug(f'Monitoring {self.pv_url_list}')
         try:
             self.client.monitor_many(self.pv_url_list, handler, timeout=1000)
         except Exception as e:
-            print(f'Error monitoring: {e}')
-            raise e
+            logger.error(f'Error monitoring: {e}')
+            raise
 
     def get(self, name, **kwargs):
         url = self.reverse_url_lookup[name]
@@ -86,8 +110,9 @@ class K2EGInterface(BaseInterface):
         pass
 
     def close(self):
-        self.client.close()
-        print('K2EGInterface closed')
+        if self.client is not None:
+            self.client.close()
+        logger.debug('K2EGInterface closed')
         return True
 
     def get_inputs(self):
