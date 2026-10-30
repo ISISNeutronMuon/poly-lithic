@@ -1,0 +1,114 @@
+<mxfile host="65bd71144e">
+    <diagram id="spigot-deployment" name="FastAPI + p4p Spigot">
+        <mxGraphModel dx="782" dy="560" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="600" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+
+                <!-- Title -->
+                <mxCell id="title" value="Poly-Lithic Deployment: FastAPI Server + p4p Spigot" style="text;html=1;fontSize=18;fontStyle=1;align=center;verticalAlign=middle;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="150" y="20" width="800" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="subtitle" value="FastAPI is the source of truth; the p4p server mirrors variables via EPICS PVAccess" style="text;html=1;fontSize=11;align=center;verticalAlign=middle;fontColor=#888888;" parent="1" vertex="1">
+                    <mxGeometry x="150" y="48" width="800" height="20" as="geometry"/>
+                </mxCell>
+
+                <!-- fastapi_server (top-left, primary source of truth) -->
+                <mxCell id="fastapi" value="&lt;b&gt;fastapi_server&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;interface.fastapi_server&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="100" width="175" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="fastapi_pub" value="pub: in_interface" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#aaaaaa;fontSize=11;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="175" width="175" height="20" as="geometry"/>
+                </mxCell>
+
+                <!-- input_transformer (top-center) -->
+                <mxCell id="in_tx" value="&lt;b&gt;input_transformer&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;SimpleTransformer&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="365" y="100" width="175" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="in_tx_pub" value="pub: in_transformer" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#aaaaaa;fontSize=11;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="365" y="175" width="175" height="20" as="geometry"/>
+                </mxCell>
+
+                <!-- model (top-right) -->
+                <mxCell id="model" value="&lt;b&gt;surrogate_model&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;MLflow Model v3&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="650" y="100" width="175" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="model_pub" value="pub: model_output" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#aaaaaa;fontSize=11;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="650" y="175" width="175" height="20" as="geometry"/>
+                </mxCell>
+
+                <!-- output_transformer (bottom-center) -->
+                <mxCell id="out_tx" value="&lt;b&gt;output_transformer&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;SimpleTransformer&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="365" y="340" width="175" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="out_tx_pub" value="pub: out_transformer" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#aaaaaa;fontSize=11;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="365" y="415" width="175" height="20" as="geometry"/>
+                </mxCell>
+
+                <!-- p4p_spigot (bottom-left) — EPICS mirror -->
+                <mxCell id="spigot_note" value="EPICS Mirror (Spigot)" style="text;html=1;fontSize=10;fontStyle=1;align=center;verticalAlign=middle;fontColor=#666666;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="302" width="230" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="spigot_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="50" y="318" width="230" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="spigot" value="&lt;b&gt;p4p_spigot&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;interface.p4p_server&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="340" width="175" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="spigot_pub" value="pub: in_interface" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#aaaaaa;fontSize=11;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="415" width="175" height="20" as="geometry"/>
+                </mxCell>
+
+                <!-- Arrow 1: fastapi → input_transformer -->
+                <mxCell id="e1" value="in_interface" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="fastapi" target="in_tx" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Arrow 2: input_transformer → model -->
+                <mxCell id="e2" value="in_transformer" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="in_tx" target="model" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Arrow 3: model → output_transformer -->
+                <mxCell id="e3" value="model_output" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;" parent="1" source="model" target="out_tx" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="737" y="230"/>
+                            <mxPoint x="452" y="230"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+
+                <!-- Arrow 4: output_transformer → fastapi_server (main return, bottom routing) -->
+                <mxCell id="e4" value="out_transformer" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" parent="1" source="out_tx" target="fastapi" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="452" y="460"/>
+                            <mxPoint x="167" y="460"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+
+                <!-- Arrow 5: output_transformer → p4p_spigot (mirrors outputs to EPICS PVs) -->
+                <mxCell id="e5" value="out_transformer" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="out_tx" target="spigot" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Arrow 6: p4p_spigot → input_transformer (dashed; EPICS clients can also write inputs) -->
+                <mxCell id="e6" value="in_interface" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" parent="1" source="spigot" target="in_tx" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="167" y="280"/>
+                            <mxPoint x="452" y="280"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+
+                <!-- Legend note -->
+                <mxCell id="legend" value="&lt;font style=&quot;font-size: 10px;&quot;&gt;━━ primary data flow &nbsp;&nbsp; ╌╌ optional EPICS write path&lt;/font&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontColor=#888888;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="510" width="400" height="20" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

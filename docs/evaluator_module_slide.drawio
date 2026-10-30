@@ -1,0 +1,119 @@
+<mxfile host="65bd71144e">
+    <diagram id="eval-slide" name="Evaluation Module">
+        <mxGraphModel dx="582" dy="583" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="760" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="Evaluation Module" style="text;html=1;fontSize=20;fontStyle=1;align=center;verticalAlign=middle;fontColor=#333;" parent="1" vertex="1">
+                    <mxGeometry x="380" y="15" width="340" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="pred" value="&lt;b&gt;Predictions&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="65" width="140" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="actual" value="&lt;b&gt;Ground Truth&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="775" y="65" width="140" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="observer" value="&lt;b&gt;EvaluatorObserver&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=13;" parent="1" vertex="1">
+                    <mxGeometry x="390" y="60" width="320" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" parent="1" source="pred" target="observer" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" parent="1" source="actual" target="observer" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="buffer" value="&lt;b&gt;AlignmentBuffer&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Pairs predictions with actuals&lt;br&gt;(latest | timestamp mode)&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="410" y="160" width="280" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" parent="1" source="observer" target="buffer" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="eval_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;dashed=0;opacity=30;" parent="1" vertex="1">
+                    <mxGeometry x="285" y="285" width="530" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="eval_label" value="Evaluators" style="text;html=1;fontSize=14;fontStyle=1;align=left;fontColor=#2D7600;" parent="1" vertex="1">
+                    <mxGeometry x="310" y="278" width="120" height="22" as="geometry"/>
+                </mxCell>
+                <mxCell id="rolling" value="&lt;b&gt;RollingStats&lt;br&gt;Evaluator&lt;/b&gt;&lt;hr style=&quot;margin:4px 0&quot;&gt;&lt;font style=&quot;font-size:10px&quot;&gt;RMSE · MAE&lt;br&gt;Mean Bias · R²&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="320" y="305" width="140" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="drift" value="&lt;b&gt;DriftDetection&lt;br&gt;Evaluator&lt;/b&gt;&lt;hr style=&quot;margin:4px 0&quot;&gt;&lt;font style=&quot;font-size:10px&quot;&gt;KS Test · CUSUM&lt;br&gt;drift &amp;amp; cusum flags&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="480" y="305" width="140" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="thresh" value="&lt;b&gt;Threshold&lt;br&gt;Evaluator&lt;/b&gt;&lt;hr style=&quot;margin:4px 0&quot;&gt;&lt;font style=&quot;font-size:10px&quot;&gt;Abs / Rel thresholds&lt;br&gt;Per-PV overrides&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="640" y="305" width="140" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="e4" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" parent="1" source="buffer" target="eval_box" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e4l" value="paired windows" style="edgeLabel;html=1;fontSize=10;fontColor=#666;" parent="e4" vertex="1" connectable="0">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint y="-33" as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="result" value="&lt;b&gt;EvalResult&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;metrics · flags · details&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="270" y="510" width="230" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="e5" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" parent="1" source="eval_box" target="result" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="385" y="410"/>
+                            <mxPoint x="385" y="410"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="cond" value="&lt;b&gt;check_condition()&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;SymPy expression eval&lt;/font&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff;strokeColor=#6c8ebf;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="590" y="435" width="180" height="75" as="geometry"/>
+                </mxCell>
+                <mxCell id="e6" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" parent="1" source="eval_box" target="cond" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="680" y="420"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="handler_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;dashed=0;opacity=30;" parent="1" vertex="1">
+                    <mxGeometry x="470" y="567.5" width="480" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="h_label" value="Workflow Handlers" style="text;html=1;fontSize=12;fontStyle=1;align=left;fontColor=#0050ef;" parent="1" vertex="1">
+                    <mxGeometry x="500" y="563" width="150" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="h1" value="&lt;b&gt;Broker&lt;br&gt;Message&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="510" y="585" width="90" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="h2" value="&lt;b&gt;Webhook&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="615" y="585" width="90" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="h3" value="&lt;b&gt;Script&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="720" y="585" width="90" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="h4" value="&lt;b&gt;PV Alarm&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="825" y="585" width="90" height="45" as="geometry"/>
+                </mxCell>
+                <mxCell id="e7" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" parent="1" source="cond" target="handler_box" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e7l" value="if triggered" style="edgeLabel;html=1;fontSize=10;fontColor=#666;" parent="e7" vertex="1" connectable="0">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="out_eval" value="&lt;b&gt;eval_results&lt;/b&gt; topic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="690" width="200" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="e8" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" parent="1" source="result" target="out_eval" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="385" y="660"/>
+                            <mxPoint x="385" y="660"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="out_action" value="&lt;b&gt;Triggered Actions&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="610" y="690" width="200" height="35" as="geometry"/>
+                </mxCell>
+                <mxCell id="e9" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" parent="1" source="handler_box" target="out_action" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

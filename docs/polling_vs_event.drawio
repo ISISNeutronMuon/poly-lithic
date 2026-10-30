@@ -1,0 +1,174 @@
+<mxfile host="65bd71144e">
+    <diagram id="poll-vs-event" name="Polling vs Event-Driven">
+        <mxGraphModel dx="832" dy="659" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="760" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="Polling vs Event-Driven Processing" style="text;html=1;fontSize=24;fontStyle=1;align=center;verticalAlign=middle;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="290" y="20" width="520" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="subtitle" value="Fixed checks vs push on change" style="text;html=1;fontSize=12;align=center;verticalAlign=middle;fontColor=#666666;" parent="1" vertex="1">
+                    <mxGeometry x="290" y="48" width="520" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="poll_group" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f9fa;strokeColor=#666666;dashed=1;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="90" width="490" height="620" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_group" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8f9fa;strokeColor=#666666;dashed=1;" parent="1" vertex="1">
+                    <mxGeometry x="570" y="90" width="490" height="620" as="geometry"/>
+                </mxCell>
+                <mxCell id="poll_title" value="Polling" style="text;html=1;fontSize=18;fontStyle=1;align=center;verticalAlign=middle;fontColor=#b85450;" parent="1" vertex="1">
+                    <mxGeometry x="220" y="100" width="130" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_title" value="Event-Driven" style="text;html=1;fontSize=18;fontStyle=1;align=center;verticalAlign=middle;fontColor=#2D7600;" parent="1" vertex="1">
+                    <mxGeometry x="740" y="100" width="150" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="poll_source" value="&lt;b&gt;Data Source&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;changes whenever it wants&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="85" y="150" width="150" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="poll_client" value="&lt;b&gt;Polling Client&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;check every N ms&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="305" y="150" width="150" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="poll_req1" value="poll" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#b85450;fontSize=10;" parent="1" source="poll_client" target="poll_source" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="280" y="177"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="poll_res1" value="current state" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#6c8ebf;fontSize=10;dashed=1;" parent="1" source="poll_source" target="poll_client" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="280" y="195"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="event_source" value="&lt;b&gt;Data Source&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;emits on change&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="577.5" y="150" width="150" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_bus" value="&lt;b&gt;Event Channel&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;callback / queue / broker&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="150" width="150" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_consumer" value="&lt;b&gt;Consumer&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;react on arrival&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" parent="1" vertex="1">
+                    <mxGeometry x="950" y="150" width="110" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_push1" value="publish event" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2D7600;fontSize=10;" parent="1" source="event_source" target="event_bus" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_push2" value="deliver event" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#2D7600;fontSize=10;" parent="1" source="event_bus" target="event_consumer" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="poll_label" value="Checks happen on every tick" style="text;html=1;fontSize=12;fontStyle=1;align=left;fontColor=#b85450;" parent="1" vertex="1">
+                    <mxGeometry x="75" y="245" width="360" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_label" value="Work happens only on events" style="text;html=1;fontSize=12;fontStyle=1;align=left;fontColor=#2D7600;" parent="1" vertex="1">
+                    <mxGeometry x="605" y="245" width="350" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="poll_axis" value="" style="shape=line;strokeColor=#666666;strokeWidth=2;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="320" width="400" height="10" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_axis" value="" style="shape=line;strokeColor=#666666;strokeWidth=2;" parent="1" vertex="1">
+                    <mxGeometry x="610" y="320" width="400" height="10" as="geometry"/>
+                </mxCell>
+                <mxCell id="poll_tick1" value="" style="shape=line;strokeColor=#999999;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="120" y="308" width="1" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="poll_tick2" value="" style="shape=line;strokeColor=#999999;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="308" width="1" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="poll_tick3" value="" style="shape=line;strokeColor=#999999;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="280" y="308" width="1" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="poll_tick4" value="" style="shape=line;strokeColor=#999999;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="360" y="308" width="1" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="poll_tick5" value="" style="shape=line;strokeColor=#999999;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="440" y="308" width="1" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_tick1" value="" style="shape=line;strokeColor=#999999;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="650" y="308" width="1" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_tick2" value="" style="shape=line;strokeColor=#999999;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="730" y="308" width="1" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_tick3" value="" style="shape=line;strokeColor=#999999;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="810" y="308" width="1" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_tick4" value="" style="shape=line;strokeColor=#999999;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="890" y="308" width="1" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_tick5" value="" style="shape=line;strokeColor=#999999;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="970" y="308" width="1" height="24" as="geometry"/>
+                </mxCell>
+                <mxCell id="poll_probe1" value="Check 1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="95" y="345" width="50" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="poll_probe2" value="Check 2" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="175" y="345" width="50" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="poll_probe3" value="Check 3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="255" y="345" width="50" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="poll_probe4" value="Check 4" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="335" y="345" width="50" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="poll_probe5" value="Check 5" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="415" y="345" width="50" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_wait1" value="idle" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cccccc;fontColor=#666666;fontSize=10;dashed=1;" parent="1" vertex="1">
+                    <mxGeometry x="620" y="345" width="65" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_evt1" value="Event A" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="725" y="345" width="65" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_wait2" value="idle" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#cccccc;fontColor=#666666;fontSize=10;dashed=1;" parent="1" vertex="1">
+                    <mxGeometry x="815" y="345" width="65" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_evt2" value="Event B" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="905" y="345" width="65" height="28" as="geometry"/>
+                </mxCell>
+                <mxCell id="change_label" value="Two source changes" style="text;html=1;fontSize=11;fontStyle=1;align=center;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="398" y="390" width="300" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="change_marker1" value="change A" style="text;html=1;fontSize=10;align=center;fontColor=#0050ef;" parent="1" vertex="1">
+                    <mxGeometry x="248" y="392" width="65" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="change_marker2" value="change B" style="text;html=1;fontSize=10;align=center;fontColor=#0050ef;" parent="1" vertex="1">
+                    <mxGeometry x="900" y="392" width="65" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="change_arrow1" value="" style="endArrow=classic;html=1;strokeColor=#0050ef;" parent="1" source="change_marker1" target="poll_probe3" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="change_arrow2" value="" style="endArrow=classic;html=1;strokeColor=#0050ef;" parent="1" source="change_marker2" target="event_evt2" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="poll_obs_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="430" width="405" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="poll_obs_title" value="Polling pattern" style="text;html=1;fontSize=13;fontStyle=1;align=left;fontColor=#7f6000;" parent="1" vertex="1">
+                    <mxGeometry x="95" y="440" width="200" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="poll_obs_text" value="fixed timer&lt;br&gt;request every interval&lt;br&gt;change seen on next check" style="text;html=1;fontSize=11;align=left;verticalAlign=top;fontColor=#333333;spacingLeft=4;" parent="1" vertex="1">
+                    <mxGeometry x="95" y="462" width="375" height="32" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_obs_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+                    <mxGeometry x="610" y="430" width="405" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_obs_title" value="Event-driven pattern" style="text;html=1;fontSize=13;fontStyle=1;align=left;fontColor=#7f6000;" parent="1" vertex="1">
+                    <mxGeometry x="625" y="440" width="220" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_obs_text" value="emit on change&lt;br&gt;forward event&lt;br&gt;consumer reacts immediately" style="text;html=1;fontSize=11;align=left;verticalAlign=top;fontColor=#333333;spacingLeft=4;" parent="1" vertex="1">
+                    <mxGeometry x="625" y="462" width="375" height="32" as="geometry"/>
+                </mxCell>
+                <mxCell id="poll_trade" value="&lt;b&gt;Traits&lt;/b&gt;&lt;br&gt;• simple&lt;br&gt;• steady load&lt;br&gt;• idle work&lt;br&gt;• interval lag" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=8;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="95" y="530" width="150" height="95" as="geometry"/>
+                </mxCell>
+                <mxCell id="event_trade" value="&lt;b&gt;Traits&lt;/b&gt;&lt;br&gt;• responsive&lt;br&gt;• quiet when idle&lt;br&gt;• async friendly&lt;br&gt;• needs delivery path" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;spacingLeft=8;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="840" y="530" width="150" height="95" as="geometry"/>
+                </mxCell>
+                <mxCell id="decision" value="Fixed cadence vs push on change" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="365" y="545" width="360" height="48" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

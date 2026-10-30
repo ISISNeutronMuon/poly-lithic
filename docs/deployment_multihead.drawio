@@ -1,0 +1,76 @@
+<mxfile host="65bd71144e">
+    <diagram id="multihead-deployment" name="Multi-Head Dual Interface">
+        <mxGraphModel dx="946" dy="827" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="580" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="Poly-Lithic Deployment: Multi-Head Event-Driven" style="text;html=1;fontSize=18;fontStyle=1;align=center;verticalAlign=middle;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="20" width="800" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="subtitle" value="Two independent interfaces feed the same pipeline; both receive results. Deployment type: event_driven." style="text;html=1;fontSize=11;align=center;verticalAlign=middle;fontColor=#888888;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="48" width="800" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="p4p" value="&lt;b&gt;p4p_server&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;interface.p4p_server&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="110" width="175" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="p4p_pub" value="pub: in_interface_1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#aaaaaa;fontSize=11;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="185" width="175" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="fastapi" value="&lt;b&gt;fastapi_server&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;interface.fastapi_server&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="330" width="175" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="fastapi_pub" value="pub: in_interface_0" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#aaaaaa;fontSize=11;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="405" width="175" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="in_tx" value="&lt;b&gt;input_transformer&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;SimpleTransformer&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="360" y="220" width="175" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="in_tx_pub" value="pub: in_transformer" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#aaaaaa;fontSize=11;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="360" y="295" width="175" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="model" value="&lt;b&gt;surrogate_model&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;Local Model&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="640" y="220" width="175" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="model_pub" value="pub: model_output" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#aaaaaa;fontSize=11;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="640" y="295" width="175" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="out_tx" value="&lt;b&gt;output_transformer&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;SimpleTransformer&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="920" y="220" width="175" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="out_tx_pub" value="pub: out_transformer" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#aaaaaa;fontSize=11;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="920" y="295" width="175" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" value="in_interface_1" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.25;entryDx=0;entryDy=0;" parent="1" source="p4p" target="in_tx" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2" value="in_interface_0" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" parent="1" source="fastapi" target="in_tx" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3" value="in_transformer" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="in_tx" target="model" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e4" value="model_output" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="model" target="out_tx" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e5" value="out_transformer" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0;exitY=0.25;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="out_tx" target="p4p" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="880" y="237"/>
+                            <mxPoint x="880" y="145"/>
+                            <mxPoint x="235" y="145"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e6" value="out_transformer" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0;exitY=0.75;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="out_tx" target="fastapi" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="880" y="272"/>
+                            <mxPoint x="880" y="365"/>
+                            <mxPoint x="235" y="365"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

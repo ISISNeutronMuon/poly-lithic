@@ -4,16 +4,19 @@ from poly_lithic.src.config import ConfigParser
 from poly_lithic.src.interfaces import registered_interfaces
 from poly_lithic.src.logging_utils import get_logger
 from poly_lithic.src.transformers import registered_transformers
+from poly_lithic.src.evaluators import registered_evaluators
 from poly_lithic.src.utils.plugin_registry import (
     interface_plugin_registry,
     transformer_plugin_registry,
     model_getter_plugin_registry,
+    evaluator_plugin_registry,
 )
 from poly_lithic.src.utils.messaging import (
     ModelObserver,
     InterfaceObserver,
     MessageBroker,
     TransformerObserver,
+    EvaluatorObserver,
 )
 
 logger = get_logger()
@@ -141,6 +144,12 @@ class Builder:
                     **_observer_kwargs(ModelObserver, module, args),
                 )
                 loaded_observers[module] = observer
+            elif module_type == 'evaluator':
+                observer = EvaluatorObserver(
+                    config=self.config.modules[module].config,
+                    topic=self.config.modules[module].pub,
+                )
+                loaded_observers[module] = observer
             else:
                 raise ValueError(f'Invalid module type: {module_type}')
         logger.debug(f'Loaded observers: {loaded_observers}')
@@ -149,10 +158,10 @@ class Builder:
         for observer in loaded_observers:
             if not isinstance(
                 loaded_observers[observer],
-                (ModelObserver, InterfaceObserver, TransformerObserver),
+                (ModelObserver, InterfaceObserver, TransformerObserver, EvaluatorObserver),
             ):
                 raise ValueError(
-                    f'Invalid observer: {observer} must be of type ModelObserver, InterfaceObserver or TransformerObserver'
+                    f'Invalid observer: {observer} must be of type ModelObserver, InterfaceObserver, TransformerObserver or EvaluatorObserver'
                 )
         self.loaded_observers = loaded_observers
         return None

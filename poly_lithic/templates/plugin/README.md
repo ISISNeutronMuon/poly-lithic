@@ -116,6 +116,7 @@ modules:
 | `poly_lithic.interfaces` | `BaseInterface` | External system communication (EPICS, REST, etc.) |
 | `poly_lithic.transformers` | `BaseTransformer` | Data transformation and processing, may also be used for hardcoded models. |
 | `poly_lithic.model_getters` | `ModelGetterBase` | Model loading (MLFlow, local files) |
+| `poly_lithic.evaluators` | `BaseEvaluator` | Online model evaluation against ground truth (metrics, drift, thresholds) |
 
 ### Deciding Which Plugin Type to Use
 

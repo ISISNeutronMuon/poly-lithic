@@ -9,6 +9,7 @@ from pydantic import (
 )
 import time
 import threading
+import numpy as np
 import collections
 from uuid import uuid4
 import numpy as np
@@ -16,6 +17,9 @@ from poly_lithic.src.logging_utils import get_logger
 from poly_lithic.src.transformers import BaseTransformer
 from poly_lithic.src.interfaces import BaseInterface
 from poly_lithic.src.utils.plugin_registry import model_getter_plugin_registry
+from poly_lithic.src.evaluators import BaseEvaluator, registered_evaluators
+from poly_lithic.src.evaluators.alignment_buffer import AlignmentBuffer
+from poly_lithic.src.evaluators.handlers import build_handlers, check_condition
 import os
 
 # from deepdiff import DeepDiff
@@ -697,3 +701,234 @@ class ModelObserver(Observer):
 
 #     def update(self, message: Message) -> None:
 #         self.callback(message)
+
+
+class EvaluatorObserver(Observer):
+    """Compares model predictions against ground-truth data and triggers workflows.
+
+    Subscribes to two topics (model output + ground truth from an interface).
+    Maintains an AlignmentBuffer to pair predictions with actuals, runs one
+    or more BaseEvaluator instances, and optionally triggers workflow handlers.
+
+    Config example::
+
+        config:
+            mapping:
+                ML:PRED:TEMP: ML:ACTUAL:TEMP
+            alignment:
+                mode: "latest"          # or "timestamp"
+                tolerance_s: 0.5
+            window:
+                type: "samples"         # or "time"
+                size: 100
+            evaluators:
+                - type: RollingStatsEvaluator
+                  metrics: [rmse, mae]
+                - type: ThresholdEvaluator
+                  thresholds:
+                      absolute: 1.0
+            workflows:
+                - type: webhook
+                  condition: "rmse > 0.5"
+                  url: "http://retraining-service/trigger"
+                  cooldown_s: 300       # optional: min seconds between fires (default 0)
+                - type: broker_message
+                  condition: "drift_detected"
+                  topic: eval_alarm
+            min_eval_samples: 2
+            model_topic: "model"
+    """
+
+    def __init__(
+        self,
+        config: dict,
+        topic: str = 'eval_results',
+    ):
+        self.config = config
+        self.topic = topic
+
+        # Build alignment buffer
+        self.buffer = AlignmentBuffer(config)
+
+        # Determine which topic carries model predictions vs ground truth
+        self._model_topic: str = config.get('model_topic', 'model')
+        self._min_eval_samples: int = config.get('min_eval_samples', 2)
+
+        # Build evaluator instances
+        self._evaluators: list[BaseEvaluator] = []
+        from poly_lithic.src.utils.plugin_registry import evaluator_plugin_registry
+        for eval_cfg in config.get('evaluators', []):
+            eval_type = eval_cfg.get('type', 'RollingStatsEvaluator')
+            if evaluator_plugin_registry.has_plugin(eval_type):
+                eval_class = evaluator_plugin_registry.get(eval_type)
+            elif eval_type in registered_evaluators:
+                eval_class = registered_evaluators[eval_type]
+            else:
+                raise ValueError(f'Unknown evaluator type: {eval_type}')
+            self._evaluators.append(eval_class(eval_cfg))
+
+        # If no evaluators configured, default to RollingStatsEvaluator
+        if not self._evaluators:
+            self._evaluators.append(registered_evaluators['RollingStatsEvaluator'](config))
+
+        # Build workflow handlers.  Each config entry is built individually so
+        # that per-entry options read here (e.g. ``cooldown_s``) stay aligned
+        # with their handler even when build_handlers skips unknown types.
+        # Entries: (condition, handler, cooldown_s)
+        self._workflows: list[tuple[str, Any, float]] = []
+        for wf_cfg in config.get('workflows', []) or []:
+            built = build_handlers([wf_cfg])
+            if not built:
+                continue
+            cooldown_s = float(wf_cfg.get('cooldown_s', 0) or 0)
+            for condition, handler in built:
+                self._workflows.append((condition, handler, cooldown_s))
+        # Last fire time (time.monotonic()) per workflow index
+        self._workflow_last_fired: dict[int, float] = {}
+
+        # PVs we've already warned about for non-scalar values (warn once)
+        self._nonscalar_warned: set[str] = set()
+
+        # Buffer pair count at the last evaluation; only re-evaluate on new pairs
+        self._last_pair_count: int = 0
+
+    @staticmethod
+    def _to_scalar(val: Any) -> float | None:
+        """Convert ``val`` to a Python float, or return None if it is not a scalar.
+
+        Accepts Python numbers, numpy scalars and 0-d arrays.  Rejects strings,
+        lists, n-d arrays and anything else that isn't a single number.
+        NaN/inf are allowed through (evaluators decide how to treat them).
+        """
+        if isinstance(val, (str, bytes)):
+            return None
+        try:
+            arr = np.asarray(val)
+            if arr.ndim != 0:
+                return None
+            return float(arr)
+        except (TypeError, ValueError):
+            return None
+
+    def update(self, message: Message) -> Message | list[Message] | None:
+        """Process an incoming message — either model output or ground truth."""
+        is_model = message.topic == self._model_topic
+
+        for pv_name, struct in message.value.items():
+            if not isinstance(struct, dict) or 'value' not in struct:
+                continue
+            if is_model:
+                if pv_name not in self.buffer.prediction_pvs:
+                    continue
+            elif pv_name not in self.buffer.actual_pvs:
+                continue
+
+            val = self._to_scalar(struct['value'])
+            if val is None:
+                if pv_name not in self._nonscalar_warned:
+                    self._nonscalar_warned.add(pv_name)
+                    logger.warning(
+                        f'EvaluatorObserver: skipping non-scalar value for {pv_name} '
+                        f'(type {type(struct["value"]).__name__}); further occurrences '
+                        f'logged at debug level'
+                    )
+                else:
+                    logger.debug(f'EvaluatorObserver: skipping non-scalar value for {pv_name}')
+                continue
+            ts = struct.get('timestamp', message.timestamp)
+
+            if is_model:
+                self.buffer.add_prediction(pv_name, val, ts)
+            else:
+                self.buffer.add_actual(pv_name, val, ts)
+
+        # Nothing new was paired by this message (e.g. a prediction still
+        # waiting for its actual), so results would just repeat the last ones
+        if self.buffer.pair_count == self._last_pair_count:
+            return None
+
+        if not self.buffer.has_enough_data(self._min_eval_samples):
+            return None
+        self._last_pair_count = self.buffer.pair_count
+
+        # Build prediction/actual arrays from the buffer
+        predictions: dict[str, list[float]] = {}
+        actuals: dict[str, list[float]] = {}
+        all_timestamps: list[float] = []
+
+        for pred_pv in self.buffer.mapping:
+            window = self.buffer.get_window(pred_pv)
+            if window:
+                predictions[pred_pv] = [s.prediction for s in window]
+                actuals[pred_pv] = [s.actual for s in window]
+                all_timestamps.extend(s.timestamp for s in window)
+
+        if not predictions:
+            return None
+
+        # Run all evaluators and merge results
+        from poly_lithic.src.evaluators.BaseEvaluator import EvalResult
+        merged = EvalResult()
+        for evaluator in self._evaluators:
+            result = evaluator.evaluate(predictions, actuals, all_timestamps)
+            merged.metrics.update(result.metrics)
+            merged.flags.update(result.flags)
+            merged.details.update(result.details)
+
+        # Build output messages
+        messages: list[Message] = []
+
+        # Always publish metrics to the configured topic
+        value_dict: dict[str, dict] = {}
+        for k, v in merged.metrics.items():
+            value_dict[k] = {'value': v}
+        for k, v in merged.flags.items():
+            value_dict[k] = {'value': int(v)}
+
+        if value_dict:
+            eval_msg = Message(
+                topic=self.topic,
+                source=str(self),
+                value=value_dict,
+                parent_trace_ids=[message.trace_id],
+            )
+            messages.append(eval_msg)
+
+        # Run workflow handlers whose conditions are met
+        context: dict = {'messages': []}
+        now = time.monotonic()
+        for idx, (condition, handler, cooldown_s) in enumerate(self._workflows):
+            if not check_condition(condition, merged):
+                continue
+            last = self._workflow_last_fired.get(idx)
+            if cooldown_s > 0 and last is not None and (now - last) < cooldown_s:
+                logger.debug(
+                    f'EvaluatorObserver: workflow {idx} ({handler.name}) in cooldown, '
+                    f'{cooldown_s - (now - last):.1f}s remaining'
+                )
+                continue
+            # Record the fire time before handling so a failing handler is
+            # still rate-limited.
+            self._workflow_last_fired[idx] = now
+            try:
+                handler.handle(merged, context)
+            except Exception as e:
+                logger.error(f'EvaluatorObserver: workflow {idx} ({handler.name}) failed: {e}')
+
+        # Collect any broker messages from handlers
+        for msg_dict in context.get('messages', []):
+            msg = Message(
+                topic=msg_dict['topic'],
+                source=str(self),
+                value=msg_dict['value'],
+                parent_trace_ids=[message.trace_id],
+            )
+            messages.append(msg)
+
+        return messages if messages else None
+
+    def __str__(self):
+        return f'EvaluatorObserver(topic={self.topic})'
+
+    def __repr__(self):
+        return self.__str__()

@@ -1,0 +1,238 @@
+<mxfile host="65bd71144e">
+    <diagram id="eval-module" name="Evaluation Module">
+        <mxGraphModel dx="582" dy="583" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="title" value="Poly-Lithic Evaluation Module Architecture" style="text;html=1;fontSize=22;fontStyle=1;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="400" y="20" width="800" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="input_group" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;dashed=1;" parent="1" vertex="1">
+                    <mxGeometry x="130" y="80" width="520" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="input_label" value="Incoming Messages" style="text;html=1;fontSize=14;fontStyle=1;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="310" y="85" width="160" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="pred_msg" value="&lt;b&gt;Prediction Messages&lt;/b&gt;&lt;br&gt;topic: model_topic&lt;br&gt;value: {pv: prediction}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="150" y="110" width="220" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="actual_msg" value="&lt;b&gt;Ground Truth Messages&lt;/b&gt;&lt;br&gt;topic: ref_output&lt;br&gt;value: {pv: actual}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="410" y="110" width="220" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="observer_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;dashed=0;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="230" width="620" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="observer" value="&lt;b&gt;EvaluatorObserver&lt;/b&gt; (Observer)&lt;br&gt;&lt;br&gt;update(message: Message)&lt;br&gt;Routes messages → AlignmentBuffer → Evaluators → Workflows" style="text;html=1;fontSize=12;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                    <mxGeometry x="100" y="235" width="580" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_pred_obs" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" parent="1" source="pred_msg" target="observer_box" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_actual_obs" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" parent="1" source="actual_msg" target="observer_box" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="align_group" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="380" width="620" height="150" as="geometry"/>
+                </mxCell>
+                <mxCell id="align_title" value="&lt;b&gt;AlignmentBuffer&lt;/b&gt;" style="text;html=1;fontSize=14;fontStyle=0;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="290" y="385" width="200" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="paired_sample" value="&lt;b&gt;PairedSample&lt;/b&gt;&lt;br&gt;prediction: float&lt;br&gt;actual: float&lt;br&gt;timestamp: float" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff;strokeColor=#d6b656;" parent="1" vertex="1">
+                    <mxGeometry x="100" y="415" width="160" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="align_modes" value="&lt;b&gt;Alignment Modes&lt;/b&gt;&lt;br&gt;• &lt;i&gt;latest&lt;/i&gt;: pair most recent&lt;br&gt;• &lt;i&gt;timestamp&lt;/i&gt;: pair within tolerance_s" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff;strokeColor=#d6b656;" parent="1" vertex="1">
+                    <mxGeometry x="290" y="415" width="190" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="window_types" value="&lt;b&gt;Window Types&lt;/b&gt;&lt;br&gt;• &lt;i&gt;samples&lt;/i&gt;: last N pairs&lt;br&gt;• &lt;i&gt;time&lt;/i&gt;: last T seconds" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff;strokeColor=#d6b656;" parent="1" vertex="1">
+                    <mxGeometry x="510" y="415" width="170" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="align_methods" value="add_prediction() · add_actual() · get_window() · get_all_windows() · has_enough_data()" style="text;html=1;fontSize=10;align=center;fontColor=#666;" parent="1" vertex="1">
+                    <mxGeometry x="100" y="500" width="580" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_obs_align" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" parent="1" source="observer_box" target="align_group" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_obs_align_label" value="route &amp; buffer" style="edgeLabel;html=1;fontSize=10;" parent="e_obs_align" vertex="1" connectable="0">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="eval_group" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;dashed=0;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="590" width="620" height="280" as="geometry"/>
+                </mxCell>
+                <mxCell id="eval_group_title" value="Evaluators" style="text;html=1;fontSize=14;fontStyle=1;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="320" y="595" width="140" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="base_eval" value="&lt;b&gt;«abstract» BaseEvaluator&lt;/b&gt;&lt;hr&gt;&lt;i&gt;+ evaluate(predictions, actuals, timestamps) → EvalResult&lt;/i&gt;&lt;br&gt;&lt;i&gt;+ name → str&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=8;" parent="1" vertex="1">
+                    <mxGeometry x="220" y="615" width="340" height="65" as="geometry"/>
+                </mxCell>
+                <mxCell id="eval_result" value="&lt;b&gt;«dataclass» EvalResult&lt;/b&gt;&lt;hr&gt;metrics: dict[str, float]&lt;br&gt;flags: dict[str, bool]&lt;br&gt;details: dict[str, Any]" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=8;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="100" y="615" width="110" height="90" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_eval_result" value="returns" style="dashed=1;endArrow=open;endFill=0;fontSize=10;" parent="1" source="base_eval" target="eval_result" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="rolling" value="&lt;b&gt;RollingStatsEvaluator&lt;/b&gt;&lt;hr&gt;Metrics:&lt;br&gt;• RMSE&lt;br&gt;• MAE&lt;br&gt;• Mean Bias&lt;br&gt;• R²" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;spacingLeft=8;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="100" y="730" width="160" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="drift" value="&lt;b&gt;DriftDetectionEvaluator&lt;/b&gt;&lt;hr&gt;Algorithms:&lt;br&gt;• KS Test (normality)&lt;br&gt;• CUSUM (change pts)&lt;br&gt;&lt;br&gt;Flags:&lt;br&gt;• drift_detected&lt;br&gt;• cusum_alert" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;spacingLeft=8;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="290" y="730" width="170" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="threshold" value="&lt;b&gt;ThresholdEvaluator&lt;/b&gt;&lt;hr&gt;Checks:&lt;br&gt;• abs_threshold&lt;br&gt;• rel_threshold&lt;br&gt;• per_pv overrides&lt;br&gt;&lt;br&gt;Flags:&lt;br&gt;• any_threshold_exceeded" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;align=left;spacingLeft=8;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="490" y="730" width="180" height="130" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_rolling_base" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=0;rounded=1;" parent="1" source="rolling" target="base_eval" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="710"/>
+                            <mxPoint x="390" y="710"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_drift_base" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=0;rounded=1;" parent="1" source="drift" target="base_eval" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_thresh_base" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=0;rounded=1;" parent="1" source="threshold" target="base_eval" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_align_eval" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" parent="1" source="align_group" target="eval_group" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_align_eval_label" value="predictions, actuals, timestamps" style="edgeLabel;html=1;fontSize=10;" parent="e_align_eval" vertex="1" connectable="0">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="registry" value="&lt;b&gt;Plugin Registry&lt;/b&gt;&lt;br&gt;(evaluator_plugin_registry)&lt;hr&gt;RollingStatsEvaluator&lt;br&gt;DriftDetectionEvaluator&lt;br&gt;ThresholdEvaluator&lt;br&gt;&lt;i&gt;+ user-defined plugins&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;align=left;spacingLeft=8;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="780" y="630" width="190" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_reg_eval" value="registers" style="dashed=1;endArrow=open;endFill=0;fontSize=10;" parent="1" source="registry" target="base_eval" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="workflow_group" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;dashed=0;" parent="1" vertex="1">
+                    <mxGeometry x="780" y="230" width="420" height="370" as="geometry"/>
+                </mxCell>
+                <mxCell id="wf_title" value="Workflow Handlers" style="text;html=1;fontSize=14;fontStyle=1;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="900" y="235" width="180" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="check_cond" value="&lt;b&gt;check_condition()&lt;/b&gt;&lt;br&gt;Evaluates condition string&lt;br&gt;against EvalResult using SymPy&lt;br&gt;&lt;br&gt;&lt;i&gt;e.g. &quot;rmse &gt; 0.5&quot;&lt;br&gt;&quot;drift_detected&quot;&lt;br&gt;&quot;mae &gt; 0.1 and drift_detected&quot;&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff;strokeColor=#6c8ebf;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="800" y="265" width="200" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="base_handler" value="&lt;b&gt;«abstract» BaseWorkflowHandler&lt;/b&gt;&lt;hr&gt;&lt;i&gt;+ handle(eval_result, context) → None&lt;/i&gt;&lt;br&gt;&lt;i&gt;+ name → str&lt;/i&gt;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;align=left;spacingLeft=8;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="830" y="395" width="260" height="55" as="geometry"/>
+                </mxCell>
+                <mxCell id="broker_h" value="&lt;b&gt;BrokerMessage&lt;br&gt;Handler&lt;/b&gt;&lt;br&gt;Publish to&lt;br&gt;broker topic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="800" y="475" width="90" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="webhook_h" value="&lt;b&gt;Webhook&lt;br&gt;Handler&lt;/b&gt;&lt;br&gt;HTTP POST&lt;br&gt;to URL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="900" y="475" width="90" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="script_h" value="&lt;b&gt;Script&lt;br&gt;Handler&lt;/b&gt;&lt;br&gt;Execute shell&lt;br&gt;command" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1000" y="475" width="90" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="pvalarm_h" value="&lt;b&gt;PVAlarm&lt;br&gt;Handler&lt;/b&gt;&lt;br&gt;Write PV with&lt;br&gt;alarm severity" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1100" y="475" width="90" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_bh" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=0;rounded=1;" parent="1" source="broker_h" target="base_handler" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_wh" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=0;rounded=1;" parent="1" source="webhook_h" target="base_handler" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_sh" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=0;rounded=1;" parent="1" source="script_h" target="base_handler" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_ph" style="edgeStyle=orthogonalEdgeStyle;endArrow=block;endFill=0;rounded=1;" parent="1" source="pvalarm_h" target="base_handler" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_cond_handler" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" parent="1" source="check_cond" target="base_handler" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_cond_handler_label" value="if condition met" style="edgeLabel;html=1;fontSize=10;" parent="e_cond_handler" vertex="1" connectable="0">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="build_h" value="&lt;b&gt;build_handlers()&lt;/b&gt;&lt;br&gt;→ list[(condition, handler)]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff;strokeColor=#6c8ebf;fontSize=11;" parent="1" vertex="1">
+                    <mxGeometry x="1020" y="280" width="170" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="handler_reg" value="&lt;b&gt;HANDLER_REGISTRY&lt;/b&gt;&lt;br&gt;&lt;i&gt;broker_message, webhook,&lt;br&gt;script, pv_alarm&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff;strokeColor=#6c8ebf;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="1020" y="345" width="170" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_build_reg" style="dashed=1;endArrow=open;endFill=0;" parent="1" source="build_h" target="handler_reg" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_obs_wf" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" parent="1" source="observer_box" target="check_cond" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_obs_wf_label" value="merged EvalResult" style="edgeLabel;html=1;fontSize=10;" parent="e_obs_wf" vertex="1" connectable="0">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="output_group" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;dashed=1;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="930" width="1120" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="output_label" value="Output Messages" style="text;html=1;fontSize=14;fontStyle=1;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="500" y="935" width="200" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="eval_output" value="&lt;b&gt;Evaluation Results&lt;/b&gt;&lt;br&gt;topic: eval_results&lt;br&gt;value: {metric: {value: val}, ...}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="120" y="960" width="280" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="wf_output" value="&lt;b&gt;Triggered Workflow Messages&lt;/b&gt;&lt;br&gt;broker messages · webhooks · scripts · PV alarms" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="500" y="960" width="350" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_eval_out" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" parent="1" source="eval_group" target="eval_output" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="260" y="910"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_eval_out_label" value="metrics &amp; flags" style="edgeLabel;html=1;fontSize=10;" parent="e_eval_out" vertex="1" connectable="0">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_handler_out" style="edgeStyle=orthogonalEdgeStyle;rounded=1;" parent="1" source="workflow_group" target="wf_output" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="990" y="630"/>
+                            <mxPoint x="1230" y="630"/>
+                            <mxPoint x="1230" y="980"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e_handler_out_label" value="triggered actions" style="edgeLabel;html=1;fontSize=10;" parent="e_handler_out" vertex="1" connectable="0">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend_box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff;strokeColor=#999;dashed=1;" parent="1" vertex="1">
+                    <mxGeometry x="1260" y="80" width="200" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="legend_title" value="&lt;b&gt;Legend&lt;/b&gt;" style="text;html=1;fontSize=12;align=center;" parent="1" vertex="1">
+                    <mxGeometry x="1310" y="85" width="100" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg1" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
+                    <mxGeometry x="1275" y="110" width="20" height="14" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg1t" value="Abstract / Data class" style="text;html=1;fontSize=10;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="1300" y="107" width="140" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg2" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+                    <mxGeometry x="1275" y="132" width="20" height="14" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg2t" value="Concrete Evaluator" style="text;html=1;fontSize=10;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="1300" y="129" width="140" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg3" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+                    <mxGeometry x="1275" y="154" width="20" height="14" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg3t" value="Workflow / Handlers" style="text;html=1;fontSize=10;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="1300" y="151" width="140" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg4" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+                    <mxGeometry x="1275" y="176" width="20" height="14" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg4t" value="Data Alignment" style="text;html=1;fontSize=10;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="1300" y="173" width="140" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg5" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+                    <mxGeometry x="1275" y="198" width="20" height="14" as="geometry"/>
+                </mxCell>
+                <mxCell id="leg5t" value="Observer (entry point)" style="text;html=1;fontSize=10;align=left;" parent="1" vertex="1">
+                    <mxGeometry x="1300" y="195" width="140" height="20" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
