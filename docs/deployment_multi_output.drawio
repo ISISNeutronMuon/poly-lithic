@@ -1,0 +1,148 @@
+<mxfile host="65bd71144e">
+    <diagram id="multi-output-deployment" name="Multi-Output Spigots">
+        <mxGraphModel dx="782" dy="560" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="600" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+
+                <!-- Title -->
+                <mxCell id="title" value="Poly-Lithic Deployment: Multiple Output Spigots" style="text;html=1;fontSize=18;fontStyle=1;align=center;verticalAlign=middle;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="20" width="900" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="subtitle" value="A single pipeline fans out to multiple p4p output spigots, each serving a different set of EPICS consumers." style="text;html=1;fontSize=11;align=center;verticalAlign=middle;fontColor=#888888;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="48" width="900" height="20" as="geometry"/>
+                </mxCell>
+
+                <!-- p4p_server (left, input interface) -->
+                <mxCell id="p4p_in" value="&lt;b&gt;p4p_server&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;interface.p4p_server&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="220" width="175" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="p4p_in_pub" value="pub: in_interface" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#aaaaaa;fontSize=11;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="60" y="295" width="175" height="20" as="geometry"/>
+                </mxCell>
+
+                <!-- input_transformer -->
+                <mxCell id="in_tx" value="&lt;b&gt;input_transformer&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;SimpleTransformer&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="220" width="175" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="in_tx_pub" value="pub: in_transformer" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#aaaaaa;fontSize=11;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="295" width="175" height="20" as="geometry"/>
+                </mxCell>
+
+                <!-- model -->
+                <mxCell id="model" value="&lt;b&gt;surrogate_model&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;MLflow Model v3&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="600" y="220" width="175" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="model_pub" value="pub: model_output" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#aaaaaa;fontSize=11;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="600" y="295" width="175" height="20" as="geometry"/>
+                </mxCell>
+
+                <!-- output_transformer -->
+                <mxCell id="out_tx" value="&lt;b&gt;output_transformer&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;SimpleTransformer&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="870" y="220" width="175" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="out_tx_pub" value="pub: out_transformer" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#aaaaaa;fontSize=11;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="870" y="295" width="175" height="20" as="geometry"/>
+                </mxCell>
+
+                <!-- Output spigots group label -->
+                <mxCell id="spigots_note" value="Output Spigots (read-only mirrors)" style="text;html=1;fontSize=10;fontStyle=1;align=center;verticalAlign=middle;fontColor=#666666;" parent="1" vertex="1">
+                    <mxGeometry x="1065" y="110" width="230" height="18" as="geometry"/>
+                </mxCell>
+                <mxCell id="spigots_bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;dashed=1;strokeWidth=1;" parent="1" vertex="1">
+                    <mxGeometry x="1065" y="126" width="215" height="290" as="geometry"/>
+                </mxCell>
+
+                <!-- output_spigot_beam (right-top) -->
+                <mxCell id="spigot_beam" value="&lt;b&gt;output_beam_pvs&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;interface.p4p_server&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="1090" y="145" width="175" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="spigot_beam_pub" value="pub: None (output only)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#aaaaaa;fontSize=11;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="1090" y="220" width="175" height="20" as="geometry"/>
+                </mxCell>
+
+                <!-- output_spigot_controls (right-center) -->
+                <mxCell id="spigot_ctrl" value="&lt;b&gt;output_ctrl_pvs&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;interface.p4p_server&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="1090" y="250" width="175" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="spigot_ctrl_pub" value="pub: None (output only)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#aaaaaa;fontSize=11;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="1090" y="325" width="175" height="20" as="geometry"/>
+                </mxCell>
+
+                <!-- output_spigot_hdf5 (right-bottom) — file archive -->
+                <mxCell id="spigot_hdf5" value="&lt;b&gt;output_hdf5_archive&lt;/b&gt;&lt;br&gt;&lt;font style=&quot;font-size: 11px;&quot;&gt;interface.hdf5&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" parent="1" vertex="1">
+                    <mxGeometry x="1090" y="355" width="175" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="spigot_hdf5_pub" value="pub: None (output only)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontColor=#aaaaaa;fontSize=11;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="1090" y="430" width="175" height="20" as="geometry"/>
+                </mxCell>
+
+                <!-- Arrow 1: p4p_in → input_transformer -->
+                <mxCell id="e1" value="in_interface" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="p4p_in" target="in_tx" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Arrow 2: input_transformer → model -->
+                <mxCell id="e2" value="in_transformer" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="in_tx" target="model" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Arrow 3: model → output_transformer -->
+                <mxCell id="e3" value="model_output" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="model" target="out_tx" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+
+                <!-- Arrow 4: output_transformer → output_beam_pvs -->
+                <mxCell id="e4" value="out_transformer" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="out_tx" target="spigot_beam" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1060" y="255"/>
+                            <mxPoint x="1060" y="180"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+
+                <!-- Arrow 5: output_transformer → output_ctrl_pvs -->
+                <mxCell id="e5" value="out_transformer" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="out_tx" target="spigot_ctrl" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1060" y="255"/>
+                            <mxPoint x="1060" y="285"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+
+                <!-- Arrow 6: output_transformer → output_hdf5_archive -->
+                <mxCell id="e6" value="out_transformer" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="out_tx" target="spigot_hdf5" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="1060" y="255"/>
+                            <mxPoint x="1060" y="390"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+
+                <!-- Return arrow: output_beam_pvs → p4p_server (input mirrors output for feedback) -->
+                <mxCell id="e7" value="out_transformer" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" parent="1" source="out_tx" target="p4p_in" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="957" y="480"/>
+                            <mxPoint x="147" y="480"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+
+                <!-- Consumer labels -->
+                <mxCell id="consumer_beam" value="Beam physics&lt;br&gt;consumers" style="text;html=1;fontSize=10;align=left;verticalAlign=middle;fontColor=#888888;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="1270" y="170" width="110" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="consumer_ctrl" value="Controls system&lt;br&gt;consumers" style="text;html=1;fontSize=10;align=left;verticalAlign=middle;fontColor=#888888;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="1270" y="270" width="110" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="consumer_hdf5" value="HDF5 file&lt;br&gt;archive" style="text;html=1;fontSize=10;align=left;verticalAlign=middle;fontColor=#888888;fontStyle=2;" parent="1" vertex="1">
+                    <mxGeometry x="1270" y="375" width="110" height="30" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
