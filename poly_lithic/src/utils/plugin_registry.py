@@ -2,7 +2,7 @@
 Plugin Registry System for Poly-Lithic
 
 This module provides a plugin registration system that allows external packages
-to register their own interfaces, transformers, and model getters through entry points.
+to register their own interfaces, transformers, model getters, and evaluators through entry points.
 
 External packages can register plugins by adding entry points in their pyproject.toml:
 
@@ -14,6 +14,9 @@ my_transformer = "my_package.transformers:MyTransformer"
 
 [project.entry-points."poly_lithic.model_getters"]
 my_model_getter = "my_package.models:MyModelGetter"
+
+[project.entry-points."poly_lithic.evaluators"]
+my_evaluator = "my_package.evaluators:MyEvaluator"
 """
 
 from typing import Any
@@ -157,6 +160,7 @@ class PluginRegistry:
 interface_plugin_registry = PluginRegistry('poly_lithic.interfaces')
 transformer_plugin_registry = PluginRegistry('poly_lithic.transformers')
 model_getter_plugin_registry = PluginRegistry('poly_lithic.model_getters')
+evaluator_plugin_registry = PluginRegistry('poly_lithic.evaluators')
 
 
 def register_interface(name: str, interface_class: Any):
@@ -169,3 +173,7 @@ def register_transformer(name: str, transformer_class: Any):
 
 def register_model_getter(name: str, model_getter_class: Any):
     model_getter_plugin_registry.register(name, model_getter_class)
+
+
+def register_evaluator(name: str, evaluator_class: Any):
+    evaluator_plugin_registry.register(name, evaluator_class)

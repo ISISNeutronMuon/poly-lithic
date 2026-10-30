@@ -1,0 +1,192 @@
+# Evaluation Module Example
+# -------------------------
+# This config extends the basic local deployment with an EvaluatorObserver
+# that compares model predictions against a ground-truth PV interface.
+#
+# Architecture:
+#   p4p_server (inputs) → transformer → model → output_transformer → p4p_server (outputs)
+#                                                        ↓
+#                              ground_truth_server → evaluator → eval_results
+#                                                              → eval_alarm_write (on drift)
+#
+# The evaluator:
+#   1. Receives model predictions from the "model" topic
+#   2. Receives ground-truth values from the "ground_truth" topic
+#   3. Pairs them using the AlignmentBuffer (timestamp mode, 0.5s tolerance)
+#   4. Runs RollingStatsEvaluator (RMSE, MAE) and DriftDetectionEvaluator
+#   5. Publishes metrics/flags to "eval_results"
+#   6. If RMSE > 1.0 → sends a webhook to a retraining service
+#   7. If drift is detected → writes a PV alarm
+
+deployment:
+  type: "continuous"
+  rate: 1  # seconds
+
+modules:
+  # --- Input interface: reads live PVs ---
+  p4p_server:
+    name: "p4p_server"
+    type: "interface.p4p_server"
+    pub:
+      - "in_interface"
+    sub:
+      - "get_all"
+      - "out_transformer"
+    module_args: None
+    config:
+      EPICS_PVA_NAME_SERVERS: "localhost:5075"
+      variables:
+        ML:LOCAL:TEST_B:
+          proto: pva
+          name: ML:LOCAL:TEST_B
+        ML:LOCAL:TEST_A:
+          proto: pva
+          name: ML:LOCAL:TEST_A
+        ML:LOCAL:TEST_S:
+          proto: pva
+          mode: out
+          name: ML:LOCAL:TEST_S
+
+  # --- Pre-processing transformer ---
+  input_transformer:
+    name: "input_transformer"
+    type: "transformer.SimpleTransformer"
+    pub: "in_transformer"
+    sub: "in_interface"
+    module_args: None
+    config:
+      symbols:
+        - "ML:LOCAL:TEST_B"
+        - "ML:LOCAL:TEST_A"
+      variables:
+        x:
+          formula: "ML:LOCAL:TEST_A * 2 + 10"
+        y:
+          formula: "ML:LOCAL:TEST_B + 120"
+
+  # --- Model ---
+  model:
+    name: "model"
+    type: "model.SimpleModel"
+    pub: "model"
+    sub: "in_transformer"
+    module_args: None
+    config:
+      type: "LocalModelGetter"
+      args:
+        model_path: "examples/base/local/model_definition.py"
+        model_factory_class: "ModelFactory"
+      variables:
+        max:
+          type: "scalar"
+
+  # --- Post-processing transformer ---
+  output_transformer:
+    name: "output_transformer"
+    type: "transformer.SimpleTransformer"
+    pub: "out_transformer"
+    sub: "model"
+    module_args:
+      unpack_data: True
+    config:
+      symbols:
+        - "output"
+      variables:
+        ML:LOCAL:TEST_S:
+          formula: "output"
+
+  # --- Ground-truth interface: reads the "real" measured values ---
+  ground_truth_server:
+    name: "ground_truth_server"
+    type: "interface.p4p_server"
+    pub:
+      - "ground_truth"
+    sub:
+      - "get_all"
+    module_args: None
+    config:
+      EPICS_PVA_NAME_SERVERS: "localhost:5075"
+      variables:
+        ML:LOCAL:TEST_S_ACTUAL:
+          proto: pva
+          name: ML:LOCAL:TEST_S_ACTUAL
+
+  # --- Evaluator: compares predictions vs ground truth ---
+  evaluator:
+    name: "evaluator"
+    type: "evaluator.EvaluatorObserver"
+    pub: "eval_results"
+    sub:
+      - "model"          # receives predictions
+      - "ground_truth"   # receives actuals
+    module_args: None
+    config:
+      # Which topic carries model predictions
+      model_topic: "model"
+
+      # Map prediction PV → ground-truth PV
+      mapping:
+        ML:LOCAL:TEST_S: ML:LOCAL:TEST_S_ACTUAL
+
+      # How to pair predictions with actuals
+      alignment:
+        mode: "timestamp"     # "latest" or "timestamp"
+        tolerance_s: 0.5      # max time gap for pairing
+
+      # Rolling window of paired samples
+      window:
+        type: "samples"       # "samples" or "time"
+        size: 50              # keep last 50 pairs
+
+      # Minimum paired samples before running evaluation
+      min_eval_samples: 5
+
+      # Evaluator chain — all run on every cycle, results are merged
+      evaluators:
+        - type: RollingStatsEvaluator
+          metrics:
+            - rmse
+            - mae
+
+        - type: DriftDetectionEvaluator
+          drift:
+            ks_alpha: 0.05
+            cusum_threshold: 5.0
+            min_samples: 10
+
+        - type: ThresholdEvaluator
+          thresholds:
+            absolute: 2.0       # flag if any PV error > 2.0
+            per_pv:
+              ML:LOCAL:TEST_S:
+                absolute: 1.5   # tighter threshold for this PV
+
+      # Workflow handlers — fire when their condition is met
+      workflows:
+        - type: webhook
+          condition: "rmse > 1.0"
+          url: "http://localhost:9000/retrain"
+          timeout: 5
+          # Min seconds between fires while the condition stays true; without
+          # this the webhook would be hit on every update (default 0).
+          cooldown_s: 300
+
+        - type: pv_alarm
+          condition: "drift_detected"
+          pv: "ML:LOCAL:EVAL_ALARM"
+          topic: "eval_alarm_write"
+          severity: 2            # MAJOR
+          message: "Model drift detected — residuals no longer normal"
+
+        # Clear the alarm once drift is gone
+        - type: pv_alarm
+          condition: "not drift_detected"
+          pv: "ML:LOCAL:EVAL_ALARM"
+          topic: "eval_alarm_write"
+          severity: 0            # NO_ALARM
+          value: 0
+          message: "No drift"
+
+        - type: broker_message
+          condition: "any_threshold_exceeded"
+          topic: "eval_alert"
