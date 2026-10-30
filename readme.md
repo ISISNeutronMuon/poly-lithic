@@ -39,8 +39,13 @@ use old docs in the meantime: [old docs](./readme_old.md) -->
       - [Model Configs](#model-configs)
         - [Example Model - Local Model](#example-model---local-model)
         - [Example Model - MLFLow Model](#example-model---mlflow-model)
+    - [Evaluator](#evaluator)
+      - [Evaluator Config](#evaluator-config)
+        - [Built-in evaluators](#built-in-evaluators)
+        - [Workflows](#workflows)
+        - [Evaluator sample configuration](#evaluator-sample-configuration)
+        - [Custom evaluators](#custom-evaluators)
 
-  - [Roadmap](#roadmap)
 # Poly-Lithic
 
 Poly-Lithic is a package that allows you do deploy any model with an arbitrary number of inputs and outputs, related data transformations and system interfaces. 
@@ -1101,19 +1106,147 @@ See the [local example notebook](./examples/base/simple_model_local.ipynb) for m
 See the [MLFlow example notebook](./examples/base/simple_model_mlflow.ipynb) for more details.
 
 
-## Roadmap
+### Evaluator
 
-| Feature / Task                                | Timeline     | Priority | Status        |
-|-----------------------------------------------|--------------|----------|---------------|
-| 🖌️ 🎨 **Make logo**                            | 1–3 Months   | 🥇       | Compelte! |
-| 🔌 🧩 **Plugin System for Modules**                      | 1–3 Months   | 🥇       | Complete! |
-| 🧠 🔧 **Lume-Model Integration**               | 1–3 Months   | 🥇       | ✅ Complete |
-| ⚡ 🔄 **Event driven mode**                    | 1-3 Months   | 🥈       | 🚧 In Progress     |
-| 🌐 🔌 **FastAPI REST Interface**                | 1–3 Months   | 🥇       | ✅ Complete |
-| 🔗 📡 **Job trace propagation across broker**   | 1–3 Months   | 🥈       | ⏳ Planned     |
-| 📦 🤖 **MLflow 3.x Support**                   | 6–12 Months   | 🥇       | ⏳ Planned     |
-| 🌐 🚀 **Move to `gh-pages`**                   | 1–3 Months   | 🥈       | 🚧 In Progress |
-| 🔗 🧪 **p4p4isis Interface**                   | 6–12 Months  | 🥉       | ⏳ Planned     |
-| 📊 🧭 **Time Series Aggregation**              | 3–6 Months   | 🥉       | ⏳ Planned     |
-| 📈 🔍 **Model Evaluator Module**               | 3–6 Months   | 🥉       | ⏳ Planned     |
-| 🔁 🔧 **Model Retrainer Module**               | 6–12 Months  | 🥈       | ⏳ Planned     |
+Evaluators monitor a deployed model online by comparing its predictions against ground-truth values coming from the real system. An evaluator module (`EvaluatorObserver`, see [messaging.py](./poly_lithic/src/utils/messaging.py)):
+
+1. subscribes to the model output topic (predictions) and to one or more ground-truth topics (usually an interface),
+2. pairs each prediction PV with its ground-truth PV in an alignment buffer and keeps a rolling window of paired samples,
+3. once enough pairs are available, runs every configured evaluator on the window and merges their results,
+4. publishes all metrics and flags (flags as `0`/`1`) to its `pub` topic, e.g. `{"rmse": {"value": 0.12}, "drift_detected": {"value": 0}}`,
+5. triggers any workflows whose condition holds (broker message, webhook, script or PV alarm).
+
+Only scalar values are evaluated; non-scalar PV values (arrays/waveforms/strings) are skipped. Evaluators follow the structure (see [base evaluator class](./poly_lithic/src/evaluators/BaseEvaluator.py)):
+
+```python
+@dataclass
+class EvalResult:
+    metrics: dict[str, float]       # e.g. {"rmse": 0.12, "mae": 0.08}
+    flags: dict[str, bool]          # e.g. {"drift_detected": True}
+    details: dict[str, Any]         # optional diagnostics
+
+class BaseEvaluator(ABC):
+    @abstractmethod
+    def __init__(self, config: dict):   # the evaluator's entry from the `evaluators` list
+        pass
+
+    @abstractmethod
+    def evaluate(self, predictions: dict[str, list[float]], actuals: dict[str, list[float]],
+                 timestamps: list[float] | None = None) -> EvalResult:
+        pass                            # predictions/actuals are keyed by prediction PV name
+
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        pass
+```
+
+#### Evaluator Config
+
+The module type is `evaluator.EvaluatorObserver`; metrics are published to the module's `pub` topic.
+
+| Key | Default | Description |
+| --- | ------- | ----------- |
+| `mapping` | `{}` | Prediction PV → ground-truth PV, e.g. `ML:PRED:TEMP: ML:ACTUAL:TEMP` |
+| `model_topic` | `"model"` | Topic carrying predictions. Messages on any other subscribed topic are treated as ground truth. |
+| `alignment.mode` | `"latest"` | `latest`: pair the most recent prediction with the most recent actual. `timestamp`: only pair if their timestamps are within `tolerance_s`. |
+| `alignment.tolerance_s` | `1.0` | Max timestamp gap for `timestamp` mode |
+| `window.type` | `"samples"` | `samples`: keep the last `size` pairs. `time`: keep pairs from the last `size` seconds, measured relative to the newest sample timestamp (data clock, not wall clock). |
+| `window.size` | `100` | Window length (pairs or seconds) |
+| `min_eval_samples` | `2` | Minimum pairs (in at least one mapping) before evaluation runs |
+| `evaluators` | `RollingStatsEvaluator` | List of evaluators; all run on every evaluation and their results are merged |
+| `workflows` | `[]` | List of actions triggered by conditions on the merged results |
+
+##### Built-in evaluators
+
+| `type` | Options | Outputs |
+| ------ | ------- | ------- |
+| `RollingStatsEvaluator` | `metrics`: subset of `[rmse, mae, mean_bias, r_squared]` (default: all) | metrics `rmse`, `mae`, `mean_bias`, `r_squared` (pooled across all mapped PVs) |
+| `DriftDetectionEvaluator` | `drift.ks_alpha` (0.05; one of 0.10, 0.05, 0.025, 0.01), `drift.cusum_threshold` (5.0), `drift.cusum_drift` (0.0), `drift.min_samples` (10) | metrics `ks_statistic`, `ks_critical`, `cusum_max`; flags `drift_detected` (KS test of residuals against a normal distribution), `cusum_alert` (`cusum_max > cusum_threshold`). Both flags are `False` until `min_samples` residuals exist. |
+| `ThresholdEvaluator` | `thresholds.absolute`, `thresholds.relative` (fraction), `thresholds.per_pv.<PV>.absolute` / `.relative` (overrides) | per PV: metrics `<PV>/max_abs_error`, `<PV>/mean_abs_error`, `<PV>/max_rel_error` (if relative set); flags `<PV>/abs_threshold_exceeded`, `<PV>/rel_threshold_exceeded`; plus flag `any_threshold_exceeded` |
+
+##### Workflows
+
+Each workflow entry has a `type`, an optional `condition` and an optional `cooldown_s`.
+
+- `condition` is an expression over the merged metric and flag names, supporting comparisons, arithmetic and `and` / `or` / `not` (or `&` / `|` / `~`). Names can be plain (`rmse`, `drift_detected`) or per-PV names containing `:` `/` `.`, e.g. `ML:PRED:TEMP/max_abs_error > 1`. Flags evaluate as `0`/`1`. An empty condition always fires. An unknown variable or invalid expression logs a warning and does not fire.
+- `cooldown_s` (default `0`) is the minimum time between firings. With `0` the workflow fires on every evaluation while the condition holds, so set a cooldown for `webhook` and `script` triggers.
+
+| `type` | Options | Action |
+| ------ | ------- | ------ |
+| `broker_message` | `topic` (`"eval_alarm"`) | Publishes all metrics and flags to `topic` on the broker |
+| `webhook` | `url` (required), `timeout` (10 s), `headers` (`Content-Type: application/json`) | HTTP POST of `{"metrics": ..., "flags": ..., "details": ...}` |
+| `script` | `command` (required, run through the shell), `timeout` (30 s) | Runs the command with the same JSON payload on stdin |
+| `pv_alarm` | `pv` (required), `topic` (`"eval_alarm_write"`), `severity` (2; 0=NO_ALARM, 1=MINOR, 2=MAJOR), `message`, `value` (1) | Publishes `{pv: {"value": value, "alarm": {...}}}` to `topic`. Subscribe an interface that serves `pv` to that topic. The handler only runs when its condition holds, so add a second `pv_alarm` with the inverted condition, `value: 0` and `severity: 0` to clear the alarm. |
+
+Webhook and script payloads are strict JSON: non-finite metrics (`inf`/`nan`) are sent as `null`.
+
+##### Evaluator sample configuration
+Trimmed from [deployment_config_evaluator.yaml](./examples/base/local/deployment_config_evaluator.yaml), which contains the full deployment including the ground-truth interface.
+
+```yaml
+modules:
+  evaluator:
+    name: "evaluator"
+    type: "evaluator.EvaluatorObserver"
+    pub: "eval_results"            # metrics/flags are published here
+    sub:
+      - "model"                    # predictions
+      - "ground_truth"             # actuals, published by a ground-truth interface
+    module_args: None
+    config:
+      model_topic: "model"
+      mapping:
+        ML:LOCAL:TEST_S: ML:LOCAL:TEST_S_ACTUAL
+      alignment:
+        mode: "timestamp"
+        tolerance_s: 0.5
+      window:
+        type: "samples"
+        size: 50
+      min_eval_samples: 5
+      evaluators:
+        - type: RollingStatsEvaluator
+          metrics: [rmse, mae]
+        - type: DriftDetectionEvaluator
+          drift:
+            ks_alpha: 0.05
+            cusum_threshold: 5.0
+            min_samples: 10
+        - type: ThresholdEvaluator
+          thresholds:
+            absolute: 2.0
+            per_pv:
+              ML:LOCAL:TEST_S:
+                absolute: 1.5
+      workflows:
+        - type: webhook
+          condition: "rmse > 1.0"
+          url: "http://localhost:9000/retrain"
+          timeout: 5
+          cooldown_s: 300
+        - type: pv_alarm
+          condition: "drift_detected"
+          pv: "ML:LOCAL:EVAL_ALARM"
+          topic: "eval_alarm_write"
+          severity: 2
+          message: "Model drift detected"
+        - type: broker_message
+          condition: "any_threshold_exceeded or ML:LOCAL:TEST_S/max_abs_error > 1"
+          topic: "eval_alert"
+```
+
+##### Custom evaluators
+Custom evaluators subclass `BaseEvaluator` and are looked up by the `type` name in the `evaluators` list (the plugin registry is checked before the built-ins). Register them either through the `poly_lithic.evaluators` entry point group in your plugin's `pyproject.toml` (see the [plugin readme](./poly_lithic/templates/plugin/README.md)):
+
+```toml
+[project.entry-points."poly_lithic.evaluators"]
+MyEvaluator = "my_package.evaluators:MyEvaluator"
+```
+
+or at runtime:
+
+```python
+from poly_lithic.src.utils.plugin_registry import register_evaluator
+register_evaluator("MyEvaluator", MyEvaluator)
+```
